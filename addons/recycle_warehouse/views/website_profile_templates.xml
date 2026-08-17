@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<!-- ================================================================ -->
+<!-- Dawrha — Profile Completion Page (bilingual · RTL · dark mode)    -->
+<!-- Reuses dawrha_layout + shared dw-* CSS variables. Extra styling   -->
+<!-- and client-side validation loaded page-scoped at the bottom.      -->
+<!-- ================================================================ -->
+<template id="profile_completion_page" name="Complete Profile">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title" t-value="'Complete Profile'"/>
+
+        <!-- Page-scoped stylesheet (dark-mode + RTL aware) -->
+        <link rel="stylesheet"
+              href="/recycle_warehouse/static/src/css/profile_style.css"/>
+
+        <section class="dw-section dw-profile-section" style="padding-top:48px;">
+            <div class="container">
+
+                <div class="dw-breadcrumb">
+                    <a href="/account" data-i18n="Account">Account</a> /
+                    <span data-i18n="Complete Your Profile">Complete Your Profile</span>
+                </div>
+
+                <h2 class="dw-section-title" data-i18n="Complete Your Profile">Complete Your Profile</h2>
+                <p class="dw-section-sub" data-i18n="Fill in your information to complete your profile and apply.">Fill in your information to complete your profile and apply.</p>
+
+                <!-- ✅ Success banner -->
+                <t t-if="success_msg">
+                    <div class="dw-alert dw-alert-success dw-profile-alert" role="status">
+                        <span>✅</span> <span t-esc="success_msg"/>
+                    </div>
+                </t>
+
+                <!-- ❌ Validation errors -->
+                <t t-if="errors">
+                    <div class="dw-alert dw-alert-error dw-profile-alert" role="alert">
+                        <ul style="margin:0;padding-inline-start:20px;">
+                            <t t-foreach="errors" t-as="err" t-key="err_index">
+                                <li t-esc="err"/>
+                            </t>
+                        </ul>
+                    </div>
+                </t>
+
+                <form id="dw-profile-form" method="post" enctype="multipart/form-data"
+                      action="/profile/complete" class="dw-profile-form" novalidate="novalidate">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="dw_lang" class="dw_lang_input"/>
+                    <input type="hidden" name="confirm_update" id="dw-confirm-update" value=""/>
+
+                    <!-- ── Section 1: Contact information ─────────────── -->
+                    <div class="dw-profile-card">
+                        <h3 class="dw-profile-card-title">
+                            <span>📇</span>
+                            <span data-i18n="Contact Information">Contact Information</span>
+                        </h3>
+                        <div class="dw-profile-grid">
+                            <div class="dw-field">
+                                <label data-i18n="First Name">First Name</label>
+                                <input type="text" name="first_name" required="required"
+                                       t-att-value="pc_first_name"
+                                       data-req="1" placeholder="First Name"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Last Name">Last Name</label>
+                                <input type="text" name="last_name" required="required"
+                                       t-att-value="pc_last_name"
+                                       data-req="1" placeholder="Last Name"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Email">Email</label>
+                                <input type="email" name="email" required="required"
+                                       t-att-value="pc_email"
+                                       data-req="1" data-check="email" placeholder="Email"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Phone">Phone</label>
+                                <input type="text" name="phone" required="required"
+                                       t-att-value="pc_phone"
+                                       data-req="1" data-check="phone" placeholder="Phone"/>
+                            </div>
+                            <div class="dw-field dw-field-full">
+                                <label data-i18n="Address">Address</label>
+                                <input type="text" name="street" t-att-value="pc_street"
+                                       placeholder="Address"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="City">City</label>
+                                <input type="text" name="city" t-att-value="pc_city"
+                                       placeholder="City"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Country">Country</label>
+                                <input type="text" name="country" t-att-value="pc_country"
+                                       placeholder="Country"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Section 2: Employment information ──────────── -->
+                    <div class="dw-profile-card">
+                        <h3 class="dw-profile-card-title">
+                            <span>💼</span>
+                            <span data-i18n="Employment Information">Employment Information</span>
+                        </h3>
+                        <div class="dw-profile-grid">
+                            <div class="dw-field">
+                                <label data-i18n="Job Position">Job Position</label>
+                                <select name="job_id" required="required" data-req="1">
+                                    <option value="" data-i18n="Select a position">Select a position</option>
+                                    <t t-foreach="jobs" t-as="job" t-key="job.id">
+                                        <option t-att-value="job.id"
+                                                t-att-selected="str(job.id) == pc_job_id"
+                                                t-esc="job.name"/>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Company Name">Company Name</label>
+                                <input type="text" name="company_name" required="required"
+                                       t-att-value="pc_company_name"
+                                       data-req="1" placeholder="Company Name"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Company Type">Company Type</label>
+                                <select name="company_type" required="required" data-req="1">
+                                    <option value="" data-i18n="Select type">Select type</option>
+                                    <option value="factory"
+                                            t-att-selected="pc_company_type == 'factory'"
+                                            data-i18n="Factory">Factory</option>
+                                    <option value="organization"
+                                            t-att-selected="pc_company_type == 'organization'"
+                                            data-i18n="Organization">Organization</option>
+                                </select>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Years of Experience">Years of Experience</label>
+                                <input type="number" name="experience" min="0" max="60"
+                                       t-att-value="pc_experience"
+                                       placeholder="Years of Experience"/>
+                            </div>
+                            <div class="dw-field dw-field-full">
+                                <label data-i18n="CV / Resume">CV / Resume</label>
+                                <input type="file" name="cv_file" required="required"
+                                       data-req="1" data-check="cv"
+                                       accept=".pdf,.doc,.docx"/>
+                                <div class="dw-hint" data-i18n="Only PDF or Word files allowed">Only PDF or Word files allowed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Section 3: Documents ───────────────────────── -->
+                    <div class="dw-profile-card">
+                        <h3 class="dw-profile-card-title">
+                            <span>📄</span>
+                            <span data-i18n="Documents">Documents</span>
+                        </h3>
+                        <div class="dw-profile-grid">
+                            <div class="dw-field">
+                                <label data-i18n="National ID">National ID</label>
+                                <input type="text" name="national_id" required="required"
+                                       t-att-value="pc_national_id"
+                                       data-req="1" data-check="nid"
+                                       placeholder="Digits only (5–20)"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="ID Expiry Date">ID Expiry Date</label>
+                                <input type="date" name="id_expiry"/>
+                            </div>
+                            <div class="dw-field dw-field-full">
+                                <label data-i18n="Additional Documents">Additional Documents</label>
+                                <input type="file" name="extra_docs" multiple="multiple"
+                                       data-check="cv"
+                                       accept=".pdf,.doc,.docx"/>
+                                <div class="dw-hint" data-i18n="Optional. PDF or Word. You may select multiple files.">Optional. PDF or Word. You may select multiple files.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dw-profile-actions">
+                        <button type="submit" class="dw-btn dw-btn-primary dw-profile-submit"
+                                data-i18n="Save Profile">Save Profile</button>
+                        <a href="/account" class="dw-btn dw-btn-secondary" data-i18n="Cancel">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ── Duplicate application modal (shown on server detection) ── -->
+        <div t-att-class="'dw-modal dw-profile-modal' + (dup_error and ' dw-modal-open' or '')"
+             id="dw-dup-modal">
+            <div class="dw-modal-box">
+                <div class="dw-modal-icon">⚠️</div>
+                <h3 class="dw-modal-title" id="dw-dup-title" t-esc="dup_title or 'Application already exists'"/>
+                <p class="dw-modal-text" id="dw-dup-text"
+                   t-esc="dup_msg or 'You have already applied for this position. Do you want to update your application?'"/>
+                <div class="dw-modal-actions">
+                    <button type="button" class="dw-btn dw-btn-primary" id="dw-dup-confirm"
+                            data-i18n="Yes, update">Yes, update</button>
+                    <button type="button" class="dw-btn dw-btn-secondary" id="dw-dup-cancel"
+                            data-i18n="Cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page-scoped client-side validation + language + duplicate handling -->
+        <script src="/recycle_warehouse/static/src/js/profile_completion.js"></script>
+    </t>
+</template>
+</odoo>

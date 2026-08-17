@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_recycle_product_list" model="ir.ui.view">
+        <field name="name">recycle.product.list</field>
+        <field name="model">recycle.product</field>
+        <field name="arch" type="xml">
+            <!-- No price columns: a material is priced per buyer tier AND per
+                 condition in the backend, so a single number per row would be
+                 wrong for most materials. The "View Prices" action opens the
+                 full sheet instead. -->
+            <!-- create="false": materials are authored in the backend, WITH the
+                 price list that makes them visible to a buyer. One created here
+                 would have no prices, so it would appear to nobody and be
+                 orderable by no one — work that looks done and does nothing.
+                 The "Suggest a Material" queue is the way in instead. -->
+            <list create="false" delete="false" edit="false">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="uom_id"/>
+                <button name="action_view_prices" type="object" string="View Prices"
+                        icon="fa-money" class="btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_product_form" model="ir.ui.view">
+        <field name="name">recycle.product.form</field>
+        <field name="model">recycle.product</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="false">
+                <header>
+                    <button name="action_view_prices" type="object"
+                            string="View Prices" class="btn-primary"/>
+                    <button name="%(action_recycle_product_suggestion)d"
+                            type="action" string="Suggest a Material"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Product Name"/></h1>
+                    </div>
+                    <group>
+                        <field name="category_id"/>
+                        <field name="uom_id"/>
+                        <field name="weight" string="Weight per Unit (kg)"/>
+                        <field name="active" invisible="1"/>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not pricing_suspended">
+                        <field name="pricing_notice" nolabel="1" readonly="1"/>
+                    </div>
+                    <field name="pricing_suspended" invisible="1"/>
+                    <notebook>
+                        <page string="Prices" name="prices">
+                            <field name="condition_price_ids" nolabel="1" readonly="1">
+                                <list create="false" edit="false" delete="false"
+                                      decoration-success="has_offer == True">
+                                    <field name="has_offer" column_invisible="1"/>
+                                    <field name="tier"/>
+                                    <field name="condition_name" string="Condition"/>
+                                    <!-- Both numbers, not just the live one: an
+                                         offer is a CHANGE of price, and reading
+                                         only the new figure answers "what does
+                                         it cost" while losing "what did it
+                                         cost" — the question this screen is
+                                         opened with. `price` stays available
+                                         underneath as the plain list price. -->
+                                    <field name="price_display" string="Price"/>
+                                    <!-- The saving, stated. Two numbers beside
+                                         each other tell you the price changed;
+                                         they do not tell you by how much
+                                         without arithmetic the reader should
+                                         not have to do. -->
+                                    <field name="offer_percentage" string="Offer %"
+                                           optional="show"/>
+                                    <field name="offer_valid_until" string="Offer ends"
+                                           optional="show"/>
+                                </list>
+                            </field>
+                            <div class="text-muted mt-2">
+                                Prices are authored in the backend — per buyer tier,
+                                and per material condition when the material has any.
+                                A struck-through figure means a live offer: the old
+                                price is on the left, what the apps charge today on
+                                the right.
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_product_search" model="ir.ui.view">
+        <field name="name">recycle.product.search</field>
+        <field name="model">recycle.product</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="category_id"/>
+                <separator/>
+                <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_recycle_product" model="ir.actions.act_window">
+        <field name="name">Products</field>
+        <field name="res_model">recycle.product</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_recycle_product_category_list" model="ir.ui.view">
+        <field name="name">recycle.product.category.list</field>
+        <field name="model">recycle.product.category</field>
+        <field name="arch" type="xml">
+            <!-- Same reason as materials: the backend authors categories and
+                 pushes them here, so one created in Odoo would be an orphan
+                 nothing on the app side knows about. -->
+            <list create="false" delete="false" edit="false">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_recycle_product_category" model="ir.actions.act_window">
+        <field name="name">Product Categories</field>
+        <field name="res_model">recycle.product.category</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

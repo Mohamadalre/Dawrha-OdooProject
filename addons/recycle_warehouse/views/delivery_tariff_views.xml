@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Delivery pricing is authored HERE by the administrator: Odoo owns the
+         fleet, so it owns what a delivery costs. The backend mirrors these rows
+         read-only and quotes buyers from the mirror. -->
+
+    <record id="view_recycle_delivery_tariff_list" model="ir.ui.view">
+        <field name="name">recycle.delivery.tariff.list</field>
+        <field name="model">recycle.delivery.tariff</field>
+        <field name="arch" type="xml">
+            <list string="Delivery Tariffs" editable="bottom">
+                <field name="scope"/>
+                <field name="warehouse_id"
+                       column_invisible="False"
+                       readonly="scope != 'warehouse'"/>
+                <field name="province_id" readonly="scope != 'province'"/>
+                <field name="base_fee"/>
+                <field name="rate_per_km"/>
+                <field name="min_fee" optional="show"/>
+                <field name="currency"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_delivery_tariff_form" model="ir.ui.view">
+        <field name="name">recycle.delivery.tariff.form</field>
+        <field name="model">recycle.delivery.tariff</field>
+        <field name="arch" type="xml">
+            <form string="Delivery Tariff">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Applies To">
+                            <field name="scope"/>
+                            <field name="warehouse_id"
+                                   invisible="scope != 'warehouse'"
+                                   required="scope == 'warehouse'"/>
+                            <field name="province_id"
+                                   invisible="scope != 'province'"
+                                   required="scope == 'province'"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Pricing">
+                            <field name="base_fee"/>
+                            <field name="rate_per_km"/>
+                            <field name="min_fee"/>
+                            <field name="currency"/>
+                        </group>
+                    </group>
+                    <div class="text-muted">
+                        The most specific matching tariff wins: this warehouse,
+                        then its governorate, then the global one.
+                        Free facilities always collect their own goods, so no
+                        tariff applies to them.
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recycle_delivery_tariff" model="ir.actions.act_window">
+        <field name="name">Delivery Tariffs</field>
+        <field name="res_model">recycle.delivery.tariff</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Set your delivery pricing</p>
+            <p>
+                Start with one global tariff, then add narrower ones only where
+                a governorate or a single warehouse should cost differently.
+            </p>
+        </field>
+    </record>
+    <!-- menuitem lives in menus.xml (menu_recycle_config is defined there). -->
+</odoo>

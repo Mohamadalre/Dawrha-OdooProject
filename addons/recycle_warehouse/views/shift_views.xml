@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================ -->
+    <!--  SHIFT — list (admin)                                            -->
+    <!-- ================================================================ -->
+    <record id="view_shift_list" model="ir.ui.view">
+        <field name="name">recycle.shift.list</field>
+        <field name="model">recycle.shift</field>
+        <field name="arch" type="xml">
+            <list string="Work Shifts"
+                  decoration-muted="not active">
+                <field name="name"/>
+                <field name="shift_type" string="For" optional="show"/>
+                <field name="is_global" string="Global" optional="show"/>
+                <field name="warehouse_ids" string="Warehouses" widget="many2many_tags" optional="show"/>
+                <field name="start_time" widget="float_time"/>
+                <field name="end_time"   widget="float_time"/>
+                <field name="tolerance" string="Tolerance (min)"/>
+                <field name="employee_count" string="Employees"/>
+                <field name="active" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!--  SHIFT — form (admin)                                            -->
+    <!-- ================================================================ -->
+    <record id="view_shift_form" model="ir.ui.view">
+        <field name="name">recycle.shift.form</field>
+        <field name="model">recycle.shift</field>
+        <field name="arch" type="xml">
+            <form string="Work Shift">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Morning Shift…"/></h1>
+                    </div>
+                    <group>
+                        <group string="Timing">
+                            <field name="start_time" widget="float_time"/>
+                            <field name="end_time"   widget="float_time"/>
+                            <field name="tolerance"  string="Tolerance (minutes)"/>
+                        </group>
+                        <group string="Info">
+                            <!-- A shift is GLOBAL (all warehouses) or SPECIFIC
+                                 to one or more warehouses. Employees are NEVER
+                                 assigned from here — that happens on the
+                                 employee form (shift / warehouse / role). -->
+                            <field name="shift_type" widget="radio"
+                                   options="{'horizontal': true}"/>
+                            <field name="is_global"/>
+                            <field name="warehouse_ids" string="Warehouses"
+                                   widget="many2many_tags"
+                                   invisible="is_global"
+                                   options="{'no_create': True}"/>
+                            <field name="active"/>
+                            <field name="employee_count" string="Assigned Employees"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search -->
+    <record id="view_shift_search" model="ir.ui.view">
+        <field name="name">recycle.shift.search</field>
+        <field name="model">recycle.shift</field>
+        <field name="arch" type="xml">
+            <search string="Search Shifts">
+                <field name="name"/>
+                <field name="warehouse_ids"/>
+                <filter string="Active" name="active"
+                        domain="[('active','=',True)]"/>
+                <filter string="Warehouse Staff" name="type_warehouse"
+                        domain="[('shift_type','=','warehouse')]"/>
+                <filter string="Drivers" name="type_driver"
+                        domain="[('shift_type','=','driver')]"/>
+                <filter string="Global" name="global"
+                        domain="[('is_global','=',True)]"/>
+                <separator/>
+                <filter string="Type" name="group_type"
+                        context="{'group_by': 'shift_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_recycle_shifts" model="ir.actions.act_window">
+        <field name="name">Work Shifts</field>
+        <field name="res_model">recycle.shift</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No shifts defined yet</p>
+            <p>Create work shifts to assign them to employees and track attendance.</p>
+        </field>
+    </record>
+
+    <!-- Client action for the OWL shift manager sub-page -->
+    <record id="action_recycle_shift_manager" model="ir.actions.client">
+        <field name="name">Shift Management</field>
+        <field name="tag">recycle_shift_manager</field>
+    </record>
+
+</odoo>

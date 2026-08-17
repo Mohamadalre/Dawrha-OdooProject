@@ -1,0 +1,1104 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+
+    <!-- ============================================================ -->
+    <!--  Input Employee Dashboard — admin/manager style, own scope   -->
+    <!-- ============================================================ -->
+    <t t-name="recycle_warehouse.RecycleHomeAction">
+    <div t-att-class="'o_recycle_home_dashboard o_recycle_admin_theme' + (state.view === 'my_warehouse' ? ' o_ra_has_unified_nav' : '') + (state.darkMode ? ' o_ra_dark' : '') + (state.lang === 'ar' ? ' o_ra_rtl' : '')">
+
+        <!-- In-page message/confirm dialog (replaces window.confirm). -->
+        <t t-call="recycle_warehouse.MessageDialog"/>
+
+        <!-- ── Top toolbar: menu toggle (every other view) ── -->
+        <div class="o_ra_top_toolbar" t-if="state.view !== 'my_warehouse'">
+            <button class="o_ra_persistent_sidebar_toggle" t-att-title="tr('Menu')" t-on-click="toggleSidebar">&#9776;</button>
+        </div>
+
+        <!-- ── Unified Top Navbar (main dashboard view only) ── -->
+        <div class="o_ra_unified_nav" t-if="state.view === 'my_warehouse'">
+            <button class="o_ra_unified_hamburger" t-att-title="tr('Menu')" t-on-click="toggleSidebar">&#9776;</button>
+            <div class="o_ra_unified_spacer"></div>
+            <button class="o_ra_unified_btn" t-att-title="tr('Toggle Theme')" t-on-click="toggleDarkMode">
+                <t t-if="state.darkMode">&#x2600;&#xFE0F;</t>
+                <t t-else="">&#x1F319;</t>
+            </button>
+            <button class="o_ra_unified_btn" t-att-title="tr('Notifications')" t-on-click="showNotifications">
+                &#x1F514;
+                <span t-if="state.notifUnreadCount" class="o_ra_notif_badge" t-esc="state.notifUnreadCount > 9 ? '9+' : state.notifUnreadCount"/>
+            </button>
+            <button class="o_ra_unified_btn" t-att-title="tr('Settings')" t-on-click="showSettings">&#x2699;&#xFE0F;</button>
+            <div class="o_ra_unified_profile" t-on-click="showProfile">
+                <div class="o_ra_unified_avatar">
+                    <t t-esc="(userName || 'E')[0].toUpperCase()"/>
+                </div>
+                <span class="o_ra_unified_name" t-esc="userName"/>
+            </div>
+        </div>
+        <div t-if="state.sidebarOpen" class="o_ra_sb_backdrop" t-on-click="toggleSidebar"></div>
+
+        <!-- ── Process Toast Notification ── -->
+        <t t-if="state.processToast">
+            <div class="o_ra_toast_container">
+                <div t-att-class="'o_ra_toast ' + (state.processToast.type === 'error' ? 'o_ra_toast_error' : 'o_ra_toast_success')"
+                     t-on-click="() => this.state.processToast = null">
+                    <span class="o_ra_toast_icon" t-esc="state.processToast.type === 'error' ? '⚠️' : '✅'"/>
+                    <span t-esc="state.processToast.msg"/>
+                </div>
+            </div>
+        </t>
+
+        <!-- ── Change Password Modal ── -->
+        <t t-if="state.showChangePasswordModal">
+            <div class="o_ra_modal_backdrop" t-on-click="closeChangePasswordModal"></div>
+            <div class="o_ra_modal">
+                <div class="o_ra_modal_header">
+                    <div class="o_ra_modal_icon">&#x1F511;</div>
+                    <div class="o_ra_modal_title" t-esc="tr('Change Password')"></div>
+                    <button class="o_ra_modal_close" t-on-click="closeChangePasswordModal">&#x2715;</button>
+                </div>
+                <div class="o_ra_modal_body">
+                    <t t-if="state.changePasswordStep === 1">
+                        <div class="o_ra_form_group">
+                            <label class="o_ra_form_label" t-esc="tr('Current Password')"></label>
+                            <input type="password" class="o_ra_form_input" t-model="state.changePasswordCurrent"
+                                   t-att-placeholder="tr('Enter current password')"/>
+                        </div>
+                        <div class="o_ra_form_group">
+                            <label class="o_ra_form_label" t-esc="tr('New Password')"></label>
+                            <input type="password" class="o_ra_form_input" t-model="state.changePasswordNew"
+                                   t-att-placeholder="tr('Enter new password')"/>
+                        </div>
+                        <div class="o_ra_form_group">
+                            <label class="o_ra_form_label" t-esc="tr('Confirm New Password')"></label>
+                            <input type="password" class="o_ra_form_input" t-model="state.changePasswordConfirm"
+                                   t-att-placeholder="tr('Confirm new password')"/>
+                        </div>
+                        <t t-if="state.changePasswordError">
+                            <div class="o_ra_modal_error" t-esc="state.changePasswordError"></div>
+                        </t>
+                    </t>
+                    <t t-if="state.changePasswordStep === 2">
+                        <div class="o_ra_modal_success_box">
+                            <div class="o_ra_modal_success_icon">&#x2705;</div>
+                            <div class="o_ra_modal_success_title" t-esc="tr('Password Changed Successfully!')"></div>
+                            <div class="o_ra_modal_success_desc" t-esc="tr('Your password has been updated. You can now login with your new password.')"></div>
+                        </div>
+                        <div class="o_ra_modal_info_box">
+                            <div class="o_ra_modal_info_icon">&#x1F4E7;</div>
+                            <div class="o_ra_modal_info_text" t-esc="tr('A password reset link will be sent to your email address.')"></div>
+                        </div>
+                    </t>
+                </div>
+                <div class="o_ra_modal_footer">
+                    <t t-if="state.changePasswordStep === 1">
+                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="closeChangePasswordModal" t-esc="tr('Cancel')"></button>
+                        <button class="o_ra_action_btn" t-att-disabled="state.changePasswordLoading" t-on-click="submitChangePassword">
+                            <t t-if="state.changePasswordLoading" t-esc="tr('Saving…')"></t>
+                            <t t-else="" t-esc="tr('Change Password')"></t>
+                        </button>
+                    </t>
+                    <t t-if="state.changePasswordStep === 2">
+                        <button class="o_ra_action_btn" t-on-click="closeChangePasswordModal" t-esc="tr('Done')"></button>
+                    </t>
+                </div>
+            </div>
+        </t>
+
+        <!-- ── Vertical Sidebar ── -->
+        <aside t-att-class="'o_ra_sidebar' + (state.sidebarOpen ? ' o_ra_sb_open' : '')">
+            <div class="o_ra_sb_brand" t-on-click="goHome" tabindex="0" role="button">
+                <img src="/recycle_warehouse/static/src/img/icon_logo.png" class="o_ra_sb_brand_icon" alt="Dawrha"/>
+                <span class="o_ra_sb_brand_txt" t-esc="tr('Recycling Management System')"/>
+            </div>
+
+            <!-- Warehouse card (above Home) -->
+            <t t-if="state.myWarehouse">
+                <div class="o_ra_sb_warehouse o_ra_sb_warehouse_click" t-on-click="showMyWarehouse" tabindex="0" role="button">
+                    <div class="o_ra_sb_wh_icon">&#x1F3ED;</div>
+                    <div class="o_ra_sb_wh_info">
+                        <div class="o_ra_sb_wh_label"><t t-esc="tr('My Warehouse')"/></div>
+                        <div class="o_ra_sb_wh_name"><t t-esc="state.myWarehouse.name"/></div>
+                        <div class="o_ra_sb_wh_row">
+                            <span class="o_ra_sb_wh_badge"><t t-esc="state.myWarehouse.code || '—'"/></span>
+                            <span class="o_ra_sb_wh_badge"><t t-esc="govLabel(state.myWarehouse.governorate)"/></span>
+                        </div>
+                        <div class="o_ra_sb_wh_row">
+                            <span class="o_ra_sb_wh_mgr">&#x1F464; <t t-esc="m2oName(state.myWarehouse.manager_user_id) || '—'"/></span>
+                        </div>
+                    </div>
+                    <span class="o_ra_sb_wh_chev">›</span>
+                </div>
+            </t>
+
+            <div class="o_ra_sb_sections">
+                <t t-foreach="navSections" t-as="sec" t-key="sec.key">
+                    <t t-if="sec.single">
+                        <button t-att-class="'o_ra_sb_btn' + (state.activeNavGo === sec.go ? ' o_ra_sb_btn_active' : '')"
+                                t-on-click="() => this.navClick(sec.go)">
+                            <span class="o_ra_sb_icon" t-esc="sec.icon"/>
+                            <span class="o_ra_sb_lbl" t-esc="tr(sec.label)"/>
+                        </button>
+                    </t>
+                    <t t-else="">
+                        <button t-att-class="'o_ra_sb_btn' + (state.navSection === sec.key ? ' o_ra_sb_btn_open' : '')"
+                                t-on-click="() => this.toggleNavSection(sec.key)">
+                            <span class="o_ra_sb_icon" t-esc="sec.icon"/>
+                            <span class="o_ra_sb_lbl" t-esc="tr(sec.label)"/>
+                            <span class="o_ra_sb_chev" t-esc="state.navSection === sec.key ? '▾' : '▸'"/>
+                        </button>
+                        <div t-if="state.navSection === sec.key" class="o_ra_sb_items">
+                            <t t-foreach="sec.items" t-as="it" t-key="it.label">
+                                <button t-att-class="'o_ra_sb_item' + (state.activeNavGo === it.go ? ' o_ra_sb_item_active' : '')"
+                                        t-on-click="() => this.navClick(it.go)">
+                                    <span class="o_ra_sb_item_dot"/>
+                                    <t t-esc="tr(it.label)"/>
+                                </button>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </aside>
+
+        <!-- ── Main content ── -->
+        <div class="o_ra_main">
+
+        <!-- ═══════════════════════════════ HOME (MY WAREHOUSE) ═══════════════════ -->
+        <t t-if="state.view === 'my_warehouse'">
+
+            <!-- ── Immersive Hero ── -->
+            <div class="o_ra_hero">
+                <div class="o_ra_hero_inner">
+                    <div class="o_ra_hero_brand">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" class="o_ra_hero_logo" alt="Dawrha" style="height:40px;"/>
+                        <span class="o_ra_hero_sys">
+                            <t t-esc="tr('WMS')"/> &#x2022; <t t-esc="tr('Input Employee')"/>
+                            <t t-if="state.myWarehouse"> &#x2022; <t t-esc="state.myWarehouse.name"/></t>
+                        </span>
+                    </div>
+                    <h1 class="o_ra_hero_title" t-esc="tr('My Warehouse Dashboard')"/>
+                    <p class="o_ra_hero_sub">
+                        <t t-esc="tr('Welcome back')"/>, <strong t-esc="userName"/>
+                    </p>
+                </div>
+            </div>
+
+            <div class="o_recycle_view_container">
+                <!-- Responsive Period Filter -->
+                <div class="o_ra_period_row">
+                    <span class="o_ra_filter_lbl" t-esc="tr('Period')"/>
+                    <div class="o_ra_period_btns">
+                        <button t-att-class="'o_ra_period_btn' + (state.filterPeriod === 'today' ? ' o_ra_period_btn_active' : '')"
+                                t-on-click="() => this.setFilterPeriod('today')" t-esc="tr('Today')"/>
+                        <button t-att-class="'o_ra_period_btn' + (state.filterPeriod === 'week' ? ' o_ra_period_btn_active' : '')"
+                                t-on-click="() => this.setFilterPeriod('week')" t-esc="tr('Week')"/>
+                        <button t-att-class="'o_ra_period_btn' + (state.filterPeriod === 'month' ? ' o_ra_period_btn_active' : '')"
+                                t-on-click="() => this.setFilterPeriod('month')" t-esc="tr('Month')"/>
+                    </div>
+                </div>
+
+                <t t-if="state.loading">
+                    <div class="o_ra_loading"><t t-esc="tr('Loading…')"/></div>
+                </t>
+                <t t-else="">
+                    <!-- KPI Cards -->
+                    <div class="o_ra_kpi_grid" style="margin-bottom:1rem;">
+                        <div class="o_ra_kpi o_ra_kpi_card_green">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_green"><span>&#x1F4E6;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Processed Shipments')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.processed"></div>
+                                <div class="o_ra_kpi_sub">
+                                    <t t-if="state.filterPeriod === 'today'" t-esc="tr('today')"/>
+                                    <t t-elif="state.filterPeriod === 'week'" t-esc="tr('this week')"/>
+                                    <t t-else="" t-esc="tr('this month')"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_purple">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_purple"><span>&#x23F1;&#xFE0F;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Working Hours')"></div>
+                                <div class="o_ra_kpi_val"><t t-esc="state.stats.avgHours"/> <span class="o_ra_kpi_unit" t-esc="tr('hrs')"/></div>
+                                <div class="o_ra_kpi_sub">
+                                    <t t-if="state.filterPeriod === 'today'" t-esc="tr('today')"/>
+                                    <t t-elif="state.filterPeriod === 'week'" t-esc="tr('this week')"/>
+                                    <t t-else="" t-esc="tr('this month')"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_blue">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_blue"><span>&#x1F4CA;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Completion Rate')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.acceptRate + '%'"></div>
+                                <div class="o_ra_kpi_sub">
+                                    <t t-if="state.filterPeriod === 'today'" t-esc="tr('today')"/>
+                                    <t t-elif="state.filterPeriod === 'week'" t-esc="tr('this week')"/>
+                                    <t t-else="" t-esc="tr('this month')"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_amber">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_amber"><span>&#x1F4E8;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Pending Shipments')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.pending || 0"></div>
+                                <div class="o_ra_kpi_sub" t-esc="tr('Reserved to you')"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick actions -->
+                    <div class="o_ra_actions_row" style="margin-bottom:1rem;">
+                        <button class="o_ra_action_btn" t-on-click="openProcess">&#x2795; <t t-esc="tr('Process New Shipment')"/></button>
+                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
+                    </div>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════ MY SHIPMENTS ═══════════════ -->
+        <t t-elif="state.view === 'shipments_list'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F4E6;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('My Shipments')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Shipments reserved for you and shipments you have received.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <!-- Responsive Filter Bar -->
+                <div class="o_ra_filter_responsive">
+                    <input type="text" class="o_ra_form_input o_ra_search_input"
+                           t-att-placeholder="tr('Search shipment or driver…')"
+                           t-model="state.shipmentSearch"/>
+                    <div class="o_ra_filter_pills">
+                        <button t-att-class="'o_ra_filter_pill' + (state.shipmentStateFilter === '' ? ' o_ra_filter_pill_active' : '')"
+                                t-on-click="setShipmentFilter" data-filter="" t-esc="tr('All')"/>
+                        <button t-att-class="'o_ra_filter_pill' + (state.shipmentStateFilter === 'receiving' ? ' o_ra_filter_pill_active' : '')"
+                                t-on-click="setShipmentFilter" data-filter="receiving" t-esc="tr('In Reception')"/>
+                        <button t-att-class="'o_ra_filter_pill' + (state.shipmentStateFilter === 'processed' ? ' o_ra_filter_pill_active' : '')"
+                                t-on-click="setShipmentFilter" data-filter="processed" t-esc="tr('Received Status')"/>
+                    </div>
+                </div>
+                <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+
+                <!-- Desktop Table View -->
+                <div t-else="" class="o_recycle_tbl_wrap">
+                    <table class="o_recycle_data_table">
+                        <thead><tr>
+                            <th t-esc="tr('ID')"/>
+                            <th t-esc="tr('Shipment')"/>
+                            <th t-esc="tr('Driver')"/>
+                            <th t-esc="tr('Received')"/>
+                            <th t-esc="tr('Status')"/>
+                        </tr></thead>
+                        <tbody>
+                            <tr t-foreach="filteredShipments" t-as="s" t-key="s.id" t-on-click="() => this.openShipmentDetail(s)" class="o_ra_tbl_row">
+                                <td t-esc="s.id"/>
+                                <td style="font-weight:600;" t-esc="s.name || ('SH-' + s.id)"/>
+                                <td t-esc="s.driver_name || '—'"/>
+                                <td t-esc="formatDate(s.received_at)"/>
+                                <td><span t-att-class="'o_ra_badge ' + stateBadgeClass(s.state)" t-esc="stateLabel(s.state,'shipment')"/></td>
+                            </tr>
+                            <tr t-if="!filteredShipments.length">
+                                <td colspan="5" class="o_recycle_tbl_empty" t-esc="tr('No shipments found.')"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div t-if="!state.loading" class="o_ra_mobile_card_view">
+                    <t t-foreach="filteredShipments" t-as="s" t-key="'card-'+s.id">
+                        <div class="o_ra_mobile_card" t-on-click="() => this.openShipmentDetail(s)">
+                            <div class="o_ra_mobile_card_header">
+                                <span class="o_ra_mobile_card_id" t-esc="s.name || ('SH-' + s.id)"/>
+                                <span t-att-class="'o_ra_badge ' + stateBadgeClass(s.state)" t-esc="stateLabel(s.state,'shipment')"/>
+                            </div>
+                            <div class="o_ra_mobile_card_body">
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Driver')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="s.driver_name || '—'"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Date')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="formatDate(s.received_at)"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_mobile_card_footer">
+                                <span class="o_ra_mobile_card_lbl" t-esc="'#' + s.id"/>
+                            </div>
+                        </div>
+                    </t>
+                    <div t-if="!filteredShipments.length" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F4E6;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No shipments found.')"/>
+                    </div>
+                </div>
+
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                    <button class="o_ra_action_btn" t-on-click="openProcess">&#x2795; <t t-esc="tr('Process New Shipment')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════ SHIPMENT DETAIL ═══════════════ -->
+        <!-- ═══════════════ PROCESS / VIEW SHIPMENT ═══════════════ -->
+        <t t-elif="state.view === 'process'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x2696;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Process Shipment')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Scan the QR code on the shipment or upload an image to start processing.')"></div>
+                </div>
+            </div>
+
+            <div class="o_rcv_container">
+
+                <!-- ══════════ LOADING STATE ══════════ -->
+                <t t-if="state.processLoading">
+                    <div class="o_rcv_loading_screen">
+                        <div class="o_rcv_spinner"></div>
+                        <div class="o_rcv_loading_text" t-esc="tr('Processing shipment...')"></div>
+                        <div class="o_rcv_loading_sub" t-esc="tr('Please wait while we verify the shipment data.')"></div>
+                    </div>
+                </t>
+
+                <!-- ══════════ SUCCESS SCREEN ══════════ -->
+                <t t-elif="state.processSuccess">
+                    <div class="o_rcv_success_card">
+                        <div class="o_rcv_success_icon_wrap">
+                            <span class="o_rcv_success_icon">&#x2705;</span>
+                        </div>
+                        <div class="o_rcv_success_title" t-esc="tr('Shipment Received!')"></div>
+                        <div class="o_rcv_success_name" t-esc="state.processSuccess.name"></div>
+                        <div class="o_rcv_success_desc" t-esc="tr('Moved to the receiving zone and sent to sorting.')"></div>
+                        <div class="o_rcv_success_actions">
+                            <button class="o_rcv_btn o_rcv_btn_primary" t-on-click="openProcess">
+                                <span>&#x2795;</span> <t t-esc="tr('Process Another')"/>
+                            </button>
+                            <button class="o_rcv_btn o_rcv_btn_muted" t-on-click="openMyShipments">
+                                <span>&#x1F441;&#xFE0F;</span> <t t-esc="tr('View Shipments')"/>
+                            </button>
+                            <button class="o_rcv_btn o_rcv_btn_ghost" t-on-click="goHome">
+                                <span>&#x1F3E0;</span> <t t-esc="tr('Home')"/>
+                            </button>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ══════════ STEP 1: SCAN / UPLOAD ══════════ -->
+                <t t-elif="!state.processShipment">
+                    <div class="o_rcv_dual_cards">
+                        <!-- QR Scan Card -->
+                        <div class="o_rcv_card o_rcv_card_qr" t-on-click="startQrScanner">
+                            <div class="o_rcv_card_shine"></div>
+                            <div class="o_rcv_card_icon_wrap o_rcv_card_icon_qr">
+                                <span class="o_rcv_card_icon">&#x1F4F1;</span>
+                            </div>
+                            <div class="o_rcv_card_body">
+                                <div class="o_rcv_card_title" t-esc="tr('Scan QR Code')"></div>
+                                <div class="o_rcv_card_desc" t-esc="tr('Open camera and scan the shipment label directly.')"></div>
+                            </div>
+                            <div class="o_rcv_card_arrow">&#x27A1;&#xFE0F;</div>
+                        </div>
+
+                        <!-- Upload Image Card -->
+                        <div class="o_rcv_card o_rcv_card_upload" t-on-click="triggerBarcodeInput">
+                            <div class="o_rcv_card_shine"></div>
+                            <div class="o_rcv_card_icon_wrap o_rcv_card_icon_upload">
+                                <span class="o_rcv_card_icon">&#x1F4F7;</span>
+                            </div>
+                            <div class="o_rcv_card_body">
+                                <div class="o_rcv_card_title" t-esc="tr('Upload Image')"></div>
+                                <div class="o_rcv_card_desc" t-esc="tr('Choose a photo with a QR code from your gallery.')"></div>
+                            </div>
+                            <div class="o_rcv_card_arrow">&#x27A1;&#xFE0F;</div>
+                        </div>
+                        <input type="file" t-ref="barcodeFileInput" accept="image/*" style="display:none;" t-on-change="onBarcodeFileChange"/>
+                    </div>
+
+                    <!-- Hidden qr-reader div (used by Html5Qrcode) -->
+                    <div id="qr-reader" style="display:none;"/>
+                </t>
+
+                <!-- ══════════ STEP 2: SHIPMENT DETAILS (READ-ONLY) ══════════ -->
+                <t t-else="">
+                    <!-- Shipment Info Card -->
+                    <div class="o_rcv_info_card">
+                        <div class="o_rcv_info_header">
+                            <div class="o_rcv_info_badge">
+                                <span>&#x1F4E6;</span>
+                                <span t-esc="state.processShipment.name" class="o_rcv_info_name"></span>
+                            </div>
+                            <div class="o_rcv_info_state_badge" t-esc="stateLabel(state.processShipment.state,'shipment')"></div>
+                        </div>
+                        <div class="o_rcv_info_grid">
+                            <div class="o_rcv_info_item">
+                                <div class="o_rcv_info_lbl" t-esc="tr('Driver')"></div>
+                                <div class="o_rcv_info_val" t-esc="state.processShipment.driver_name || '—'"></div>
+                            </div>
+                            <div class="o_rcv_info_item">
+                                <div class="o_rcv_info_lbl" t-esc="tr('Truck ID')"></div>
+                                <div class="o_rcv_info_val" t-esc="state.processShipment.truck_info || '—'"></div>
+                            </div>
+                            <div class="o_rcv_info_item">
+                                <div class="o_rcv_info_lbl" t-esc="tr('Truck Serial Number')"></div>
+                                <div class="o_rcv_info_val" t-esc="state.processShipment.truck_serial_number || '—'"></div>
+                            </div>
+                            <div class="o_rcv_info_item">
+                                <div class="o_rcv_info_lbl" t-esc="tr('Dispatch Date')"></div>
+                                <div class="o_rcv_info_val" t-esc="formatDate(state.processShipment.dispatch_date) || '—'"></div>
+                            </div>
+                            <div class="o_rcv_info_item">
+                                <div class="o_rcv_info_lbl" t-esc="tr('Declared Totals')"></div>
+                                <div class="o_rcv_info_val"><t t-esc="state.processShipment.expected_totals_display || (state.processShipment.expected_weight + ' ' + tr('kg'))"/></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expected Materials (read-only sanity check) -->
+                    <div class="o_rcv_section">
+                        <div class="o_rcv_section_title" t-esc="tr('Expected Materials')"></div>
+                        <div class="o_rcv_table_wrap">
+                            <table class="o_rcv_table">
+                                <thead>
+                                    <tr>
+                                        <th t-esc="tr('Material')"></th>
+                                        <th t-esc="tr('Category')"></th>
+                                        <th t-esc="tr('Expected Quantity')"></th>
+                                        <th t-esc="tr('Unit')"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.processShipment.expected_lines" t-as="l" t-key="l.id">
+                                        <td t-esc="l.product"></td>
+                                        <td t-esc="l.category || '—'"></td>
+                                        <td t-esc="l.expected_qty"></td>
+                                        <td t-esc="l.uom"></td>
+                                    </tr>
+                                    <tr t-if="!state.processShipment.expected_lines.length">
+                                        <td colspan="4" class="o_rcv_table_empty" t-esc="tr('No expected materials declared for this shipment.')"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="o_rcv_form_hint" t-if="state.processShipment.expected_lines.length">
+                            <t t-esc="tr('Visual check only — confirm what arrived roughly matches this list, no exact measurement needed here.')"/>
+                        </div>
+                    </div>
+
+                    <t t-if="state.processShipment.state === 'receiving'">
+                        <!-- Receiving Zone -->
+                        <div class="o_rcv_form_card">
+                            <div class="o_rcv_form_card_title" t-esc="tr('Receiving Zone')"></div>
+                            <t t-if="state.receivingZones.length > 1">
+                                <div class="o_rcv_form_group">
+                                    <select class="o_rcv_form_input" t-model="state.processZoneId">
+                                        <option value="" t-esc="tr('Select a receiving zone…')"></option>
+                                        <t t-foreach="state.receivingZones" t-as="z" t-key="z.id">
+                                            <option t-att-value="'' + z.id" t-esc="z.name"></option>
+                                        </t>
+                                    </select>
+                                </div>
+                            </t>
+                            <t t-elif="state.receivingZones.length === 1">
+                                <div class="o_rcv_info_val" t-esc="state.receivingZones[0].name"></div>
+                            </t>
+                            <t t-else="">
+                                <div class="o_rcv_confirm_msg o_rcv_confirm_danger">
+                                    <span>&#x26D4;</span>
+                                    <span t-esc="tr('No receiving zone is configured for your warehouse. Contact the warehouse manager.')"></span>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- ══════════ ACTION BUTTONS ══════════ -->
+                        <div class="o_rcv_actions">
+                            <button class="o_rcv_btn o_rcv_btn_muted" t-att-disabled="state.processSaving" t-on-click="releaseFromProcess">
+                                &#x1F513; <t t-esc="tr('Release')"/>
+                            </button>
+                            <button class="o_rcv_btn o_rcv_btn_primary" t-att-disabled="state.processSaving || !state.processZoneId" t-on-click="confirmAccept">
+                                <t t-if="state.processSaving" t-esc="tr('Saving…')"></t>
+                                <t t-else="">&#x2705; <t t-esc="tr('Confirm Receipt')"/></t>
+                            </button>
+                        </div>
+                    </t>
+                </t>
+
+                <!-- Bottom Back -->
+                <div class="o_rcv_bottom">
+                    <button class="o_rcv_btn o_rcv_btn_ghost" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════ PROFILE ═══════════════ -->
+        <t t-elif="state.view === 'profile'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F464;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('My Profile')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Your account information.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div class="o_ra_profile_card">
+                    <t t-if="state.profileLoading">
+                        <div class="o_ra_loading" t-esc="tr('Loading…')"></div>
+                    </t>
+                    <t t-else="">
+                        <div class="o_ra_profile_header">
+                            <div class="o_ra_profile_avatar">
+                                <t t-esc="(state.userProfile?.name || 'E')[0].toUpperCase()"/>
+                                <span class="o_ra_profile_status"/>
+                            </div>
+                            <div class="o_ra_profile_header_info">
+                                <div class="o_ra_profile_name" t-esc="state.userProfile?.name || userName"></div>
+                                <div class="o_ra_profile_role" t-esc="profileRoleLabel"></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_fields">
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F464;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Name')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.name"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F4E7;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Email')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.email"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F4DD;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Login')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.login"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F4DE;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Phone')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.phone || '—'"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F4CB;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('National ID')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.national_id || '—'"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F3AD;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Role')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="profileRoleLabel"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F3ED;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Warehouse')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.warehouse || '—'"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F4CD;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Address')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.street || '—'"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F3F0;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('City')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.city || '—'"/></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <div class="o_ra_pf_icon">&#x1F30D;</div>
+                                <div class="o_ra_pf_body">
+                                    <div class="o_ra_pf_lbl"><t t-esc="tr('Country')"/></div>
+                                    <div class="o_ra_pf_val"><t t-esc="state.userProfile?.country || '—'"/></div>
+                                </div>
+                            </div>
+                        </div>
+                        <t t-if="!state.profileEditMode">
+                            <div class="o_ra_profile_actions">
+                                <button class="o_ra_action_btn" t-on-click="startEditProfile">&#x270F;&#xFE0F; <t t-esc="tr('Edit')"/></button>
+                                <button class="o_recycle_back_btn" t-on-click="logout">&#x1F6AA; <t t-esc="tr('Log Out')"/></button>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="o_ra_profile_edit_form">
+                                <t t-if="state.profileSaveError">
+                                    <div class="o_ra_form_error" t-esc="state.profileSaveError"></div>
+                                </t>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label"><t t-esc="tr('Name')"/> <span class="o_ra_required">*</span></label>
+                                    <input class="o_ra_form_input" type="text"
+                                           t-att-value="state.profileForm.name"
+                                           t-on-input="(e) => { this.state.profileForm.name = e.target.value; }"/>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Email')"/>
+                                    <input class="o_ra_form_input o_ra_input_disabled" type="text"
+                                           t-att-value="state.userProfile?.email" disabled="disabled"/>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Phone')"/>
+                                    <input class="o_ra_form_input" type="text"
+                                           t-att-value="state.profileForm.phone"
+                                           t-on-input="(e) => { this.state.profileForm.phone = e.target.value; }"/>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('National ID')"/>
+                                    <input class="o_ra_form_input" type="text"
+                                           t-att-value="state.profileForm.national_id"
+                                           t-on-input="(e) => { this.state.profileForm.national_id = e.target.value; }"/>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Role')"/>
+                                    <input class="o_ra_form_input o_ra_input_disabled" type="text"
+                                           t-att-value="state.userProfile?.role" disabled="disabled"/>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Address')"/>
+                                    <input class="o_ra_form_input" type="text"
+                                           t-att-value="state.profileForm.street"
+                                           t-on-input="(e) => { this.state.profileForm.street = e.target.value; }"/>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('City')"/>
+                                    <input class="o_ra_form_input" type="text"
+                                           t-att-value="state.profileForm.city"
+                                           t-on-input="(e) => { this.state.profileForm.city = e.target.value; }"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_actions">
+                                <button class="o_ra_action_btn" t-att-disabled="state.profileSaving" t-on-click="saveProfile">
+                                    &#x1F4BE; <t t-esc="state.profileSaving ? tr('Saving…') : tr('Save')"/>
+                                </button>
+                                <button class="o_recycle_back_btn" t-on-click="cancelEditProfile" t-esc="tr('Cancel')"/>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════ SHIFT ═══════════════ -->
+        <t t-elif="state.view === 'shift'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F552;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('My Shift')"/>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Your current shift details and schedule.')"/>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"/>
+                <t t-else="">
+                    <t t-if="state.myShift">
+                        <!-- Shift Hero Card -->
+                        <div class="o_ra_my_shift_hero">
+                            <div class="o_ra_my_shift_hero_top">
+                                <div class="o_ra_my_shift_icon">&#x1F552;</div>
+                                <div class="o_ra_my_shift_name" t-esc="state.myShift.name"/>
+                                <div class="o_ra_my_shift_time_range">
+                                    <span t-esc="floatToTime(state.myShift.start_time)"/>
+                                    <span class="o_ra_my_shift_arrow">&#8594;</span>
+                                    <span t-esc="floatToTime(state.myShift.end_time)"/>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Shift Details Grid -->
+                        <div class="o_ra_my_shift_grid">
+                            <div class="o_ra_my_shift_item">
+                                <div class="o_ra_my_shift_item_icon">&#x1F550;</div>
+                                <div class="o_ra_my_shift_item_body">
+                                    <div class="o_ra_my_shift_item_lbl" t-esc="tr('Start Time')"/>
+                                    <div class="o_ra_my_shift_item_val" t-esc="floatToTime(state.myShift.start_time)"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_my_shift_item">
+                                <div class="o_ra_my_shift_item_icon">&#x1F551;</div>
+                                <div class="o_ra_my_shift_item_body">
+                                    <div class="o_ra_my_shift_item_lbl" t-esc="tr('End Time')"/>
+                                    <div class="o_ra_my_shift_item_val" t-esc="floatToTime(state.myShift.end_time)"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_my_shift_item">
+                                <div class="o_ra_my_shift_item_icon">&#x23F0;</div>
+                                <div class="o_ra_my_shift_item_body">
+                                    <div class="o_ra_my_shift_item_lbl" t-esc="tr('Tolerance')"/>
+                                    <div class="o_ra_my_shift_item_val" t-esc="(state.myShift.tolerance || 0) + ' min'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_my_shift_item">
+                                <div class="o_ra_my_shift_item_icon">&#x1F465;</div>
+                                <div class="o_ra_my_shift_item_body">
+                                    <div class="o_ra_my_shift_item_lbl" t-esc="tr('Employee Count')"/>
+                                    <div class="o_ra_my_shift_item_val" t-esc="(state.myShift.employee_count || 0) + ' ' + tr('employees')"/>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Assigned Employees -->
+                        <t t-if="state.myShift.assigned_employee_names">
+                            <div class="o_ra_my_shift_section">
+                                <div class="o_ra_my_shift_section_title" t-esc="tr('Assigned Employees')"/>
+                                <div class="o_ra_my_shift_employees" t-esc="state.myShift.assigned_employee_names"/>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <div class="o_ra_empty_state">
+                            <div class="o_ra_empty_state_icon">&#x1F552;</div>
+                            <div class="o_ra_empty_state_title" t-esc="tr('No shift assigned')"/>
+                            <div class="o_ra_empty_state_desc" t-esc="tr('You are not currently assigned to a work shift.')"/>
+                        </div>
+                    </t>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════ SETTINGS ═══════════════ -->
+        <t t-elif="state.view === 'settings'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x2699;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Settings')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Customize your dashboard appearance and preferences.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+
+                <!-- APPEARANCE -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x1F3A8;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('Appearance')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_purple">
+                                    <t t-if="state.darkMode">&#x1F319;</t>
+                                    <t t-else="">&#x2600;&#xFE0F;</t>
+                                </div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Dark Mode')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Toggle between light and dark theme')"></div>
+                                </div>
+                            </div>
+                            <button t-att-class="'o_ra_settings_toggle' + (state.darkMode ? ' o_ra_settings_toggle_on' : '')"
+                                    t-on-click="toggleDarkMode">
+                                <span t-att-class="'o_ra_settings_toggle_knob' + (state.darkMode ? ' o_ra_settings_toggle_knob_on' : '')"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LANGUAGE -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x1F310;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('Language')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_lang_options">
+                            <button t-att-class="'o_ra_settings_lang_btn' + (state.lang === 'en' ? ' o_ra_settings_lang_active' : '')"
+                                    t-on-click="() => this.setLang('en')">
+                                <span class="o_ra_settings_lang_flag">&#x1F1FA;&#x1F1F8;</span>
+                                <span class="o_ra_settings_lang_name">English</span>
+                                <span t-if="state.lang === 'en'" class="o_ra_settings_lang_check">&#x2713;</span>
+                            </button>
+                            <button t-att-class="'o_ra_settings_lang_btn' + (state.lang === 'ar' ? ' o_ra_settings_lang_active' : '')"
+                                    t-on-click="() => this.setLang('ar')">
+                                <span class="o_ra_settings_lang_flag">&#x1F1F8;&#x1F1E6;</span>
+                                <span class="o_ra_settings_lang_name">العربية</span>
+                                <span t-if="state.lang === 'ar'" class="o_ra_settings_lang_check">&#x2713;</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRIVACY & SECURITY -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x1F512;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('Privacy &amp; Security')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_blue">&#x1F511;</div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Change Password')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Update your account password')"></div>
+                                </div>
+                            </div>
+                            <button class="o_ra_settings_action_btn" t-on-click="openChangePassword">&#x27A1;</button>
+                        </div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_green">&#x1F4BB;</div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Active Sessions')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Manage your active sessions')"></div>
+                                </div>
+                            </div>
+                            <button class="o_ra_settings_action_btn" t-on-click="showActiveSessions">&#x27A1;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SYSTEM INFO -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x2139;&#xFE0F;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('System Information')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_sys_rows">
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('Platform')"></span>
+                                <span class="o_ra_settings_sys_val">Odoo 19.0</span>
+                            </div>
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('Module')"></span>
+                                <span class="o_ra_settings_sys_val">Recycle WMS v1.0</span>
+                            </div>
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('User')"></span>
+                                <span class="o_ra_settings_sys_val" t-esc="userName"></span>
+                            </div>
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('Role')"></span>
+                                <span class="o_ra_settings_sys_val" t-esc="tr('Reception Employee')"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGOUT -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_card o_ra_settings_logout_card" t-on-click="logout">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_red">&#x1F6AA;</div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Logout')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Sign out of your account')"></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_settings_logout_arrow">&#x27A1;</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOAST -->
+                <t t-if="state.settingsSaved">
+                    <div class="o_ra_settings_toast">
+                        <span class="o_ra_settings_toast_icon">&#x2713;</span>
+                        <span t-esc="tr('Settings saved successfully!')"></span>
+                    </div>
+                </t>
+
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════ ACTIVE SESSIONS ═══════════════════ -->
+        <t t-elif="state.view === 'active_sessions'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F4BB;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Active Sessions')"/>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Devices currently signed in to your account.')"/>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.sessionsLoading" class="o_ra_loading" t-esc="tr('Loading…')"/>
+                <div t-else="" class="o_recycle_tbl_wrap">
+                    <table class="o_recycle_data_table">
+                        <thead><tr>
+                            <th t-esc="tr('Device')"/><th t-esc="tr('IP Address')"/><th t-esc="tr('Last Action')"/><th t-esc="tr('Last Activity')"/><th/>
+                        </tr></thead>
+                        <tbody>
+                            <tr t-foreach="state.sessions" t-as="s" t-key="s.id" class="o_ra_tbl_row">
+                                <td style="font-weight:600;">
+                                    <span t-esc="s.device_type === 'mobile' ? '📱' : '💻'"/>
+                                    <t t-esc="(s.device_name || s.platform || '—') + ' · ' + (s.browser || '—')"/>
+                                </td>
+                                <td t-esc="s.ip_address || '—'"/>
+                                <td t-esc="s.last_event === 'logout' ? tr('Logout') : tr('Login')"/>
+                                <td t-esc="formatDate(s.last_activity)"/>
+                                <td>
+                                    <span t-if="s.is_current" class="o_ra_badge o_ra_badge_success" t-esc="tr('This device')"/>
+                                </td>
+                            </tr>
+                            <tr t-if="!state.sessions.length">
+                                <td colspan="5" class="o_recycle_tbl_empty" t-esc="tr('No active sessions found.')"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div t-if="!state.sessionsLoading" class="o_ra_mobile_card_view">
+                    <t t-foreach="state.sessions" t-as="s" t-key="'sess-'+s.id">
+                        <div class="o_ra_mobile_card">
+                            <div class="o_ra_mobile_card_header">
+                                <span class="o_ra_mobile_card_id" t-esc="(s.device_name || s.platform || '—') + ' · ' + (s.browser || '—')"/>
+                                <span t-if="s.is_current" class="o_ra_badge o_ra_badge_success" t-esc="tr('This device')"/>
+                            </div>
+                            <div class="o_ra_mobile_card_body">
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('IP Address')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="s.ip_address || '—'"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Last Action')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="s.last_event === 'logout' ? tr('Logout') : tr('Login')"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Last Activity')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="formatDate(s.last_activity)"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    <div t-if="!state.sessions.length" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F4BB;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No active sessions found.')"/>
+                    </div>
+                </div>
+
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════ NOTIFICATIONS ═══════════════════ -->
+        <t t-elif="state.view === 'notifications'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F514;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Notifications')"/>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('System alerts and updates for you')"/>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.notifLoading" class="o_ra_loading" t-esc="tr('Loading…')"/>
+                <t t-if="!state.notifLoading">
+                    <div t-if="!state.notifications.length" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F515;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No notifications')"/>
+                    </div>
+                    <t t-else="">
+                        <div class="o_ra_settings_card" style="padding:0;overflow:hidden;">
+                            <t t-foreach="state.notifications" t-as="n" t-key="n.id">
+                                <div class="o_ra_notif_row" t-att-class="n.is_read ? '' : 'o_ra_notif_unread'">
+                                    <div class="o_ra_notif_icon" t-esc="n.icon"/>
+                                    <div class="o_ra_notif_body">
+                                        <div class="o_ra_notif_title" t-esc="n.title"/>
+                                        <div class="o_ra_notif_msg" t-esc="n.message"/>
+                                        <div class="o_ra_notif_time" t-esc="formatDate(n.time)"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════ MY WAREHOUSE DETAIL ═══════════════════════════════ -->
+        <t t-if="state.view === 'my_warehouse_detail'">
+            <div class="o_ra_page_hero">
+                <div class="o_ra_page_hero_inner">
+                    <div class="o_ra_page_hero_icon">&#x1F3ED;</div>
+                    <h1 class="o_ra_page_hero_title"><t t-esc="tr('My Warehouse')"/></h1>
+                    <p class="o_ra_page_hero_sub"><t t-esc="state.myWarehouse ? state.myWarehouse.name : ''"/></p>
+                </div>
+            </div>
+            <div class="o_ra_view_container">
+                <t t-if="state.myWarehouse">
+                    <div class="o_ra_profile_fields" style="max-width:600px;margin:0 auto;">
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F3ED;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Name')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="state.myWarehouse.name"/></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F511;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Code')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="state.myWarehouse.code || '—'"/></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F4CD;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Governorate')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="govLabel(state.myWarehouse.governorate)"/></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F464;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Manager')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="m2oName(state.myWarehouse.manager_user_id) || '—'"/></div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="o_ra_empty_state">
+                        <div class="o_ra_empty_icon">&#x1F3ED;</div>
+                        <div class="o_ra_empty_title"><t t-esc="tr('No warehouse assigned')"/></div>
+                    </div>
+                </t>
+                <div class="o_ra_bottom_nav" style="max-width:600px;margin:1.5rem auto 0;">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        </div><!-- /.o_ra_main -->
+    </div>
+    </t>
+
+</templates>

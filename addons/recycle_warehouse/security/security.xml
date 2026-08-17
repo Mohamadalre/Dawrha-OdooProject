@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_recycle" model="ir.module.category">
+        <field name="name">Recycle Warehouse</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- Odoo 19: groups are organized under privileges instead of category_id -->
+    <record id="privilege_recycle" model="res.groups.privilege">
+        <field name="name">Recycle Warehouse</field>
+        <field name="category_id" ref="module_category_recycle"/>
+    </record>
+
+    <!-- ======================= Groups ======================= -->
+    <record id="group_recycle_input" model="res.groups">
+        <field name="name">Input Employee</field>
+        <field name="privilege_id" ref="privilege_recycle"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_recycle_sorting" model="res.groups">
+        <field name="name">Sorting Employee</field>
+        <field name="privilege_id" ref="privilege_recycle"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_recycle_output" model="res.groups">
+        <field name="name">Output Employee</field>
+        <field name="privilege_id" ref="privilege_recycle"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_recycle_manager" model="res.groups">
+        <field name="name">Warehouse Manager</field>
+        <field name="privilege_id" ref="privilege_recycle"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Delivery drivers carry sold goods from a warehouse to the buyer. Their
+         own group, not one of the warehouse-employee groups: they work no
+         shift, touch no stock, and belong to no sorting or output queue — a
+         driver folded into an employee group would inherit screens that mean
+         nothing to them and record rules written for someone else's job. -->
+    <record id="group_recycle_delivery_driver" model="res.groups">
+        <field name="name">Delivery Driver</field>
+        <field name="privilege_id" ref="privilege_recycle"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_recycle_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="privilege_id" ref="privilege_recycle"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user')), (4, ref('hr_recruitment.group_hr_recruitment_manager'))]"/>
+    </record>
+
+    <!-- ======================= Record rules ======================= -->
+
+    <!-- Warehouse -->
+    <record id="rule_warehouse_admin" model="ir.rule">
+        <field name="name">Warehouse: admin all</field>
+        <field name="model_id" ref="model_recycle_warehouse"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_warehouse_manager" model="ir.rule">
+        <field name="name">Warehouse: manager own</field>
+        <field name="model_id" ref="model_recycle_warehouse"/>
+        <field name="domain_force">['|', ('manager_user_id', '=', user.id), ('id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_warehouse_employee" model="ir.rule">
+        <field name="name">Warehouse: employee own</field>
+        <field name="model_id" ref="model_recycle_warehouse"/>
+        <field name="domain_force">[('id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Truck (fleet) -->
+    <record id="rule_truck_admin" model="ir.rule">
+        <field name="name">Truck: admin all</field>
+        <field name="model_id" ref="model_recycle_truck"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_truck_manager" model="ir.rule">
+        <field name="name">Truck: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_truck"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+
+    <!-- Driver requests (the driver roster): the manager sees ONLY drivers
+         accepted into his own warehouse. The warehouse_id != False guard
+         matters — pending requests carry no warehouse yet and must never
+         leak to managers (a manager with no recycle_warehouse_id set would
+         otherwise match them through the second OR leg). -->
+    <record id="rule_driver_request_admin" model="ir.rule">
+        <field name="name">Driver request: admin all</field>
+        <field name="model_id" ref="model_recycle_driver_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_driver_request_manager" model="ir.rule">
+        <field name="name">Driver request: manager own warehouse, accepted only</field>
+        <field name="model_id" ref="model_recycle_driver_request"/>
+        <field name="domain_force">['&amp;', '&amp;', ('state', '=', 'accepted'), ('warehouse_id', '!=', False), '|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+
+    <!-- Shift-change requests: manager sees only his warehouse's requests
+         (same warehouse guard as the driver roster). -->
+    <record id="rule_shift_change_request_admin" model="ir.rule">
+        <field name="name">Shift change request: admin all</field>
+        <field name="model_id" ref="model_recycle_shift_change_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_shift_change_request_manager" model="ir.rule">
+        <field name="name">Shift change request: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_shift_change_request"/>
+        <field name="domain_force">['&amp;', ('warehouse_id', '!=', False), '|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+
+    <!-- Truck problems: manager reads only his warehouse's reports. -->
+    <record id="rule_truck_problem_admin" model="ir.rule">
+        <field name="name">Truck problem: admin all</field>
+        <field name="model_id" ref="model_recycle_truck_problem"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_truck_problem_manager" model="ir.rule">
+        <field name="name">Truck problem: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_truck_problem"/>
+        <field name="domain_force">['&amp;', ('warehouse_id', '!=', False), '|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+
+    <!-- Truck handovers (driver attendance): manager reads only his warehouse. -->
+    <record id="rule_truck_handover_admin" model="ir.rule">
+        <field name="name">Truck handover: admin all</field>
+        <field name="model_id" ref="model_recycle_truck_handover"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_truck_handover_manager" model="ir.rule">
+        <field name="name">Truck handover: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_truck_handover"/>
+        <field name="domain_force">['&amp;', ('warehouse_id', '!=', False), '|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+
+    <!-- Zone -->
+    <record id="rule_zone_admin" model="ir.rule">
+        <field name="name">Zone: admin all</field>
+        <field name="model_id" ref="model_recycle_zone"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_zone_manager" model="ir.rule">
+        <field name="name">Zone: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_zone"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_zone_employee" model="ir.rule">
+        <field name="name">Zone: employee own warehouse (+ all sorting zones)</field>
+        <field name="model_id" ref="model_recycle_zone"/>
+        <field name="domain_force">['|', ('warehouse_id', '=', user.recycle_warehouse_id.id), ('zone_type', '=', 'sorting')]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Shipment -->
+    <record id="rule_shipment_admin" model="ir.rule">
+        <field name="name">Shipment: admin all</field>
+        <field name="model_id" ref="model_recycle_shipment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_shipment_manager" model="ir.rule">
+        <field name="name">Shipment: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_shipment_employee" model="ir.rule">
+        <field name="name">Shipment: employee own warehouse, active reservations hidden from others</field>
+        <field name="model_id" ref="model_recycle_shipment"/>
+        <field name="domain_force">['&amp;', ('recycle_archived', '=', False),
+            '&amp;', ('warehouse_id', '=', user.recycle_warehouse_id.id),
+            '&amp;',
+            '|', ('state', '!=', 'receiving'), ('receiver_user_id', '=', user.id),
+            '|', ('state', '!=', 'sorting'), ('sorter_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Shipment line -->
+    <record id="rule_shipment_line_admin" model="ir.rule">
+        <field name="name">Shipment line: admin all</field>
+        <field name="model_id" ref="model_recycle_shipment_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_shipment_line_manager" model="ir.rule">
+        <field name="name">Shipment line: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment_line"/>
+        <field name="domain_force">['|', ('shipment_id.warehouse_id.manager_user_id', '=', user.id), ('shipment_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_shipment_line_employee" model="ir.rule">
+        <field name="name">Shipment line: employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment_line"/>
+        <field name="domain_force">[('shipment_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Shipment expected material line (declared before arrival) -->
+    <record id="rule_shipment_expected_line_admin" model="ir.rule">
+        <field name="name">Shipment expected line: admin all</field>
+        <field name="model_id" ref="model_recycle_shipment_expected_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_shipment_expected_line_manager" model="ir.rule">
+        <field name="name">Shipment expected line: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment_expected_line"/>
+        <field name="domain_force">['|', ('shipment_id.warehouse_id.manager_user_id', '=', user.id), ('shipment_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_shipment_expected_line_employee" model="ir.rule">
+        <field name="name">Shipment expected line: employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment_expected_line"/>
+        <field name="domain_force">[('shipment_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting'))]"/>
+    </record>
+
+    <!-- Shipment zone movement log -->
+    <record id="rule_shipment_zone_movement_admin" model="ir.rule">
+        <field name="name">Shipment zone movement: admin all</field>
+        <field name="model_id" ref="model_recycle_shipment_zone_movement"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_shipment_zone_movement_manager" model="ir.rule">
+        <field name="name">Shipment zone movement: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment_zone_movement"/>
+        <field name="domain_force">['|', ('shipment_id.warehouse_id.manager_user_id', '=', user.id), ('shipment_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_shipment_zone_movement_employee" model="ir.rule">
+        <field name="name">Shipment zone movement: employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_shipment_zone_movement"/>
+        <field name="domain_force">[('shipment_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting'))]"/>
+    </record>
+
+    <!-- Order zone movement log (stock deduction timing/source per order) -->
+    <record id="rule_order_zone_movement_admin" model="ir.rule">
+        <field name="name">Order zone movement: admin all</field>
+        <field name="model_id" ref="model_recycle_order_zone_movement"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_order_zone_movement_manager" model="ir.rule">
+        <field name="name">Order zone movement: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_order_zone_movement"/>
+        <field name="domain_force">['|', ('order_id.warehouse_id.manager_user_id', '=', user.id), ('order_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_order_zone_movement_output" model="ir.rule">
+        <field name="name">Order zone movement: output employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_order_zone_movement"/>
+        <field name="domain_force">[('order_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Stock damage report (material damaged AFTER being stored) -->
+    <record id="rule_stock_damage_report_admin" model="ir.rule">
+        <field name="name">Stock damage report: admin all</field>
+        <field name="model_id" ref="model_recycle_stock_damage_report"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_stock_damage_report_manager" model="ir.rule">
+        <field name="name">Stock damage report: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_stock_damage_report"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_stock_damage_report_sorting" model="ir.rule">
+        <field name="name">Stock damage report: sorting employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_stock_damage_report"/>
+        <field name="domain_force">[('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_sorting'))]"/>
+    </record>
+
+    <!-- Stock -->
+    <record id="rule_stock_admin" model="ir.rule">
+        <field name="name">Stock: admin all</field>
+        <field name="model_id" ref="model_recycle_stock"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_stock_manager" model="ir.rule">
+        <field name="name">Stock: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_stock"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_stock_employee" model="ir.rule">
+        <field name="name">Stock: employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_stock"/>
+        <field name="domain_force">[('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Order -->
+    <record id="rule_order_admin" model="ir.rule">
+        <field name="name">Order: admin all</field>
+        <field name="model_id" ref="model_recycle_order"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_order_manager" model="ir.rule">
+        <field name="name">Order: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_order"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <!-- REMOVED: a rule granting reception and sorting employees sight of
+         orders.
+
+         It never worked — neither group had an ACL for `recycle.order`, and a
+         record rule only filters WITHIN what an ACL already permits, so the
+         model was denied outright and the rule never ran. It was found by the
+         guard in test_employee_dashboard_access.py.
+
+         Deleted rather than completed. Orders belong to the OUTPUT employee:
+         reception handles incoming shipments, sorting grades material into
+         storage, and neither screen reads an order. Adding the missing ACL
+         would have widened access to buyer data for two roles that have no use
+         for it, purely because a dead rule implied somebody once meant to.
+         `rule_order_output` below is the rule that matters. -->
+    <record id="rule_order_output" model="ir.rule">
+        <field name="name">Order: output employee - own warehouse, pending or assigned to me</field>
+        <field name="model_id" ref="model_recycle_order"/>
+        <field name="domain_force">['&amp;', ('recycle_archived', '=', False),
+            '&amp;', ('warehouse_id', '=', user.recycle_warehouse_id.id),
+            '|', ('state', '=', 'pending'), ('output_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Order line -->
+    <record id="rule_order_line_admin" model="ir.rule">
+        <field name="name">Order line: admin all</field>
+        <field name="model_id" ref="model_recycle_order_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_order_line_manager" model="ir.rule">
+        <field name="name">Order line: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_order_line"/>
+        <field name="domain_force">['|', ('order_id.warehouse_id.manager_user_id', '=', user.id), ('order_id.warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <!-- REMOVED for the same reason as `rule_order_employee` above: no ACL
+         behind it, and the two roles it named have no screen that reads an
+         order line. -->
+    <record id="rule_order_line_output" model="ir.rule">
+        <field name="name">Order line: output employee - own warehouse, pending or assigned to me</field>
+        <field name="model_id" ref="model_recycle_order_line"/>
+        <field name="domain_force">['&amp;', ('order_id.warehouse_id', '=', user.recycle_warehouse_id.id),
+            '|', ('order_id.state', '=', 'pending'), ('order_id.output_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Shifts -->
+    <record id="rule_shift_admin" model="ir.rule">
+        <field name="name">Shift: admin all</field>
+        <field name="model_id" ref="model_recycle_shift"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_shift_manager" model="ir.rule">
+        <field name="name">Shift: manager own warehouse or global shifts</field>
+        <field name="model_id" ref="model_recycle_shift"/>
+        <field name="domain_force">['|', '|', ('warehouse_id', '=', False), ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_shift_employee" model="ir.rule">
+        <field name="name">Shift: employee own warehouse or global shifts</field>
+        <field name="model_id" ref="model_recycle_shift"/>
+        <field name="domain_force">['|', ('warehouse_id', '=', False), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Attendance: admin/manager rules live in views/attendance_views.xml
+         (loaded later — a duplicate pair used to sit here too and was
+         silently overridden by that file's versions since they share the
+         same xmlid; removed to avoid two definitions drifting apart). -->
+    <record id="rule_attendance_employee" model="ir.rule">
+        <field name="name">Attendance: employee own records only</field>
+        <field name="model_id" ref="model_recycle_attendance"/>
+        <field name="domain_force">[('employee_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_input')), (4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+    <!-- Applicants: managers only see accepted employees of THEIR warehouse -->
+    <record id="rule_applicant_manager" model="ir.rule">
+        <field name="name">Applicant: manager sees accepted employees of own warehouse only</field>
+        <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+        <field name="domain_force">[('recycle_state', '=', 'accepted'),
+            ('recycle_job_type', '=', 'employee'),
+            '|', ('recycle_warehouse_id.manager_user_id', '=', user.id),
+                 ('recycle_warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+
+    <!-- Damage log: the same screen answers two different questions, and the
+         record rule is what makes that safe. The administrator sees every
+         warehouse's losses; a manager and their employees see only their own,
+         so "what did we lose this month" never becomes a window onto another
+         warehouse's performance. -->
+    <!-- Delivery drivers: the admin recruits them anywhere; a manager sees only
+         their own warehouse's; and a driver sees exactly one record — their
+         own. That last rule is what makes the driver dashboard safe to build on
+         a plain search instead of on a bespoke endpoint. -->
+    <record id="rule_delivery_driver_admin" model="ir.rule">
+        <field name="name">Delivery driver: admin all</field>
+        <field name="model_id" ref="model_recycle_delivery_driver"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_delivery_driver_manager" model="ir.rule">
+        <field name="name">Delivery driver: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_delivery_driver"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_delivery_driver_self" model="ir.rule">
+        <field name="name">Delivery driver: sees only their own record</field>
+        <field name="model_id" ref="model_recycle_delivery_driver"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_delivery_driver'))]"/>
+    </record>
+
+    <!-- A delivery driver may read the truck they were given, and nothing else
+         of the fleet. Their dashboard shows its plate and payload in place of
+         the shift screen the collectors have. -->
+    <record id="rule_truck_delivery_driver" model="ir.rule">
+        <field name="name">Truck: delivery driver sees only their own truck</field>
+        <field name="model_id" ref="model_recycle_truck"/>
+        <field name="domain_force">[('id', 'in', user.recycle_delivery_driver_ids.truck_id.ids)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_delivery_driver'))]"/>
+    </record>
+
+    <record id="rule_damage_entry_admin" model="ir.rule">
+        <field name="name">Damage log: admin all</field>
+        <field name="model_id" ref="model_recycle_damage_entry"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_admin'))]"/>
+    </record>
+    <record id="rule_damage_entry_manager" model="ir.rule">
+        <field name="name">Damage log: manager own warehouse</field>
+        <field name="model_id" ref="model_recycle_damage_entry"/>
+        <field name="domain_force">['|', ('warehouse_id.manager_user_id', '=', user.id), ('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_manager'))]"/>
+    </record>
+    <record id="rule_damage_entry_employee" model="ir.rule">
+        <field name="name">Damage log: employee own warehouse</field>
+        <field name="model_id" ref="model_recycle_damage_entry"/>
+        <field name="domain_force">[('warehouse_id', '=', user.recycle_warehouse_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_recycle_sorting')), (4, ref('group_recycle_output'))]"/>
+    </record>
+
+</odoo>

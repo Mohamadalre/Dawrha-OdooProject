@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  Carousel assets (CSS + JS). t-called from every page layout  -->
+    <!--  so the carousel works on website AND native auth pages.       -->
+    <!-- ============================================================ -->
+    <template id="carousel_assets" name="Dawrha Carousel Assets">
+        <link rel="stylesheet"
+              href="/recycle_warehouse/static/src/css/carousel_animations.css"/>
+        <script defer="defer"
+                src="/recycle_warehouse/static/src/js/carousel_controller.js"></script>
+    </template>
+
+    <!-- ============================================================ -->
+    <!--  Reusable carousel snippet (8 images + dots + arrows)          -->
+    <!-- ============================================================ -->
+    <template id="image_carousel" name="Dawrha Image Carousel">
+        <t t-call="recycle_warehouse.carousel_assets"/>
+        <div class="image-carousel-container" aria-label="Dawrha recycling images">
+            <div class="carousel-wrapper">
+                <t t-foreach="['hero.jpg','hero2.jpg','hero3.jpg','hero4.jpg','hero5.jpg','hero6.jpg','hero7.jpg','hero8.jpg']"
+                   t-as="imgf">
+                    <img t-attf-class="carousel-image#{imgf_index == 0 and ' is-active' or ''}"
+                         t-attf-src="/recycle_warehouse/static/img/#{imgf}"
+                         t-attf-alt="Dawrha recycling image #{imgf_index + 1}"
+                         loading="lazy"/>
+                </t>
+            </div>
+            <div class="carousel-dots">
+                <t t-foreach="range(8)" t-as="d">
+                    <button type="button"
+                            t-attf-class="dot#{d == 0 and ' active' or ''}"
+                            t-att-data-index="d"/>
+                </t>
+            </div>
+            <button class="carousel-prev" type="button" aria-label="Previous image">&#8249;</button>
+            <button class="carousel-next" type="button" aria-label="Next image">&#8250;</button>
+        </div>
+    </template>
+
+</odoo>

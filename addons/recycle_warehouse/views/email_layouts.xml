@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Odoo's native "forgot/set password" email (auth_signup) uses the
+         generic "Powered by Odoo" layout. Replace its content wholesale
+         with the same branded card every other Dawrha email uses (OTP,
+         interview, decision, set-password) — this is the template that
+         actually fires for BOTH the new-employee "Set Password" invite
+         (via action_reset_password) and any "Forgot password" request. -->
+    <template id="reset_password_email_dawrha" inherit_id="auth_signup.reset_password_email">
+        <xpath expr="//table[1]" position="replace">
+            <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;
+                        background:#ffffff;border-radius:16px;overflow:hidden;
+                        border:1px solid #e2e8f0;">
+                <div style="background:linear-gradient(135deg,#047857,#10b981);
+                            padding:24px 28px;color:#fff;">
+                    <div style="font-size:24px;font-weight:900;">Dawrha</div>
+                    <div style="opacity:.9;font-size:14px;margin-top:2px;">Set Up Your Password</div>
+                </div>
+                <div style="padding:28px;">
+                    <p style="font-size:16px;color:#0f172a;margin:0 0 14px;">
+                        Dear <t t-out="object.name or ''">Marc Demo</t>,
+                    </p>
+                    <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 20px;">
+                        A password reset was requested for the account linked to
+                        this email. Click the button below to set your password —
+                        this link stays valid for
+                        <t t-out="user.env['ir.config_parameter'].sudo().get_param('auth_signup.reset_password.validity.hours', 4)">4</t>
+                        hours.
+                    </p>
+                    <div style="text-align:center;margin:28px 0;">
+                        <a t-att-href="object.partner_id._get_signup_url()"
+                           style="display:inline-block;background:linear-gradient(135deg,#047857,#10b981);
+                                  color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;
+                                  padding:14px 36px;border-radius:10px;letter-spacing:0.3px;">
+                            Set Password
+                        </a>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:20px 0;
+                                border:1px solid #e2e8f0;">
+                        <p style="font-size:13px;color:#64748b;margin:0 0 6px;font-weight:600;">Your login credentials:</p>
+                        <p style="font-size:14px;color:#0f172a;margin:0;">
+                            Login: <strong t-out="object.login">login</strong>
+                        </p>
+                    </div>
+                    <p style="font-size:13px;color:#94a3b8;line-height:1.6;margin-top:20px;">
+                        If you did not expect this email, you can safely ignore it.
+                    </p>
+                    <p style="font-size:13px;color:#94a3b8;margin-top:18px;">— The Dawrha Team</p>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

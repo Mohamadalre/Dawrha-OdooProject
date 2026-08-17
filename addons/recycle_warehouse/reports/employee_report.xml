@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_employee" model="ir.actions.report">
+        <field name="name">Employee Report</field>
+        <field name="model">res.users</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_employee</field>
+        <field name="report_file">recycle_warehouse.report_employee</field>
+        <field name="print_report_name">'Employee - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_employee">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="apps" t-value="env['hr.applicant'].search([('recycle_email', '=', doc.email)])"/>
+                <t t-set="history" t-value="env['recycle.employee.history'].search([('user_id', '=', doc.id), ('change_type', 'in', ['role', 'warehouse'])], order='create_date desc')"/>
+                <div class="article" style="page-break-inside:avoid;max-width:800px;margin:0 auto;">
+                <style>
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #1f2937; line-height: 1.4; }
+                    img { max-width: 100%; height: auto; }
+
+                    .header {
+                        display: flex; align-items: center; justify-content: space-between;
+                        padding: 14px 24px;
+                        background: linear-gradient(135deg, #047857, #10b981);
+                        color: #fff;
+                    }
+                    .header-left { display: flex; align-items: center; gap: 10px; }
+                    .header-logo { width: 36px; height: 36px; object-fit: contain; }
+                    .header h1 { font-size: 18px; font-weight: 700; margin: 0; }
+                    .header .subtitle { margin-top: 1px; font-size: 11px; opacity: 0.85; }
+                    .header .badge { background: rgba(255,255,255,0.2); padding: 3px 12px; border-radius: 20px; font-size: 10px; }
+
+                    .body { padding: 16px 24px; }
+                    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 16px; margin-bottom: 10px; }
+                    .card-title {
+                        font-size: 12px; font-weight: 700; color: #047857;
+                        border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 8px;
+                        text-transform: uppercase; letter-spacing: 0.4px;
+                    }
+                    .grid { display: table; width: 100%; border-collapse: collapse; }
+                    .row { display: table-row; }
+                    .row + .row .label, .row + .row .value { border-top: 1px solid #f3f4f6; }
+                    .label { display: table-cell; width: 140px; font-weight: 600; color: #6b7280; padding: 5px 12px 5px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+                    .value { display: table-cell; padding: 5px 0; color: #111827; font-size: 12px; }
+                    .role-badge { display: inline-block; background: #d1fae5; color: #047857; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+
+                    .app-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                    .app-table thead tr { background: #047857; }
+                    .app-table thead th { padding: 6px 10px; font-weight: 600; color: #fff; text-align: left; font-size: 10px; text-transform: uppercase; }
+                    .app-table tbody tr:nth-child(even) { background: #f0fdf4; }
+                    .app-table tbody tr:nth-child(odd) { background: #ffffff; }
+                    .app-table tbody td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+                    .app-table tbody td.center { text-align: center; }
+                    .status-badge {
+                        display: inline-block; padding: 2px 8px; border-radius: 12px;
+                        font-size: 9px; font-weight: 700; text-transform: uppercase;
+                    }
+                    .status-applied { background: #dbeafe; color: #1d4ed8; }
+                    .status-accepted { background: #d1fae5; color: #047857; }
+                    .status-rejected { background: #fee2e2; color: #dc2626; }
+
+                    .current-badge {
+                        display: inline-block; padding: 3px 12px; border-radius: 20px;
+                        font-size: 10px; font-weight: 700;
+                        background: #d1fae5; color: #047857;
+                    }
+
+                    .footer {
+                        padding: 10px 24px; text-align: center; color: #9ca3af;
+                        font-size: 9px; border-top: 1px solid #e5e7eb;
+                    }
+                </style>
+
+                <div class="header">
+                    <div class="header-left">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="width:36px;height:36px;object-fit:contain;"/>
+                        <div>
+                            <h1 t-esc="doc.name"/>
+                            <div class="subtitle">Employee Information Report</div>
+                        </div>
+                    </div>
+                    <span class="badge">ID: <t t-esc="doc.id"/></span>
+                </div>
+
+                <div class="body">
+                    <div class="card">
+                        <div class="card-title">Account Details</div>
+                        <div class="grid">
+                            <div class="row">
+                                <span class="label">Email</span>
+                                <span class="value" t-esc="doc.email or '—'"/>
+                            </div>
+                            <div class="row">
+                                <span class="label">National ID</span>
+                                <span class="value" t-esc="doc.recycle_national_id or '—'"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Current Assignment</div>
+                        <div class="grid">
+                            <div class="row">
+                                <span class="label">Role</span>
+                                <span class="value">
+                                    <span class="role-badge">
+                                        <t t-if="doc.recycle_role == 'admin'">Admin</t>
+                                        <t t-if="doc.recycle_role == 'manager'">Warehouse Manager</t>
+                                        <t t-if="doc.recycle_role == 'input'">Input Employee</t>
+                                        <t t-if="doc.recycle_role == 'sorting'">Sorting Employee</t>
+                                        <t t-if="doc.recycle_role == 'output'">Output Employee</t>
+                                        <t t-if="not doc.recycle_role">Not assigned</t>
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Warehouse</span>
+                                <span class="value" t-esc="doc.recycle_warehouse_id.display_name or '—'"/>
+                            </div>
+                            <div class="row">
+                                <span class="label">Work Shift</span>
+                                <span class="value" t-esc="doc.shift_id.display_name or '—'"/>
+                            </div>
+                            <div class="row">
+                                <span class="label">Status</span>
+                                <span class="value">
+                                    <t t-if="doc.active">
+                                        <span class="current-badge">Active</span>
+                                    </t>
+                                    <t t-if="not doc.active">
+                                        <span class="status-badge status-rejected">Inactive</span>
+                                    </t>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Job History</div>
+                        <t t-if="apps or history">
+                            <table class="app-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:28%;">Position</th>
+                                        <th style="width:20%;">Change Type</th>
+                                        <th style="width:22%;">Changed By</th>
+                                        <th style="width:15%;">Date</th>
+                                        <th style="width:15%;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="apps" t-as="app">
+                                        <tr>
+                                            <td t-esc="app.job_id.name or '—'"/>
+                                            <td>Application</td>
+                                            <td>—</td>
+                                            <td t-esc="app.create_date.strftime('%Y-%m-%d') if app.create_date else '—'"/>
+                                            <td class="center">
+                                                <t t-if="app.recycle_state == 'accepted'">
+                                                    <span class="status-badge status-accepted">Accepted</span>
+                                                </t>
+                                                <t t-if="app.recycle_state != 'accepted'">
+                                                    <span class="status-badge status-applied" t-esc="app.recycle_state or 'pending'"/>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-foreach="history" t-as="h">
+                                        <tr>
+                                            <td>
+                                                <t t-if="h.change_type == 'role' and h.old_role and h.new_role" t-esc="h.old_role + ' → ' + h.new_role"/>
+                                                <t t-if="h.change_type == 'role' and not h.old_role and h.new_role" t-esc="h.new_role"/>
+                                                <t t-if="h.change_type == 'role' and not h.new_role and h.old_role" t-esc="h.old_role"/>
+                                                <t t-if="h.change_type == 'warehouse' and h.old_warehouse and h.new_warehouse" t-esc="h.old_warehouse + ' → ' + h.new_warehouse"/>
+                                                <t t-if="h.change_type == 'warehouse' and not h.old_warehouse and h.new_warehouse" t-esc="h.new_warehouse"/>
+                                                <t t-if="h.change_type == 'warehouse' and not h.new_warehouse and h.old_warehouse" t-esc="h.old_warehouse"/>
+                                            </td>
+                                            <td>
+                                                <t t-if="h.change_type == 'role'">Role Change</t>
+                                                <t t-if="h.change_type == 'warehouse'">Warehouse Change</t>
+                                                <t t-if="h.change_type == 'direct_addition'">Direct Addition</t>
+                                            </td>
+                                            <td t-esc="h.changed_by.name or '—'"/>
+                                            <td t-esc="h.create_date.strftime('%Y-%m-%d') if h.create_date else '—'"/>
+                                            <td class="center">
+                                                <span class="status-badge status-accepted">Approved</span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-if="not apps and not history">
+                            <table class="app-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:28%;">Position</th>
+                                        <th style="width:20%;">Change Type</th>
+                                        <th style="width:22%;">Changed By</th>
+                                        <th style="width:15%;">Date</th>
+                                        <th style="width:15%;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <t t-if="doc.recycle_role == 'input'">Input Employee</t>
+                                            <t t-if="doc.recycle_role == 'sorting'">Sorting Employee</t>
+                                            <t t-if="doc.recycle_role == 'output'">Output Employee</t>
+                                            <t t-if="doc.recycle_role == 'manager'">Warehouse Manager</t>
+                                            <t t-if="not doc.recycle_role">—</t>
+                                        </td>
+                                        <td>Direct Addition</td>
+                                        <td>—</td>
+                                        <td t-esc="doc.create_date.strftime('%Y-%m-%d') if doc.create_date else '—'"/>
+                                        <td class="center">
+                                            <t t-if="doc.active">
+                                                <span class="status-badge status-accepted">Active</span>
+                                            </t>
+                                            <t t-if="not doc.active">
+                                                <span class="status-badge status-rejected">Inactive</span>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Employee Information Report — <strong>Dawrha</strong> Recycle Warehouse Management System
+                </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

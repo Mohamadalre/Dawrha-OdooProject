@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================ -->
+    <!--  Job — form extension (publish + type + description)             -->
+    <!-- ================================================================ -->
+    <record id="view_hr_job_form_recycle" model="ir.ui.view">
+        <field name="name">hr.job.form.recycle</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Recycle Website Settings">
+                    <group>
+                        <field name="recycle_publish"/>
+                        <field name="recycle_job_type"/>
+                    </group>
+                </group>
+                <group string="Website Job Description">
+                    <field name="recycle_description" nolabel="1"
+                           placeholder="Describe the role, requirements, and benefits shown on the public jobs page…"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  HR Applicant — extended form (admin / recruitment users)        -->
+    <!-- ================================================================ -->
+    <record id="view_hr_applicant_form_recycle" model="ir.ui.view">
+        <field name="name">hr.applicant.form.recycle</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <!-- Stage decision: each stage must be Approved or Rejected -->
+                <button name="action_recycle_stage_approve" string="Approve Stage"
+                        type="object" class="btn-success oe_highlight"
+                        invisible="recycle_stage_status == 'approved' or employee_user_id or recycle_state == 'accepted'"
+                        groups="recycle_warehouse.group_recycle_admin"/>
+                <button name="action_recycle_stage_reject" string="Reject Stage"
+                        type="object" class="btn-danger"
+                        invisible="recycle_stage_status == 'rejected' or employee_user_id or recycle_state == 'accepted'"
+                        groups="recycle_warehouse.group_recycle_admin"/>
+                <!-- Schedule interview (only inside an interview stage) -->
+                <button name="action_recycle_interview" string="Set Interview"
+                        type="object"
+                        invisible="not recycle_is_interview_stage or employee_user_id"
+                        groups="recycle_warehouse.group_recycle_admin"/>
+                <!-- Advance forward only when the current stage is Approved -->
+                <button name="action_recycle_advance_stage" string="Move to Next Stage ▶"
+                        type="object" class="btn-primary oe_highlight"
+                        invisible="recycle_stage_status != 'approved' or recycle_is_last_stage or employee_user_id or recycle_state == 'accepted'"
+                        groups="recycle_warehouse.group_recycle_admin"/>
+                <!-- Final stage approved → create the account &amp; assign warehouse -->
+                <button name="action_open_manager_wizard"
+                        string="Create Account &amp; Assign Warehouse"
+                        type="object" class="btn-primary oe_highlight"
+                        invisible="recycle_state != 'accepted' or recycle_job_type != 'manager' or employee_user_id"
+                        groups="recycle_warehouse.group_recycle_admin"/>
+                <button name="action_open_employee_wizard"
+                        string="Create Account &amp; Assign Warehouse"
+                        type="object" class="btn-primary oe_highlight"
+                        invisible="recycle_state != 'accepted' or recycle_job_type != 'employee' or employee_user_id"
+                        groups="recycle_warehouse.group_recycle_admin"/>
+                <!-- Delete the employee account + all their data (keeps shipments) -->
+                <button name="action_recycle_delete_employee"
+                        string="🗑 Delete Employee"
+                        type="object" class="btn-danger"
+                        invisible="not employee_user_id"
+                        groups="recycle_warehouse.group_recycle_admin"
+                        confirm="This permanently deletes the employee's account and ALL their job applications, and removes them from their warehouse. Shipment records are kept. Continue?"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <!-- Alert: account already created -->
+                <div class="alert alert-success" role="alert"
+                     invisible="not employee_user_id">
+                    <i class="fa fa-check-circle fa-fw me-2" title="Accepted"/>
+                    <strong>Account Created</strong> — An Odoo user account has been set up for this applicant.
+                </div>
+                <!-- Alert: rejected at the current stage -->
+                <div class="alert alert-danger" role="alert"
+                     invisible="recycle_stage_status != 'rejected'">
+                    <i class="fa fa-times-circle fa-fw me-2" title="Rejected"/>
+                    <strong>Rejected</strong> — This applicant was rejected at the current stage and cannot advance.
+                </div>
+                <!-- Alert: final stage approved, ready to create the account -->
+                <div class="alert alert-info" role="alert"
+                     invisible="recycle_state != 'accepted' or employee_user_id">
+                    <i class="fa fa-user-plus fa-fw me-2" title="New applicant"/>
+                    <strong>Approved</strong> — Final stage approved. Click
+                    <strong>"Create Account &amp; Assign Warehouse"</strong> above to set up the account.
+                </div>
+                <group string="Recycle Recruitment Details">
+                    <group string="Personal Info">
+                        <field name="recycle_name"/>
+                        <field name="recycle_email"/>
+                        <field name="recycle_phone"/>
+                        <field name="recycle_national_id"/>
+                        <field name="recycle_profile_url" widget="url"/>
+                        <field name="recycle_cover_letter"/>
+                    </group>
+                    <group string="Application Status">
+                        <field name="recycle_is_interview_stage" invisible="1"/>
+                        <field name="recycle_is_last_stage" invisible="1"/>
+                        <field name="stage_id" readonly="1" string="Current Stage"/>
+                        <field name="recycle_stage_status" widget="badge"
+                               string="Stage Status"
+                               decoration-success="recycle_stage_status == 'approved'"
+                               decoration-danger="recycle_stage_status == 'rejected'"
+                               decoration-warning="recycle_stage_status == 'pending'"/>
+                        <field name="recycle_state" widget="badge"
+                               string="Overall"
+                               decoration-success="recycle_state == 'accepted'"
+                               decoration-danger="recycle_state == 'rejected'"
+                               decoration-warning="recycle_state == 'interview'"
+                               decoration-info="recycle_state == 'applied'"/>
+                        <field name="recycle_job_type"/>
+                        <field name="recycle_role" readonly="1"
+                               invisible="recycle_job_type != 'manager'"/>
+                        <field name="recycle_warehouse_id" readonly="1"/>
+                        <field name="employee_user_id" readonly="1"/>
+                        <field name="recycle_interview_datetime" readonly="1"
+                               invisible="not recycle_interview_datetime"/>
+                        <field name="recycle_interview_sent_at" readonly="1"
+                               invisible="not recycle_interview_sent_at"/>
+                        <field name="recycle_interview_location" readonly="1"
+                               invisible="not recycle_interview_location"/>
+                        <field name="recycle_interview_notes" readonly="1"
+                               invisible="not recycle_interview_notes"/>
+                    </group>
+                </group>
+                <group string="Stage History" invisible="not recycle_stage_log_ids">
+                    <field name="recycle_stage_log_ids" nolabel="1" readonly="1">
+                        <list>
+                            <field name="stage_id" string="Completed Stage"/>
+                            <field name="next_stage_id" string="Moved To"/>
+                            <field name="decided_by"/>
+                            <field name="decided_at"/>
+                        </list>
+                    </field>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Accepted Applicants — list view (manager + admin)               -->
+    <!-- ================================================================ -->
+    <record id="view_applicant_recycle_list" model="ir.ui.view">
+        <field name="name">hr.applicant.recycle.list</field>
+        <field name="model">hr.applicant</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Accepted Applicants"
+                  decoration-success="recycle_role != False"
+                  decoration-warning="not employee_user_id">
+                <field name="recycle_name" string="Name"/>
+                <field name="recycle_email" string="Email"/>
+                <field name="recycle_phone" string="Phone" optional="show"/>
+                <field name="job_id" string="Position"/>
+                <field name="recycle_warehouse_id" string="Warehouse"/>
+                <field name="recycle_role" string="Role" widget="badge"
+                       decoration-info="recycle_role == 'input'"
+                       decoration-success="recycle_role == 'sorting'"
+                       decoration-warning="recycle_role == 'output'"
+                       decoration-primary="recycle_role == 'manager'"/>
+                <field name="recycle_state" string="Status" widget="badge"
+                       decoration-success="recycle_state == 'accepted'"
+                       decoration-danger="recycle_state == 'rejected'"/>
+                <field name="employee_user_id" string="User Account" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Accepted Applicants — form view (manager role assignment)       -->
+    <!-- ================================================================ -->
+    <record id="view_applicant_recycle_form" model="ir.ui.view">
+        <field name="name">hr.applicant.recycle.form</field>
+        <field name="model">hr.applicant</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Applicant">
+                <header>
+                    <!-- Button opens the role-selection wizard dialog -->
+                    <button name="action_open_role_wizard" string="Assign Role"
+                            type="object" class="btn-primary oe_highlight"
+                            invisible="not employee_user_id"/>
+                    <button name="action_recycle_delete_employee"
+                            string="🗑 Delete Employee"
+                            type="object" class="btn-danger"
+                            invisible="not employee_user_id"
+                            groups="recycle_warehouse.group_recycle_admin"
+                            confirm="This permanently deletes the employee's account and ALL their job applications, and removes them from their warehouse. Shipment records are kept. Continue?"/>
+                </header>
+                <sheet>
+                    <!-- Alert: no account yet -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="employee_user_id">
+                        <i class="fa fa-clock-o fa-fw me-2" title="Pending"/>
+                        <strong>Pending Account Setup</strong> — The administrator must create a user account before you can assign a role.
+                    </div>
+                    <!-- Alert: role not assigned yet -->
+                    <div class="alert alert-info" role="alert"
+                         invisible="recycle_role or not employee_user_id">
+                        <i class="fa fa-user-plus fa-fw me-2" title="New applicant"/>
+                        <strong>Role Not Assigned</strong> — Click <strong>"Assign Role"</strong> above to open the role selector.
+                    </div>
+                    <!-- Alert: role already assigned -->
+                    <div class="alert alert-success" role="alert"
+                         invisible="not recycle_role or not employee_user_id">
+                        <i class="fa fa-check-circle fa-fw me-2" title="Accepted"/>
+                        <strong>Role Active</strong> — Click <strong>"Assign Role"</strong> to change the role at any time.
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="recycle_name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Contact Information">
+                            <field name="recycle_email" readonly="1"/>
+                            <field name="recycle_phone" readonly="1"/>
+                            <field name="recycle_national_id" readonly="1"/>
+                            <field name="recycle_profile_url" readonly="1" widget="url"/>
+                            <field name="recycle_cover_letter" readonly="1"/>
+                            <field name="job_id" readonly="1"/>
+                        </group>
+                        <group string="Assignment">
+                            <field name="recycle_state" readonly="1" widget="badge"
+                                   decoration-success="recycle_state == 'accepted'"
+                                   decoration-danger="recycle_state == 'rejected'"/>
+                            <field name="recycle_job_type" invisible="1"/>
+                            <field name="recycle_warehouse_id" readonly="1"/>
+                            <!-- Role is ALWAYS read-only here — changed only via the wizard -->
+                            <field name="recycle_role" readonly="1" widget="badge"
+                                   decoration-info="recycle_role == 'input'"
+                                   decoration-success="recycle_role == 'sorting'"
+                                   decoration-warning="recycle_role == 'output'"
+                                   decoration-primary="recycle_role == 'manager'"/>
+                            <field name="employee_user_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Interview Scheduling Wizard                                     -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_interview_wizard_form" model="ir.ui.view">
+        <field name="name">recycle.interview.wizard.form</field>
+        <field name="model">recycle.interview.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Schedule Interview">
+                <div class="alert alert-info" role="alert">
+                    <i class="fa fa-calendar fa-fw me-2" title="Date"/>
+                    Set the interview date, time and details. The applicant will
+                    receive an email with this information, and the application
+                    will move to the <strong>Interview</strong> stage.
+                </div>
+                <group string="Applicant">
+                    <field name="applicant_id" invisible="1"/>
+                    <field name="applicant_name" readonly="1"/>
+                    <field name="applicant_email" readonly="1"/>
+                    <field name="job_name" readonly="1"/>
+                </group>
+                <group string="Interview Details">
+                    <field name="interview_datetime"/>
+                    <field name="location" placeholder="Office address or video-call link…"/>
+                    <field name="notes" placeholder="Optional message included in the email…"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Schedule &amp; Notify Applicant"
+                            type="object" class="btn-primary oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Role Assignment Wizard                                          -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_role_wizard_form" model="ir.ui.view">
+        <field name="name">recycle.role.wizard.form</field>
+        <field name="model">recycle.role.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Employee Role">
+                <div class="alert alert-info" role="alert">
+                    <i class="fa fa-info-circle fa-fw me-2" title="Information"/>
+                    <strong>Role Assignment</strong> — Select the role for this employee.
+                    The role determines which section of the Recycle Warehouse app they can access.
+                    You can change the role at any time by clicking "Assign Role" again.
+                </div>
+                <group string="Employee">
+                    <field name="applicant_id" invisible="1"/>
+                    <field name="employee_name" readonly="1"/>
+                    <field name="warehouse_name" readonly="1"/>
+                    <field name="current_role" readonly="1" widget="badge"
+                           decoration-info="current_role == 'input'"
+                           decoration-success="current_role == 'sorting'"
+                           decoration-warning="current_role == 'output'"
+                           invisible="not current_role"/>
+                </group>
+                <group string="New Role">
+                    <field name="role" widget="radio"/>
+                    <field name="shift_id"
+                           required="role in ['input','sorting','output']"
+                           placeholder="Select a work shift…"/>
+                </group>
+                <div class="alert alert-warning mt-2" role="alert"
+                     invisible="not current_role">
+                    <i class="fa fa-exclamation-triangle fa-fw me-2" title="Warning"/>
+                    Confirming will <strong>replace</strong> the current role and update the employee's system access immediately.
+                </div>
+                <footer>
+                    <button name="action_confirm" string="Confirm Role Assignment"
+                            type="object" class="btn-primary oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Admin Wizard — Create Manager &amp; Assign Warehouse            -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_manager_wizard_form" model="ir.ui.view">
+        <field name="name">recycle.manager.wizard.form</field>
+        <field name="model">recycle.manager.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Manager Account">
+                <div class="alert alert-info" role="alert">
+                    <i class="fa fa-info-circle fa-fw me-2" title="Information"/>
+                    <strong>About this action:</strong> The applicant's portal account will be upgraded
+                    to a <strong>Warehouse Manager</strong> internal user and linked to the selected warehouse.
+                    <br/>
+                    <i class="fa fa-exclamation-circle fa-fw me-1 text-warning" title="Warning"/>
+                    Each warehouse can have <strong>one manager only</strong>.
+                </div>
+                <group string="Applicant">
+                    <field name="applicant_id" invisible="1"/>
+                    <field name="applicant_name" readonly="1"/>
+                    <field name="applicant_email" readonly="1"/>
+                </group>
+                <group string="Warehouse Assignment">
+                    <field name="warehouse_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Create Manager Account"
+                            type="object" class="btn-primary oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Admin Wizard — Create Employee &amp; Assign Warehouse           -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_employee_wizard_form" model="ir.ui.view">
+        <field name="name">recycle.employee.wizard.form</field>
+        <field name="model">recycle.employee.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Employee Account">
+                <div class="alert alert-info" role="alert">
+                    <i class="fa fa-info-circle fa-fw me-2" title="Information"/>
+                    <strong>About this action:</strong> The applicant's portal account will be upgraded
+                    to a <strong>Warehouse Employee</strong> internal user in the selected warehouse.
+                    <br/>
+                    <i class="fa fa-user-circle fa-fw me-1 text-info" title="User"/>
+                    The role (Input / Sorting / Output) will be assigned later by the warehouse manager.
+                </div>
+                <group string="Applicant">
+                    <field name="applicant_id" invisible="1"/>
+                    <field name="applicant_name" readonly="1"/>
+                    <field name="applicant_email" readonly="1"/>
+                </group>
+                <group string="Warehouse Assignment">
+                    <field name="warehouse_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Create Employee Account"
+                            type="object" class="btn-primary oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Actions                                                         -->
+    <!-- ================================================================ -->
+    <record id="action_accepted_applicants" model="ir.actions.act_window">
+        <field name="name">Accepted Applicants</field>
+        <field name="res_model">hr.applicant</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('recycle_state', '=', 'accepted')]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_applicant_recycle_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_applicant_recycle_form')})]"/>
+    </record>
+
+    <!-- All job applications to process — clean list + form (no kanban),
+         using the standard form so the Approve / Reject / Advance / Create
+         buttons appear. -->
+    <record id="action_recycle_all_applications" model="ir.actions.act_window">
+        <field name="name">Job Applications</field>
+        <field name="res_model">hr.applicant</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+    </record>
+
+</odoo>

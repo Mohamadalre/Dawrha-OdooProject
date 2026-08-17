@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Paperformat: no running header -->
+    <record id="paperformat_recycle_invoice" model="report.paperformat">
+        <field name="name">Recycle Invoice (No Header)</field>
+        <field name="default">False</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line">False</field>
+        <field name="header_spacing">0</field>
+        <field name="disable_shrinking">True</field>
+    </record>
+
+    <!-- Report action -->
+    <record id="action_report_order_invoice" model="ir.actions.report">
+        <field name="name">Order Invoice</field>
+        <field name="model">recycle.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_order_invoice</field>
+        <field name="report_file">recycle_warehouse.report_order_invoice</field>
+        <field name="paperformat_id" ref="paperformat_recycle_invoice"/>
+        <field name="binding_model_id" ref="model_recycle_order"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Invoice - %s' % (object.invoice_number or object.name)</field>
+    </record>
+
+    <!-- QWeb Template -->
+    <template id="report_order_invoice">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <div class="article" style="page-break-after:always;">
+                <style>
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    img { max-width: 100%; height: auto; }
+
+                    body {
+                        font-family: Arial, Helvetica, 'DejaVu Sans',
+                                     'Liberation Sans', Tahoma, sans-serif;
+                        font-size: 13px;
+                        color: #1f2937;
+                        background: #fff;
+                    }
+
+                    /* Kill any Odoo-injected header */
+                    header, footer, .header, .footer { display: none !important; }
+
+                    .page {
+                        padding: 28px 36px;
+                        max-width: 860px;
+                        margin: 0 auto;
+                    }
+
+                    /* ── BANNER ── */
+                    .banner {
+                        background-color: #5b21b6;
+                        border-radius: 12px;
+                        padding: 24px 28px;
+                        margin-bottom: 20px;
+                    }
+                    .banner table { width: 100%; border-collapse: collapse; }
+                    .banner-left  { vertical-align: top; }
+                    .banner-right { vertical-align: top; text-align: right; }
+
+                    .sys-label {
+                        font-size: 0.76rem;
+                        color: #ddd6fe;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        margin-bottom: 8px;
+                    }
+                    .inv-title {
+                        font-size: 1.9rem;
+                        font-weight: 800;
+                        color: #ffffff;
+                        margin-bottom: 10px;
+                        line-height: 1.1;
+                    }
+                    .inv-badge {
+                        display: inline-block;
+                        background-color: rgba(255,255,255,0.20);
+                        color: #ffffff;
+                        font-size: 1rem;
+                        font-weight: 700;
+                        padding: 4px 14px;
+                        border-radius: 6px;
+                    }
+                    .meta-lbl { font-size: 0.74rem; color: #ddd6fe; margin-bottom: 3px; }
+                    .meta-val { font-size: 1rem; font-weight: 700; color: #ffffff; margin-bottom: 10px; }
+                    .meta-ref { font-size: 0.84rem; color: #f3e8ff; font-weight: 600; }
+
+                    /* ── CARDS ── */
+                    .cards { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+                    .card-l { width: 50%; vertical-align: top; padding-right: 8px; }
+                    .card-r { width: 50%; vertical-align: top; padding-left:  8px; }
+
+                    .card-factory {
+                        border: 1.5px solid #e9d5ff;
+                        border-radius: 10px;
+                        padding: 15px 17px;
+                        background-color: #faf5ff;
+                    }
+                    .card-process {
+                        border: 1.5px solid #bbf7d0;
+                        border-radius: 10px;
+                        padding: 15px 17px;
+                        background-color: #f0fdf4;
+                    }
+                    .card-title-f {
+                        font-size: 0.68rem; font-weight: 700; color: #7c3aed;
+                        text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+                    }
+                    .card-title-p {
+                        font-size: 0.68rem; font-weight: 700; color: #059669;
+                        text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+                    }
+                    .card-name {
+                        font-size: 1rem; font-weight: 700; color: #1f2937;
+                        margin-bottom: 5px; direction: auto; unicode-bidi: plaintext;
+                    }
+                    .card-sub {
+                        font-size: 0.86rem; color: #6b7280; margin-bottom: 3px;
+                        direction: auto; unicode-bidi: plaintext;
+                    }
+                    .card-row {
+                        font-size: 0.88rem; color: #374151; margin-bottom: 5px;
+                    }
+                    .card-row strong { color: #1f2937; }
+                    .ad { direction: auto; unicode-bidi: plaintext; }
+
+                    /* ── ORDER LINES ── */
+                    .lines-wrap {
+                        border: 1.5px solid #e5e7eb;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        margin-bottom: 18px;
+                    }
+                    .lines-title {
+                        background-color: #f9fafb;
+                        border-bottom: 1px solid #e5e7eb;
+                        padding: 10px 15px;
+                        font-size: 0.76rem; font-weight: 700;
+                        color: #374151; text-transform: uppercase; letter-spacing: 0.8px;
+                    }
+                    .lines-tbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+                    .lines-tbl thead tr { background-color: #5b21b6; }
+                    .lines-tbl thead th {
+                        padding: 9px 11px; font-weight: 600; color: #ffffff;
+                        text-align: left;
+                    }
+                    .lines-tbl thead th.r { text-align: right; }
+                    .lines-tbl tbody tr.even { background-color: #faf5ff; }
+                    .lines-tbl tbody tr.odd  { background-color: #ffffff; }
+                    .lines-tbl tbody td {
+                        padding: 8px 11px;
+                        border-bottom: 1px solid #f3f4f6;
+                        color: #374151;
+                        text-align: left;
+                    }
+                    .lines-tbl tbody td.c  { text-align: center; color: #9ca3af; }
+                    .lines-tbl tbody td.r  { text-align: right; }
+                    .lines-tbl tbody td.m  { text-align: right; color: #9ca3af; }
+                    .lines-tbl tbody td.st { text-align: right; font-weight: 700; color: #5b21b6; }
+                    .lines-tbl tbody td.pd {
+                        direction: auto; unicode-bidi: plaintext; font-weight: 500;
+                    }
+
+                    /* ── TOTALS ── */
+                    .tot-outer { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    .tot-space { width: 55%; }
+                    .tot-right { width: 45%; vertical-align: top; }
+                    .tot-box {
+                        border: 2px solid #7c3aed;
+                        border-radius: 10px;
+                        overflow: hidden;
+                    }
+                    .tot-row-w { width: 100%; border-collapse: collapse; }
+                    .tot-row-w td {
+                        padding: 11px 15px; font-size: 0.88rem;
+                        background-color: #faf5ff;
+                        border-bottom: 1px solid #e9d5ff;
+                    }
+                    .tw-label { color: #6b7280; }
+                    .tw-value { text-align: right; font-weight: 600; color: #374151; }
+                    .tot-row-g { width: 100%; border-collapse: collapse; }
+                    .tot-row-g td {
+                        padding: 13px 15px; font-size: 0.95rem;
+                        background-color: #5b21b6;
+                    }
+                    .tg-label { color: #ffffff; font-weight: 700; }
+                    .tg-value { text-align: right; color: #ffffff; font-weight: 800; font-size: 1.2rem; }
+
+                    /* ── FOOTER ── */
+                    .inv-footer {
+                        text-align: center; color: #9ca3af; font-size: 0.72rem;
+                        border-top: 1px solid #e5e7eb; padding-top: 12px; line-height: 1.9;
+                    }
+                </style>
+
+                <div class="page">
+
+                    <!-- BANNER -->
+                    <div class="banner">
+                        <table>
+                            <tr>
+                                <td class="banner-left">
+                                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="width:36px;height:36px;object-fit:contain;"/>
+                                        <div>
+                                            <div style="color:#fff;font-size:18px;font-weight:800;">Dawrha</div>
+                                        </div>
+                                    </div>
+                                    <div class="sys-label">Recycle Warehouse Management System</div>
+                                    <div class="inv-title">INVOICE</div>
+                                    <div class="inv-badge"># <t t-esc="doc.invoice_number or doc.name"/></div>
+                                </td>
+                                <td class="banner-right">
+                                    <div class="meta-lbl">Invoice Date</div>
+                                    <div class="meta-val"><t t-esc="doc.invoice_date or '--'"/></div>
+                                    <div class="meta-lbl">Order Reference</div>
+                                    <div class="meta-ref"><t t-esc="doc.name"/></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- CARDS -->
+                    <table class="cards">
+                        <tr>
+                            <td class="card-l">
+                                <div class="card-factory">
+                                    <div class="card-title-f">FACTORY INFORMATION</div>
+                                    <div class="card-name"><t t-esc="doc.customer_name"/></div>
+                                    <t t-if="doc.owner_name">
+                                        <div class="card-sub">
+                                            Owner: <t t-esc="doc.owner_name"/>
+                                        </div>
+                                    </t>
+                                    <t t-if="doc.customer_email">
+                                        <div class="card-sub"><t t-esc="doc.customer_email"/></div>
+                                    </t>
+                                </div>
+                            </td>
+                            <td class="card-r">
+                                <div class="card-process">
+                                    <div class="card-title-p">PROCESSING DETAILS</div>
+                                    <div class="card-row">
+                                        <strong>Warehouse:</strong>
+                                        <span class="ad"> <t t-esc="doc.warehouse_id.name"/></span>
+                                    </div>
+                                    <t t-if="doc.output_user_id">
+                                        <div class="card-row">
+                                            <strong>Processed By:</strong>
+                                            <span class="ad"> <t t-esc="doc.output_user_id.name"/></span>
+                                        </div>
+                                    </t>
+                                    <div class="card-row">
+                                        <strong>Source:</strong> <t t-esc="doc.source"/>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- ORDER LINES -->
+                    <div class="lines-wrap">
+                        <div class="lines-title">ORDER LINES</div>
+                        <table class="lines-tbl">
+                            <thead>
+                                <tr>
+                                    <th style="width:4%; text-align:center;">#</th>
+                                    <th style="width:22%;">Product</th>
+                                    <th style="width:11%;">Condition</th>
+                                    <th class="r" style="width:9%;">Qty</th>
+                                    <th class="r" style="width:12%;">Unit Price</th>
+                                    <th class="r" style="width:13%;">Weight/Unit (kg)</th>
+                                    <th class="r" style="width:13%;">Line Weight (kg)</th>
+                                    <th class="r" style="width:16%;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.line_ids" t-as="line">
+                                    <tr t-att-class="'even' if line_index % 2 == 0 else 'odd'">
+                                        <td class="c"><t t-esc="line_index + 1"/></td>
+                                        <td class="pd"><t t-esc="line.product_id.name"/></td>
+                                        <td class="pd"><t t-esc="dict(line._fields['condition'].selection).get(line.condition, line.condition)"/></td>
+                                        <td class="r"><t t-esc="'%.2f' % line.quantity"/></td>
+                                        <td class="r"><t t-esc="'%.2f' % line.price_unit"/></td>
+                                        <td class="m"><t t-esc="'%.3f' % line.product_id.weight"/></td>
+                                        <td class="m"><t t-esc="'%.3f' % (line.quantity * line.product_id.weight)"/></td>
+                                        <td class="st"><t t-esc="'%.2f' % line.subtotal"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- TOTALS -->
+                    <table class="tot-outer">
+                        <tr>
+                            <td class="tot-space"></td>
+                            <td class="tot-right">
+                                <div class="tot-box">
+                                    <table class="tot-row-w">
+                                        <tr>
+                                            <td class="tw-label">Total Weight</td>
+                                            <td class="tw-value">
+                                                <t t-esc="'%.3f' % doc.total_weight"/> kg
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <table class="tot-row-g">
+                                        <tr>
+                                            <td class="tg-label">Grand Total</td>
+                                            <td class="tg-value">
+                                                <t t-esc="'%.2f' % doc.amount_total"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- FOOTER -->
+                    <div class="inv-footer">
+                        Auto-generated by <strong>Dawrha</strong> — Recycle Warehouse Management System
+                        <br/>
+                        Invoice: <t t-esc="doc.invoice_number"/>
+                        &#160;|&#160;
+                        Order: <t t-esc="doc.name"/>
+                        &#160;|&#160;
+                        Warehouse: <span class="ad"><t t-esc="doc.warehouse_id.name"/></span>
+                    </div>
+
+                </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

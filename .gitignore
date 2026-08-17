@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .gitignore — (recycle_warehouse addon)
+# What NOT to push to git: local tooling state, caches, secrets, and runtime data.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Python / Odoo bytecode & caches ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# ── Odoo runtime (filestore, sessions, logs, local config) ───────────────────
+# These are produced at runtime / live in Docker volumes — never source.
+*.log
+.odoorc
+odoo.conf
+/filestore/
+/sessions/
+/data/
+/data_dir/
+/postgresql/
+/pgdata/
+
+# ── Secrets & environment ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ── Editor / IDE ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── OS junk ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

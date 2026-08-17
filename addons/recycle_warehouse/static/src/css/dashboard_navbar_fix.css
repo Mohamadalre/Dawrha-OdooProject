@@ -1,0 +1,143 @@
+/* ================================================================
+   Dashboard Navbar & Sidebar Layout Fix
+   ================================================================
+   Navbar visibility is now controlled at the DOM level via
+   t-if="state.view === '<home>'" in recycle_home_action.xml, and the
+   'o_ra_has_unified_nav' class (padding-top compensation, defined in
+   recycle_home.css) is applied to the root only for that same view.
+   No body-class toggling or sidebar margin overrides are needed here —
+   keeping this file free of stale/conflicting selectors on purpose.
+   ================================================================ */
+
+/* ================================================================
+   Odoo's native launcher toggle. Only the ADMIN dashboard ever renders
+   a visible button that forwards a .click() to it (openAppLauncher() in
+   recycle_admin_dashboard.js) — every other role must NEVER be able to
+   see or reach it, full stop (not just low-opacity: a mobile orientation
+   change was re-exposing the near-transparent element as a solid dark
+   square for non-admin roles, which is the bug this fixes).
+   Default: fully removed from the layout for everyone.
+   Admin-only override (body.o_ra_dash_admin, set by setDashboardPage(true)
+   while RecycleAdminDashboard is mounted — see dashboard_page_state.js):
+   restore it at 1% opacity so the forwarded click still works. This file
+   loads last and must win a same-specificity tie against
+   recycle_home.css's older ".o_main_navbar > .o_menu_toggle" rule, which
+   also sets opacity and matches the mobile <a class="o_menu_toggle">
+   variant (a direct child of .o_main_navbar). position:static /
+   opacity:0.01 (not 0) / pointer-events left at auto are all required
+   for the forwarded click to actually open the dropdown — see the
+   June/July debugging notes: Odoo's own Popper-based dropdown-open logic
+   silently no-ops the toggle if the trigger is off-screen, fully
+   transparent, or non-hit-testable. */
+.o_main_navbar .o_menu_toggle,
+.o_navbar_apps_menu > button {
+    display: none !important;
+}
+body.o_ra_dash_admin .o_main_navbar .o_menu_toggle,
+body.o_ra_dash_admin .o_navbar_apps_menu > button {
+    display: flex !important;
+    position: static !important;
+    opacity: 0.01 !important;
+    /* Shrink the proxy to a single invisible pixel: at its natural size the
+       1%-opacity glyph still read as a FAINT 9-dot square in light mode
+       (user report). 1x1 keeps a real on-screen position + hit-testability,
+       which Odoo's Popper-based dropdown logic requires (see note above) —
+       while being imperceptible in both themes. */
+    width: 1px !important;
+    height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+}
+
+/* ================================================================
+   Menu toggle — sidebar drawer open/close, every dashboard.
+   ================================================================ */
+.o_ra_persistent_sidebar_toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(15, 23, 42, 0.72);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    transition: background 0.2s, transform 0.2s;
+}
+.o_ra_persistent_sidebar_toggle:hover {
+    background: #1fb876;
+}
+/* Sidebar toggle is mobile-only — desktop sidebar is permanently visible,
+   so no toggle is needed there. Breakpoint MUST match the sidebar's own
+   drawer-mode breakpoint (900px, see .o_ra_sidebar in recycle_home.css) —
+   a mismatch here left landscape phones (width 768-900px) with the
+   drawer closed and no way to open it. */
+.o_ra_persistent_sidebar_toggle {
+    display: none;
+}
+@media (max-width: 900px), (max-height: 500px) and (orientation: landscape) {
+    .o_ra_persistent_sidebar_toggle {
+        display: flex;
+    }
+}
+/* App launcher: the 9-dot glyph now lives as a card inside Settings
+   (RecycleAdminDashboard, "Apps" section) instead of the toolbar — see
+   openAppLauncher() in recycle_admin_dashboard.js. Still forwards to
+   Odoo's real native launcher button (kept clickable but 1%-opacity,
+   see above), so app-switcher behavior stays 100% native/unmodified.
+   3x3 dot "app grid" glyph, drawn with box-shadow so it never depends on
+   font-icon availability or breakpoint (desktop/mobile render identically). */
+.o_ra_app_launcher_dots {
+    display: block;
+    width: 3px;
+    height: 3px;
+    border-radius: 1px;
+    background: #fff;
+    box-shadow:
+        -6px -6px 0 0 #fff,
+         0px -6px 0 0 #fff,
+         6px -6px 0 0 #fff,
+        -6px  0px 0 0 #fff,
+         6px  0px 0 0 #fff,
+        -6px  6px 0 0 #fff,
+         0px  6px 0 0 #fff,
+         6px  6px 0 0 #fff;
+}
+
+/* ================================================================
+   Top toolbar: wraps the menu toggle (+ app launcher, admin only) on
+   every view EXCEPT the dashboard (there they live inline inside
+   .o_ra_unified_nav's own flex row instead, sharing its existing
+   RTL handling — see .o_ra_rtl .o_ra_unified_nav in recycle_home.css).
+   This is the ONE fixed-position anchor for both buttons; alignment
+   between them is flex, not per-button math (Odoo's own .o_main_navbar
+   still needs a real screen position for its native launcher/dropdown
+   to compute against — see the opacity rule above — but that is
+   independent of where OUR OWN visible controls are drawn).
+   LTR: left. RTL: right (state.lang toggles o_ra_rtl / tw-rtl on the
+   dashboard root, which flips this + reverses the row so the buttons'
+   relative order mirrors too, matching Arabic reading direction). ── */
+.o_ra_top_toolbar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.o_ra_rtl .o_ra_top_toolbar,
+.tw-rtl .o_ra_top_toolbar {
+    left: auto;
+    right: 10px;
+    flex-direction: row-reverse;
+}

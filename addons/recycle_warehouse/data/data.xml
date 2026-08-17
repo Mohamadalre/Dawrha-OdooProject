@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequences -->
+        <record id="seq_recycle_shipment" model="ir.sequence">
+            <field name="name">Recycle Shipment</field>
+            <field name="code">recycle.shipment</field>
+            <field name="prefix">SHP</field>
+            <field name="padding">5</field>
+        </record>
+        <record id="seq_recycle_order" model="ir.sequence">
+            <field name="name">Recycle Order</field>
+            <field name="code">recycle.order</field>
+            <field name="prefix">ORD</field>
+            <field name="padding">5</field>
+        </record>
+        <record id="seq_recycle_invoice" model="ir.sequence">
+            <field name="name">Recycle Invoice</field>
+            <field name="code">recycle.invoice</field>
+            <field name="prefix">INV</field>
+            <field name="padding">5</field>
+        </record>
+        <record id="seq_recycle_stock_damage_report" model="ir.sequence">
+            <field name="name">Recycle Stock Damage Report</field>
+            <field name="code">recycle.stock.damage.report</field>
+            <field name="prefix">DMG</field>
+            <field name="padding">5</field>
+        </record>
+        <!-- Config parameters (set_param avoids unique-key conflicts) -->
+        <function model="ir.config_parameter" name="set_param"
+                  eval="('recycle.allowed_email_domain', 'gmail.com')"/>
+        <!-- FAIL CLOSED. This seeded a literal 'change-me-secret-api-key',
+             which is committed to this repository — so every route in
+             api.py (including POST /api/recycle/orders, which CREATES
+             orders, and GET /api/recycle/orders/<id>, which is enumerable
+             by its sequential integer id) was guarded by a password anyone
+             holding the source already knows. It was still the live value.
+
+             An empty value is not a weaker default, it is the safe one:
+             `_check_api_key` starts with `bool(expected)`, so no key set
+             means every request is refused rather than every request
+             allowed. The admin sets a real one in
+             Settings -> Technical -> Parameters. -->
+        <function model="ir.config_parameter" name="set_param"
+                  eval="('recycle.api_key', '')"/>
+        <!-- Allow free signup on the website (update existing parameter) -->
+        <function model="ir.config_parameter" name="set_param"
+                  eval="('auth_signup.invitation_scope', 'b2c')"/>
+
+        <!-- Website menus -->
+        <record id="menu_website_jobs" model="website.menu">
+            <field name="name">Jobs</field>
+            <field name="url">/jobs</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="menu_website_my_applications" model="website.menu">
+            <field name="name">My Applications</field>
+            <field name="url">/my/applications</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence">41</field>
+        </record>
+    </data>
+
+    <!-- Seed (re-applied on every install/update): the default admin account
+         carries the "Administration" role inside the Recycling Warehouse app,
+         so it never shows up as role-less / "Applicant" (spec §20).
+         A <function> call is used because base.user_admin is flagged
+         noupdate=1, which makes a plain <record> override a silent no-op. -->
+    <function model="res.users" name="write"
+              eval="[[ref('base.user_admin')],
+                     {'recycle_role': 'admin',
+                      'group_ids': [(4, ref('recycle_warehouse.group_recycle_admin'))]}]"/>
+</odoo>

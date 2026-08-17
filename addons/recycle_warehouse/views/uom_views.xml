@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend the standard Units of Measure form with the tolerance flag
+         used by the sorting reconciliation logic (see recycle.shipment). -->
+    <record id="view_uom_form_recycle_tolerance" model="ir.ui.view">
+        <field name="name">uom.uom.form.recycle.tolerance</field>
+        <field name="model">uom.uom</field>
+        <field name="inherit_id" ref="uom.product_uom_form_view"/>
+        <field name="arch" type="xml">
+            <group name="uom_details" position="inside">
+                <field name="allows_tolerance"/>
+            </group>
+        </field>
+    </record>
+
+    <record id="action_recycle_uom" model="ir.actions.act_window">
+        <field name="name">Units of Measure</field>
+        <field name="res_model">uom.uom</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <!-- menuitem for this action lives in menus.xml — it needs
+         menu_recycle_config as a parent, which is only defined there, and
+         menus.xml loads after this file (see __manifest__.py data order). -->
+</odoo>

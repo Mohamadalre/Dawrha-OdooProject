@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= Shipment processing report ================= -->
+    <record id="action_report_shipment" model="ir.actions.report">
+        <field name="name">Shipment Processing Report</field>
+        <field name="model">recycle.shipment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_shipment_doc</field>
+        <field name="report_file">recycle_warehouse.report_shipment_doc</field>
+        <field name="binding_model_id" ref="model_recycle_shipment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Shipment - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_shipment_doc">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #5b21b6;">
+                            <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="width:28px;height:28px;object-fit:contain;"/>
+                            <strong style="color:#5b21b6;font-size:14px;">Dawrha — Shipment Processing Report</strong>
+                        </div>
+                        <h2>Shipment Report — <span t-esc="doc.name"/></h2>
+                        <table class="table table-sm mt-3">
+                            <tr><td><strong>Warehouse</strong></td><td><span t-esc="doc.warehouse_id.name"/></td>
+                                <td><strong>Status</strong></td><td><span t-esc="{'pending': 'Pending', 'receiving': 'In Reception', 'escalated': 'Transferred to Manager', 'accepted': 'Accepted', 'sorting': 'Sorting', 'sorted': 'Sorted'}.get(doc.state, doc.state)"/></td></tr>
+                            <tr><td><strong>Driver</strong></td><td><span t-esc="doc.driver_name"/></td>
+                                <td><strong>Priority</strong></td><td><span t-esc="doc.priority"/></td></tr>
+                            <tr><td><strong>Declared Weight</strong></td><td><span t-esc="'%.2f kg' % doc.expected_weight"/></td>
+                                <td><strong>Actual Weight</strong></td><td><span t-esc="'%.2f kg' % doc.actual_weight"/></td></tr>
+                            <tr><td><strong>Weight Difference</strong></td><td><span t-esc="'%.2f' % doc.weight_diff_pct"/> %</td>
+                                <td><strong>Received By</strong></td><td><span t-esc="doc.receiver_user_id.name or '-'"/></td></tr>
+                            <tr><td><strong>Sorted By</strong></td><td><span t-esc="doc.sorter_user_id.name or '-'"/></td>
+                                <td><strong>Good / Damaged</strong></td>
+                                <td><span t-esc="'%.2f / %.2f' % (doc.total_good_qty, doc.total_damaged_qty)"/></td></tr>
+                        </table>
+
+                        <h4 class="mt-4">Sorted Products</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th>Condition</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td><span t-esc="line.product_id.name"/></td>
+                                    <td><span t-esc="line.product_id.category_id.name"/></td>
+                                    <td class="text-end"><span t-esc="'%.2f' % line.quantity"/></td>
+                                    <td><span t-esc="'Good' if line.condition == 'good' else 'Damaged'"/></td>
+                                </tr>
+                                <tr t-if="not doc.line_ids">
+                                    <td colspan="4">No sorted lines yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-if="doc.note"><strong>Notes:</strong> <span t-esc="doc.note"/></p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ================= All shipments summary report ================= -->
+    <record id="action_report_shipments_summary" model="ir.actions.report">
+        <field name="name">Shipments Summary Report</field>
+        <field name="model">recycle.shipment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_shipments_summary</field>
+        <field name="report_file">recycle_warehouse.report_shipments_summary</field>
+        <field name="binding_model_id" ref="model_recycle_shipment"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Shipments Summary'</field>
+    </record>
+
+    <template id="report_shipments_summary">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #5b21b6;">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="width:28px;height:28px;object-fit:contain;"/>
+                        <strong style="color:#5b21b6;font-size:14px;">Dawrha — Shipments Summary Report</strong>
+                    </div>
+                    <h2>Shipments Summary Report</h2>
+                    <p>
+                        <strong>Total shipments:</strong> <span t-esc="len(docs)"/>
+                    </p>
+                    <table class="table table-sm mt-3" style="font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>Shipment</th>
+                                <th>Warehouse</th>
+                                <th>Driver</th>
+                                <th class="text-end">Priority</th>
+                                <th class="text-end">Declared (kg)</th>
+                                <th class="text-end">Actual (kg)</th>
+                                <th class="text-end">Diff %</th>
+                                <th>Received By</th>
+                                <th>Sorted By</th>
+                                <th class="text-end">Good</th>
+                                <th class="text-end">Damaged</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="docs" t-as="doc">
+                                <td><span t-esc="doc.name"/></td>
+                                <td><span t-esc="doc.warehouse_id.name"/></td>
+                                <td><span t-esc="doc.driver_name"/></td>
+                                <td class="text-end"><span t-esc="doc.priority"/></td>
+                                <td class="text-end"><span t-esc="'%.2f' % doc.expected_weight"/></td>
+                                <td class="text-end"><span t-esc="'%.2f' % doc.actual_weight"/></td>
+                                <td class="text-end"><span t-esc="'%.2f' % doc.weight_diff_pct"/></td>
+                                <td><span t-esc="doc.receiver_user_id.name or '-'"/></td>
+                                <td><span t-esc="doc.sorter_user_id.name or '-'"/></td>
+                                <td class="text-end"><span t-esc="'%.2f' % doc.total_good_qty"/></td>
+                                <td class="text-end"><span t-esc="'%.2f' % doc.total_damaged_qty"/></td>
+                                <td><span t-esc="{'pending': 'Pending', 'receiving': 'In Reception', 'escalated': 'Transferred to Manager', 'accepted': 'Accepted', 'sorting': 'Sorting', 'sorted': 'Sorted'}.get(doc.state, doc.state)"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="mt-3">
+                        <strong>Total declared:</strong>
+                        <span t-esc="'%.2f kg' % sum(docs.mapped('expected_weight'))"/> —
+                        <strong>Total actual:</strong>
+                        <span t-esc="'%.2f kg' % sum(docs.mapped('actual_weight'))"/> —
+                        <strong>Total good:</strong>
+                        <span t-esc="'%.2f' % sum(docs.mapped('total_good_qty'))"/> —
+                        <strong>Total damaged:</strong>
+                        <span t-esc="'%.2f' % sum(docs.mapped('total_damaged_qty'))"/>
+                    </p>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ================= Stock report (products, quantities, categories) ================= -->
+    <record id="action_report_stock" model="ir.actions.report">
+        <field name="name">Stock Report</field>
+        <field name="model">recycle.stock</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_stock_doc</field>
+        <field name="report_file">recycle_warehouse.report_stock_doc</field>
+        <field name="binding_model_id" ref="model_recycle_stock"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Stock Report'</field>
+    </record>
+
+    <template id="report_stock_doc">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #5b21b6;">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="width:28px;height:28px;object-fit:contain;"/>
+                        <strong style="color:#5b21b6;font-size:14px;">Dawrha — Stock Report</strong>
+                    </div>
+                    <h2>Stock Report</h2>
+                    <table class="table table-sm mt-3">
+                        <thead>
+                            <tr>
+                                <th>Warehouse</th>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th class="text-end">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="docs" t-as="line">
+                                <td><span t-esc="line.warehouse_id.name"/></td>
+                                <td><span t-esc="line.product_id.name"/></td>
+                                <td><span t-esc="line.product_id.category_id.name"/></td>
+                                <td class="text-end"><span t-esc="'%.2f' % line.quantity"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>
+                        <strong>Total quantity:</strong>
+                        <span t-esc="'%.2f' % sum(docs.mapped('quantity'))"/>
+                    </p>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

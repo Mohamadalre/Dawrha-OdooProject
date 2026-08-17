@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══════════════════════════════════════════════════════════════════
+         UTF-8 for the PDF engine — and it has to be in the BODY.
+
+         Every Arabic name printed as mojibake: "محمد" came out as "Ù…Ø­Ù…Ø¯",
+         and the em-dashes as "â€"". That is UTF-8 bytes read as Latin-1. It is
+         not a font problem — the text reaching the renderer was correct, and
+         the renderer decoded it wrongly.
+
+         `web.report_layout` declares `<meta charset="utf-8">` in its `<head>`,
+         and that declaration never reaches wkhtmltopdf. Odoo splits the
+         rendered document into header / body / footer FRAGMENTS
+         (`lxml.html.tostring(node)`), writes each to its own temp .html file,
+         and hands wkhtmltopdf the files. The body fragment has no `<html>` and
+         no `<head>` — so it arrives with no charset at all and Qt WebKit falls
+         back to Latin-1.
+
+         Which is why declaring it in the head was tried first and changed
+         nothing: the head is discarded before the bytes are ever written.
+         Inside the body it survives the split, and it is the `http-equiv`
+         spelling because Qt 4 WebKit predates the HTML5 short form.
+         ══════════════════════════════════════════════════════════════════ -->
+    <template id="driver_file_charset">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Driver file — personal details plus every truck they have held.
+
+         Printed from the driver's own record rather than from a separate
+         reporting screen, because that is where the question is asked: someone
+         is looking at THIS driver and wants their file. A standalone report
+         screen makes them search for a person they already had open.
+
+         The history is the point of the document. "Which van did he have in
+         March?" is the first question after an accident, a fuel discrepancy or
+         a complaint, and a file without dates cannot answer it.
+
+         The layout is OURS, not `web.external_layout`. That one prints the
+         res.company header, whose logo is unset on this database — so every
+         file came out unbranded, and a document that names a person and carries
+         no mark of who issued it is not evidence of anything. The addon ships
+         its own logo; the header below uses it directly, so the file is branded
+         whatever the company record happens to hold.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Shared look. Kept in one template so the two driver kinds cannot drift
+         into two different-looking documents about the same thing. -->
+    <template id="driver_file_styles">
+        <style>
+            /*
+               ARABIC.
+               ─────────────────────────────────────────────────────────────
+               The printed file came out garbled for any Arabic name: letters
+               disconnected, in the wrong order, or as empty boxes. The cause
+               was the font, not the text. wkhtmltopdf had only DejaVu Sans to
+               fall back on, and DejaVu carries Arabic code points WITHOUT the
+               shaping tables that join them — so every letter rendered in its
+               isolated form and the word fell apart.
+
+               Noto Naskh Arabic has the joining rules, and it SHIPS WITH THIS
+               ADDON rather than being installed in the container: a font
+               apt-installed into a running container disappears the next time
+               that container is rebuilt, and the report would silently go back
+               to garbling names with nothing in the logs to explain it.
+
+               Declared for the whole document, ahead of the Latin fallbacks,
+               because a driver file mixes both — an Arabic name beside a Latin
+               plate number — and the browser picks per character.
+            */
+            @font-face {
+                font-family: 'Noto Naskh Arabic';
+                src: url('/recycle_warehouse/static/src/fonts/NotoNaskhArabic-Regular.ttf') format('truetype');
+                font-weight: normal;
+                font-style: normal;
+            }
+            @font-face {
+                font-family: 'Noto Naskh Arabic';
+                src: url('/recycle_warehouse/static/src/fonts/NotoNaskhArabic-Bold.ttf') format('truetype');
+                font-weight: bold;
+                font-style: normal;
+            }
+
+            .rw-doc {
+                font-family: 'Noto Naskh Arabic', 'DejaVu Sans', sans-serif;
+                color: #1f2937;
+            }
+
+            /*
+               Direction is per VALUE, not per document.
+               ─────────────────────────────────────────────────────────────
+               The labels are English and the values may be either — an Arabic
+               driver name, a Latin plate. `unicode-bidi: plaintext` lets each
+               run choose its own direction from its first strong character, so
+               "محمد" reads right-to-left and "DEL-DEMO" reads left-to-right in
+               the same table, without the document having to guess.
+
+               Forcing the whole page RTL was the tempting fix and the wrong
+               one: it would reverse the plate numbers and the dates, which are
+               the fields the file is read FOR.
+            */
+            .rw-title, .rw-facts .rw-val, .rw-history td, .rw-brand-name {
+                unicode-bidi: plaintext;
+            }
+            /* A right-to-left value in a left-aligned cell still starts at the
+               left edge unless the cell follows it. */
+            .rw-facts .rw-val, .rw-history td { text-align: start; }
+            .rw-head {
+                display: flex; align-items: center; gap: 14px;
+                border-bottom: 3px solid #16a34a; padding-bottom: 10px;
+                margin-bottom: 18px;
+            }
+            .rw-logo { height: 46px; width: auto; }
+            .rw-brand { flex: 1; }
+            .rw-brand-name { font-size: 19px; font-weight: 700; color: #14532d; line-height: 1.1; }
+            .rw-brand-sub { font-size: 10px; letter-spacing: .10em; text-transform: uppercase; color: #6b7280; }
+            .rw-issued { text-align: right; font-size: 9px; color: #6b7280; line-height: 1.5; }
+
+            .rw-title { font-size: 22px; font-weight: 700; margin: 0; }
+            .rw-subtitle { font-size: 11px; color: #6b7280; margin: 2px 0 0; }
+
+            .rw-pill {
+                display: inline-block; padding: 2px 10px; border-radius: 999px;
+                font-size: 10px; font-weight: 700; letter-spacing: .04em;
+            }
+            .rw-pill-ok    { background: #dcfce7; color: #166534; }
+            .rw-pill-warn  { background: #fef3c7; color: #92400e; }
+            .rw-pill-stop  { background: #fee2e2; color: #991b1b; }
+
+            .rw-section {
+                font-size: 12px; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .07em; color: #14532d;
+                border-bottom: 1px solid #d1d5db; padding-bottom: 4px;
+                margin: 22px 0 10px;
+            }
+
+            /* Two label/value pairs per row: a phone number and a national id
+               read as facts about a person, not as a data table. */
+            .rw-facts { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .rw-facts td { padding: 6px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+            .rw-facts .rw-lbl {
+                width: 18%; color: #6b7280; font-size: 9px;
+                text-transform: uppercase; letter-spacing: .05em; font-weight: 700;
+            }
+            .rw-facts .rw-val { width: 32%; font-weight: 600; }
+
+            .rw-history { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+            .rw-history th {
+                background: #14532d; color: #ffffff; text-align: left;
+                padding: 7px 8px; font-size: 9px; text-transform: uppercase;
+                letter-spacing: .05em;
+            }
+            .rw-history td { padding: 7px 8px; border-bottom: 1px solid #e5e7eb; }
+            .rw-history tr:nth-child(even) td { background: #f9fafb; }
+            .rw-num { text-align: right; }
+
+            .rw-empty {
+                font-size: 11px; color: #6b7280; font-style: italic;
+                background: #f9fafb; border: 1px dashed #d1d5db;
+                border-radius: 6px; padding: 14px; text-align: center;
+            }
+            .rw-foot {
+                margin-top: 26px; border-top: 1px solid #e5e7eb; padding-top: 8px;
+                font-size: 8.5px; color: #9ca3af; text-align: center;
+            }
+        </style>
+    </template>
+
+    <!-- The masthead. -->
+    <template id="driver_file_header">
+        <div class="rw-head">
+            <!-- ABSOLUTE url. wkhtmltopdf runs as its own process with no page
+                 to resolve a relative path against, and a root-relative src
+                 fails as `ProtocolUnknownError` — which shows up as a broken
+                 image box, not as an error anyone sees. `web_base_url` is put
+                 in scope by web.report_layout for exactly this. -->
+            <img class="rw-logo"
+                 t-att-src="(web_base_url or '') + '/recycle_warehouse/static/src/img/Logo.png'"
+                 alt="Dawrha"/>
+            <div class="rw-brand">
+                <div class="rw-brand-name">Dawrha</div>
+                <div class="rw-brand-sub">Recycling Management System</div>
+            </div>
+            <div class="rw-issued">
+                <div>Issued <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/></div>
+                <div>By <span t-esc="user.name"/></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="driver_file_footer">
+        <div class="rw-foot">
+            Dawrha — Driver File · Lists every vehicle the named driver has held,
+            with the dates.
+        </div>
+    </template>
+
+    <!-- Truck-holding history, identical for both driver kinds because the
+         question it answers is identical. -->
+    <template id="driver_file_history">
+        <div class="rw-section">Trucks Held</div>
+        <table class="rw-history" t-if="history">
+            <thead>
+                <tr>
+                    <th>Truck</th>
+                    <th>Plate</th>
+                    <th>Warehouse</th>
+                    <th>Held From</th>
+                    <th>Held Until</th>
+                    <th class="rw-num">Days</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="history" t-as="h">
+                    <td><span t-field="h.truck_id.name"/></td>
+                    <td><strong t-field="h.truck_plate"/></td>
+                    <td><span t-field="h.warehouse_id.name"/></td>
+                    <td><span t-field="h.assigned_at"/></td>
+                    <td>
+                        <!-- An open period is the CURRENT holder. Saying so
+                             beats an empty cell, which reads as missing data
+                             rather than as a fact. -->
+                        <t t-if="h.released_at"><span t-field="h.released_at"/></t>
+                        <t t-else=""><span class="rw-pill rw-pill-ok">STILL HELD</span></t>
+                    </td>
+                    <td class="rw-num"><span t-field="h.duration_days"/></td>
+                </tr>
+            </tbody>
+        </table>
+        <div t-else="" class="rw-empty">
+            This driver has not been given a truck yet.
+        </div>
+    </template>
+
+    <!-- ═══════════════════ DELIVERY DRIVER ═══════════════════ -->
+    <template id="report_delivery_driver_file_doc">
+        <div class="page rw-doc">
+            <t t-call="recycle_warehouse.driver_file_charset"/>
+            <t t-call="recycle_warehouse.driver_file_styles"/>
+            <t t-call="recycle_warehouse.driver_file_header"/>
+
+            <h1 class="rw-title"><span t-field="doc.name"/></h1>
+            <p class="rw-subtitle">
+                Delivery Driver ·
+                <t t-if="doc.is_blocked">
+                    <span class="rw-pill rw-pill-stop">BLOCKED</span>
+                </t>
+                <t t-elif="not doc.is_active">
+                    <span class="rw-pill rw-pill-warn">INACTIVE</span>
+                </t>
+                <t t-else="">
+                    <span class="rw-pill rw-pill-ok">ACTIVE</span>
+                </t>
+            </p>
+
+            <div class="rw-section">Driver Information</div>
+            <table class="rw-facts">
+                <tr>
+                    <td class="rw-lbl">National ID</td>
+                    <td class="rw-val"><span t-field="doc.national_id"/></td>
+                    <td class="rw-lbl">Phone</td>
+                    <td class="rw-val"><span t-field="doc.phone"/></td>
+                </tr>
+                <tr>
+                    <td class="rw-lbl">Email</td>
+                    <td class="rw-val"><span t-field="doc.email"/></td>
+                    <td class="rw-lbl">Date of Birth</td>
+                    <td class="rw-val"><span t-field="doc.birth_date"/></td>
+                </tr>
+                <tr>
+                    <td class="rw-lbl">Warehouse</td>
+                    <td class="rw-val"><span t-field="doc.warehouse_id.name"/></td>
+                    <td class="rw-lbl">Address</td>
+                    <td class="rw-val"><span t-field="doc.address"/></td>
+                </tr>
+                <tr>
+                    <td class="rw-lbl">Licence No.</td>
+                    <td class="rw-val"><span t-field="doc.license_number"/></td>
+                    <td class="rw-lbl">Licence Expiry</td>
+                    <td class="rw-val"><span t-field="doc.license_expiry"/></td>
+                </tr>
+                <tr>
+                    <td class="rw-lbl">Current Truck</td>
+                    <td class="rw-val" colspan="3">
+                        <t t-if="doc.truck_id">
+                            <span t-field="doc.truck_id.name"/>
+                            — <strong t-field="doc.truck_id.plate_number"/>
+                        </t>
+                        <t t-else="">No truck assigned</t>
+                    </td>
+                </tr>
+                <tr t-if="doc.is_blocked">
+                    <td class="rw-lbl">Block Reason</td>
+                    <td class="rw-val" colspan="3"><span t-field="doc.blocked_reason"/></td>
+                </tr>
+            </table>
+
+            <t t-set="history" t-value="doc.truck_history_ids"/>
+            <t t-call="recycle_warehouse.driver_file_history"/>
+            <t t-call="recycle_warehouse.driver_file_footer"/>
+        </div>
+    </template>
+
+    <template id="report_delivery_driver_file">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="recycle_warehouse.report_delivery_driver_file_doc"/>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_delivery_driver_file" model="ir.actions.report">
+        <field name="name">Driver File (PDF)</field>
+        <field name="model">recycle.delivery.driver</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_delivery_driver_file</field>
+        <field name="report_file">recycle_warehouse.report_delivery_driver_file</field>
+        <field name="binding_model_id" ref="model_recycle_delivery_driver"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Driver-%s' % (object.name or '')</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         The same file for a COLLECTION driver.
+
+         A separate template because the two records genuinely differ: a
+         collector has a shift and a backend account, a delivery driver has a
+         licence on file. One shared template would print an empty half for
+         whichever kind it was not written for. The header, the history table
+         and the styling ARE shared, so the two stay visibly one document.
+         ══════════════════════════════════════════════════════════════════ -->
+    <template id="report_collection_driver_file_doc">
+        <div class="page rw-doc">
+            <t t-call="recycle_warehouse.driver_file_charset"/>
+            <t t-call="recycle_warehouse.driver_file_styles"/>
+            <t t-call="recycle_warehouse.driver_file_header"/>
+
+            <h1 class="rw-title"><span t-field="doc.name"/></h1>
+            <p class="rw-subtitle">
+                Collection Driver ·
+                <t t-if="doc.is_blocked">
+                    <span class="rw-pill rw-pill-stop">BLOCKED</span>
+                </t>
+                <t t-else="">
+                    <span class="rw-pill rw-pill-ok">ACCEPTED</span>
+                </t>
+            </p>
+
+            <div class="rw-section">Driver Information</div>
+            <table class="rw-facts">
+                <tr>
+                    <td class="rw-lbl">National ID</td>
+                    <td class="rw-val"><span t-field="doc.national_id"/></td>
+                    <td class="rw-lbl">Phone</td>
+                    <td class="rw-val"><span t-field="doc.phone"/></td>
+                </tr>
+                <tr>
+                    <td class="rw-lbl">Email</td>
+                    <td class="rw-val"><span t-field="doc.email"/></td>
+                    <td class="rw-lbl">Warehouse</td>
+                    <td class="rw-val"><span t-field="doc.warehouse_id.name"/></td>
+                </tr>
+                <tr>
+                    <td class="rw-lbl">Shift</td>
+                    <td class="rw-val"><span t-field="doc.shift_id.name"/></td>
+                    <td class="rw-lbl">State</td>
+                    <td class="rw-val"><span t-field="doc.state"/></td>
+                </tr>
+                <tr t-if="doc.is_blocked">
+                    <td class="rw-lbl">Block Reason</td>
+                    <td class="rw-val" colspan="3"><span t-field="doc.blocked_reason"/></td>
+                </tr>
+            </table>
+
+            <t t-set="history" t-value="doc.truck_history_ids"/>
+            <t t-call="recycle_warehouse.driver_file_history"/>
+            <t t-call="recycle_warehouse.driver_file_footer"/>
+        </div>
+    </template>
+
+    <template id="report_collection_driver_file">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="recycle_warehouse.report_collection_driver_file_doc"/>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_collection_driver_file" model="ir.actions.report">
+        <field name="name">Driver File (PDF)</field>
+        <field name="model">recycle.driver.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_collection_driver_file</field>
+        <field name="report_file">recycle_warehouse.report_collection_driver_file</field>
+        <field name="binding_model_id" ref="model_recycle_driver_request"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Driver-%s' % (object.name or '')</field>
+    </record>
+</odoo>

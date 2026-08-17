@@ -1,0 +1,1681 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+
+    <!-- ============================================================ -->
+    <!--  Sorting Employee Dashboard                                  -->
+    <!-- ============================================================ -->
+    <!-- ============================================================ -->
+    <!--  Sorting Employee Dashboard — admin/manager style            -->
+    <!-- ============================================================ -->
+    <t t-name="recycle_warehouse.RecycleSortingDashboard">
+    <div t-att-class="'tw-dashboard' + (state.view === 'home' ? ' o_ra_has_unified_nav' : '') + (state.darkMode ? ' dark' : '') + (state.lang === 'ar' ? ' tw-rtl' : '')">
+
+        <!-- In-page message/confirm dialog (replaces window.confirm). -->
+        <t t-call="recycle_warehouse.MessageDialog"/>
+
+        <!-- ── Top toolbar: menu toggle (every other view) ── -->
+        <div class="o_ra_top_toolbar" t-if="state.view !== 'home'">
+            <button class="o_ra_persistent_sidebar_toggle" t-att-title="tr('Menu')" t-on-click="toggleSidebar">&#9776;</button>
+        </div>
+
+        <!-- ── Unified Top Navbar (main dashboard view only) ── -->
+        <div class="o_ra_unified_nav" t-if="state.view === 'home'">
+            <button class="o_ra_unified_hamburger" t-att-title="tr('Menu')" t-on-click="toggleSidebar">&#9776;</button>
+            <div class="o_ra_unified_spacer"></div>
+            <button class="o_ra_unified_btn" t-att-title="tr('Toggle Theme')" t-on-click="toggleDarkMode">
+                <t t-if="state.darkMode">&#x2600;&#xFE0F;</t>
+                <t t-else="">&#x1F319;</t>
+            </button>
+            <button class="o_ra_unified_btn" t-att-title="tr('Notifications')" t-on-click="showNotifications">
+                &#x1F514;
+                <span t-if="state.notifUnreadCount" class="o_ra_notif_badge" t-esc="state.notifUnreadCount > 9 ? '9+' : state.notifUnreadCount"/>
+            </button>
+            <button class="o_ra_unified_btn" t-att-title="tr('Settings')" t-on-click="showSettings">&#x2699;&#xFE0F;</button>
+            <div class="o_ra_unified_profile" t-on-click="showProfile">
+                <div class="o_ra_unified_avatar">
+                    <t t-esc="(userName || 'E')[0].toUpperCase()"/>
+                </div>
+                <span class="o_ra_unified_name" t-esc="userName"/>
+            </div>
+        </div>
+
+        <!-- ── Change Password Modal ── -->
+        <t t-if="state.showChangePasswordModal">
+            <div class="o_ra_modal_backdrop" t-on-click="closeChangePasswordModal"></div>
+            <div class="o_ra_modal">
+                <div class="o_ra_modal_header">
+                    <div class="o_ra_modal_icon">&#x1F511;</div>
+                    <div class="o_ra_modal_title" t-esc="tr('Change Password')"></div>
+                    <button class="o_ra_modal_close" t-on-click="closeChangePasswordModal">&#x2715;</button>
+                </div>
+                <div class="o_ra_modal_body">
+                    <t t-if="state.changePasswordStep === 1">
+                        <div class="o_ra_form_group">
+                            <label class="o_ra_form_label" t-esc="tr('Current Password')"></label>
+                            <input type="password" class="o_ra_form_input" t-model="state.changePasswordCurrent" t-att-placeholder="tr('Enter current password')"/>
+                        </div>
+                        <div class="o_ra_form_group">
+                            <label class="o_ra_form_label" t-esc="tr('New Password')"></label>
+                            <input type="password" class="o_ra_form_input" t-model="state.changePasswordNew" t-att-placeholder="tr('Enter new password')"/>
+                        </div>
+                        <div class="o_ra_form_group">
+                            <label class="o_ra_form_label" t-esc="tr('Confirm New Password')"></label>
+                            <input type="password" class="o_ra_form_input" t-model="state.changePasswordConfirm" t-att-placeholder="tr('Confirm new password')"/>
+                        </div>
+                        <t t-if="state.changePasswordError">
+                            <div class="o_ra_modal_error" t-esc="state.changePasswordError"></div>
+                        </t>
+                    </t>
+                    <t t-if="state.changePasswordStep === 2">
+                        <div class="o_ra_modal_success_box">
+                            <div class="o_ra_modal_success_icon">&#x2705;</div>
+                            <div class="o_ra_modal_success_title" t-esc="tr('Password Changed Successfully!')"></div>
+                            <div class="o_ra_modal_success_desc" t-esc="tr('Your password has been updated. You can now login with your new password.')"></div>
+                        </div>
+                    </t>
+                </div>
+                <div class="o_ra_modal_footer">
+                    <t t-if="state.changePasswordStep === 1">
+                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="closeChangePasswordModal" t-esc="tr('Cancel')"></button>
+                        <button class="o_ra_action_btn" t-att-disabled="state.changePasswordLoading" t-on-click="submitChangePassword">
+                            <t t-if="state.changePasswordLoading" t-esc="tr('Saving…')"></t>
+                            <t t-else="" t-esc="tr('Change Password')"></t>
+                        </button>
+                    </t>
+                    <t t-if="state.changePasswordStep === 2">
+                        <button class="o_ra_action_btn" t-on-click="closeChangePasswordModal" t-esc="tr('Done')"></button>
+                    </t>
+                </div>
+            </div>
+        </t>
+
+        <div t-if="state.sidebarOpen" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-30" t-on-click="toggleSidebar"/>
+
+        <!-- ═══ SIDEBAR ═══ -->
+        <aside t-att-class="'tw-sidebar' + (state.sidebarOpen ? ' tw-sidebar-open' : '')">
+            <div class="tw-sidebar-brand" t-on-click="() => this.navClick('goHome')">
+                <img src="/recycle_warehouse/static/src/img/icon_logo.png" class="tw-sidebar-brand-icon" alt="Dawrha"/>
+                <span class="tw-sidebar-brand-text" t-esc="tr('Recycling Management System')"/>
+            </div>
+
+            <!-- Warehouse card (above Home) — identical to the Input/Reception
+                 dashboard's o_ra_sb_warehouse: a big clickable card showing the
+                 sorter's own warehouse info, not a plain nav link. -->
+            <t t-if="state.myWarehouse">
+                <div class="o_ra_sb_warehouse o_ra_sb_warehouse_click" t-on-click="() => this.navClick('openMyWarehouse')" tabindex="0" role="button">
+                    <div class="o_ra_sb_wh_icon">&#x1F3ED;</div>
+                    <div class="o_ra_sb_wh_info">
+                        <div class="o_ra_sb_wh_label"><t t-esc="tr('My Warehouse')"/></div>
+                        <div class="o_ra_sb_wh_name"><t t-esc="state.myWarehouse.name"/></div>
+                        <div class="o_ra_sb_wh_row">
+                            <span class="o_ra_sb_wh_badge"><t t-esc="state.myWarehouse.code || '—'"/></span>
+                            <span class="o_ra_sb_wh_badge"><t t-esc="govLabel(state.myWarehouse.governorate)"/></span>
+                        </div>
+                        <div class="o_ra_sb_wh_row">
+                            <span class="o_ra_sb_wh_mgr">&#x1F464; <t t-esc="m2oName(state.myWarehouse.manager_user_id) || '—'"/></span>
+                        </div>
+                    </div>
+                    <span class="o_ra_sb_wh_chev">&#8250;</span>
+                </div>
+            </t>
+
+            <nav class="flex-1 py-2">
+                <t t-foreach="navSections" t-as="sec" t-key="sec.key">
+                    <div class="tw-sidebar-section" t-if="sec.single">
+                        <button t-att-class="'tw-sidebar-btn' + (state.activeNavGo === sec.go ? ' tw-sidebar-btn-active' : '')"
+                                t-on-click="() => this.navClick(sec.go)">
+                            <span class="tw-sidebar-btn-icon" t-esc="sec.icon"/>
+                            <span t-esc="tr(sec.label)"/>
+                        </button>
+                    </div>
+                    <div class="tw-sidebar-section" t-else="">
+                        <button t-att-class="'tw-sidebar-btn' + (state.navSection === sec.key ? ' tw-sidebar-btn-active' : '')"
+                                t-on-click="() => this.toggleNavSection(sec.key)">
+                            <span class="tw-sidebar-btn-icon" t-esc="sec.icon"/>
+                            <span class="flex-1" t-esc="tr(sec.label)"/>
+                            <span class="text-[10px] text-slate-500" t-esc="state.navSection === sec.key ? '▾' : '▸'"/>
+                        </button>
+                        <div t-if="state.navSection === sec.key" class="tw-sidebar-items mt-1">
+                            <t t-foreach="sec.items" t-as="it" t-key="it.label">
+                                <button t-att-class="'tw-sidebar-item' + (state.activeNavGo === it.go ? ' tw-sidebar-item-active' : '')"
+                                        t-on-click="() => this.navClick(it.go)">
+                                    <span class="tw-sidebar-item-dot"/>
+                                    <t t-esc="tr(it.label)"/>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </nav>
+        </aside>
+
+        <!-- ═══ MAIN CONTENT ═══ -->
+        <div class="tw-main">
+            <div class="tw-main-scroll">
+
+        <!-- ═══ HOME — identical to Input/Reception's my_warehouse hero+KPI layout
+             (no warehouse info here — see "My Warehouse") ═══ -->
+        <t t-if="state.view === 'home'">
+
+            <!-- ── Immersive Hero (o_ra_hero — same as Reception) ── -->
+            <div class="o_ra_hero">
+                <div class="o_ra_hero_inner">
+                    <div class="o_ra_hero_brand">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" class="o_ra_hero_logo" alt="Dawrha" style="height:40px;"/>
+                        <span class="o_ra_hero_sys">
+                            <t t-esc="tr('WMS')"/> &#x2022; <t t-esc="tr('Sorting Employee')"/>
+                        </span>
+                    </div>
+                    <h1 class="o_ra_hero_title" t-esc="tr('Home')"/>
+                    <p class="o_ra_hero_sub">
+                        <t t-esc="tr('Welcome back')"/>, <strong t-esc="userName"/>
+                    </p>
+                </div>
+            </div>
+
+            <div class="o_recycle_view_container">
+                <!-- Responsive Period Filter -->
+                <div class="o_ra_period_row">
+                    <span class="o_ra_filter_lbl" t-esc="tr('Period')"/>
+                    <div class="o_ra_period_btns">
+                        <button t-att-class="'o_ra_period_btn' + (state.filterPeriod === 'today' ? ' o_ra_period_btn_active' : '')"
+                                t-on-click="() => this.setFilterPeriod('today')" t-esc="tr('Today')"/>
+                        <button t-att-class="'o_ra_period_btn' + (state.filterPeriod === 'week' ? ' o_ra_period_btn_active' : '')"
+                                t-on-click="() => this.setFilterPeriod('week')" t-esc="tr('Week')"/>
+                        <button t-att-class="'o_ra_period_btn' + (state.filterPeriod === 'month' ? ' o_ra_period_btn_active' : '')"
+                                t-on-click="() => this.setFilterPeriod('month')" t-esc="tr('Month')"/>
+                    </div>
+                </div>
+
+                <t t-if="state.loading">
+                    <div class="o_ra_loading"><t t-esc="tr('Loading…')"/></div>
+                </t>
+                <t t-else="">
+                    <!-- KPI Cards -->
+                    <div class="o_ra_kpi_grid" style="margin-bottom:1rem;">
+                        <div class="o_ra_kpi o_ra_kpi_card_green">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_green"><span>&#x2705;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Shipments I Sorted')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.sorted"></div>
+                                <div class="o_ra_kpi_sub">
+                                    <t t-if="state.filterPeriod === 'today'" t-esc="tr('today')"/>
+                                    <t t-elif="state.filterPeriod === 'week'" t-esc="tr('this week')"/>
+                                    <t t-else="" t-esc="tr('this month')"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_blue">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_blue"><span>&#x1F4E6;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Waiting for Sorting')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.toSort"></div>
+                                <div class="o_ra_kpi_sub" t-esc="tr('In your warehouse')"></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_purple">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_purple"><span>&#x23F1;&#xFE0F;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Work Hours')"></div>
+                                <div class="o_ra_kpi_val"><t t-esc="state.stats.hours"/> <span class="o_ra_kpi_unit" t-esc="tr('hrs')"/></div>
+                                <div class="o_ra_kpi_sub">
+                                    <t t-if="state.filterPeriod === 'today'" t-esc="tr('today')"/>
+                                    <t t-elif="state.filterPeriod === 'week'" t-esc="tr('this week')"/>
+                                    <t t-else="" t-esc="tr('this month')"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_amber">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_amber"><span>&#x26A0;&#xFE0F;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Damaged Requests')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.damaged"></div>
+                                <div class="o_ra_kpi_sub" t-esc="tr('Total')"></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_kpi o_ra_kpi_card_green">
+                            <div class="o_ra_kpi_icon o_ra_kpi_icon_green"><span>&#x1F4E8;</span></div>
+                            <div class="o_ra_kpi_body">
+                                <div class="o_ra_kpi_lbl" t-esc="tr('Pending Shipments')"></div>
+                                <div class="o_ra_kpi_val" t-esc="state.stats.pending || 0"></div>
+                                <div class="o_ra_kpi_sub" t-esc="tr('Reserved to you')"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick actions -->
+                    <div class="o_ra_actions_row" style="margin-bottom:1rem;">
+                        <button class="o_ra_action_btn" t-on-click="openSortQueue">&#x1F5C2;&#xFE0F; <t t-esc="tr('Process Sorting')"/></button>
+                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
+                    </div>
+                </t>
+            </div>
+        </t>
+
+        <!-- ═══ MY WAREHOUSE — identical to Input/Reception's my_warehouse_detail ═══ -->
+        <t t-elif="state.view === 'my_warehouse'">
+            <div class="o_ra_page_hero">
+                <div class="o_ra_page_hero_inner">
+                    <div class="o_ra_page_hero_icon">&#x1F3ED;</div>
+                    <h1 class="o_ra_page_hero_title"><t t-esc="tr('My Warehouse')"/></h1>
+                    <p class="o_ra_page_hero_sub"><t t-esc="state.myWarehouse ? state.myWarehouse.name : ''"/></p>
+                </div>
+            </div>
+            <div class="o_ra_view_container">
+                <div t-if="state.loading" class="flex items-center justify-center py-16">
+                    <div class="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"/>
+                </div>
+                <t t-elif="state.myWarehouse">
+                    <div class="o_ra_profile_fields" style="max-width:600px;margin:0 auto;">
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F3ED;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Name')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="state.myWarehouse.name"/></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F511;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Code')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="state.myWarehouse.code || '—'"/></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F4CD;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Governorate')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="govLabel(state.myWarehouse.governorate)"/></div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_field">
+                            <div class="o_ra_pf_icon">&#x1F464;</div>
+                            <div class="o_ra_pf_body">
+                                <div class="o_ra_pf_lbl"><t t-esc="tr('Manager')"/></div>
+                                <div class="o_ra_pf_val"><t t-esc="m2oName(state.myWarehouse.manager_user_id) || '—'"/></div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="o_ra_empty_state">
+                        <div class="o_ra_empty_icon">&#x1F3ED;</div>
+                        <div class="o_ra_empty_title"><t t-esc="tr('No warehouse assigned')"/></div>
+                    </div>
+                </t>
+                <div class="o_ra_bottom_nav" style="max-width:600px;margin:1.5rem auto 0;">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ MY SHIFT ═══ -->
+        <t t-elif="state.view === 'shift'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F552;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('My Shift')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Your assigned work shift and schedule.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+                <t t-elif="state.myShift">
+                    <!-- Shift Hero Card -->
+                    <div class="o_ra_my_shift_hero">
+                        <div class="o_ra_my_shift_hero_top">
+                            <div class="o_ra_my_shift_icon">&#x1F552;</div>
+                            <div class="o_ra_my_shift_name" t-esc="state.myShift.name"/>
+                            <div class="o_ra_my_shift_time_range">
+                                <span t-esc="floatToTime(state.myShift.start_time)"/>
+                                <span class="o_ra_my_shift_arrow">&#8594;</span>
+                                <span t-esc="floatToTime(state.myShift.end_time)"/>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Shift Details Grid -->
+                    <div class="o_ra_my_shift_grid">
+                        <div class="o_ra_my_shift_item">
+                            <div class="o_ra_my_shift_item_icon">&#x1F550;</div>
+                            <div class="o_ra_my_shift_item_body">
+                                <div class="o_ra_my_shift_item_lbl" t-esc="tr('Start Time')"/>
+                                <div class="o_ra_my_shift_item_val" t-esc="floatToTime(state.myShift.start_time)"/>
+                            </div>
+                        </div>
+                        <div class="o_ra_my_shift_item">
+                            <div class="o_ra_my_shift_item_icon">&#x1F551;</div>
+                            <div class="o_ra_my_shift_item_body">
+                                <div class="o_ra_my_shift_item_lbl" t-esc="tr('End Time')"/>
+                                <div class="o_ra_my_shift_item_val" t-esc="floatToTime(state.myShift.end_time)"/>
+                            </div>
+                        </div>
+                        <div class="o_ra_my_shift_item">
+                            <div class="o_ra_my_shift_item_icon">&#x23F0;</div>
+                            <div class="o_ra_my_shift_item_body">
+                                <div class="o_ra_my_shift_item_lbl" t-esc="tr('Tolerance')"/>
+                                <div class="o_ra_my_shift_item_val" t-esc="(state.myShift.tolerance || 0) + ' min'"/>
+                            </div>
+                        </div>
+                        <div class="o_ra_my_shift_item">
+                            <div class="o_ra_my_shift_item_icon">&#x1F465;</div>
+                            <div class="o_ra_my_shift_item_body">
+                                <div class="o_ra_my_shift_item_lbl" t-esc="tr('Employee Count')"/>
+                                <div class="o_ra_my_shift_item_val" t-esc="(state.myShift.employee_count || 0) + ' ' + tr('employees')"/>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Assigned Employees -->
+                    <t t-if="state.myShift.assigned_employee_names">
+                        <div class="o_ra_my_shift_section">
+                            <div class="o_ra_my_shift_section_title" t-esc="tr('Assigned Employees')"/>
+                            <div class="o_ra_my_shift_employees" t-esc="state.myShift.assigned_employee_names"/>
+                        </div>
+                    </t>
+                </t>
+                <t t-else="">
+                    <div class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F552;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No shift assigned')"/>
+                        <div class="o_ra_empty_state_desc" t-esc="tr('You are not currently assigned to a work shift.')"/>
+                    </div>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ WAREHOUSE STOCK (my warehouse only, via record rules) ═══ -->
+        <t t-elif="state.view === 'stock_list'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F4CA;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Stock')"/>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Current inventory of your warehouse by product.')"/>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div class="o_ra_filter_row" style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+                    <select class="o_ra_form_select o_ra_filter_select" t-model="state.stockZoneFilter">
+                        <option value="" t-esc="tr('All Storage Zones')"/>
+                        <t t-foreach="state.stockZones" t-as="z" t-key="z.id">
+                            <option t-att-value="z.id" t-esc="z.name"/>
+                        </t>
+                    </select>
+                </div>
+                <!-- Condition filter -->
+                <div class="o_ra_filter_responsive" style="margin-bottom:1rem;">
+                    <label class="o_ra_filter_lbl" t-esc="tr('Grade')"/>
+                    <!-- Built from the grades this warehouse is actually
+                         holding. A fixed row of four English words offered
+                         filters that matched nothing for any material the admin
+                         graded differently, and hid the grades that did exist. -->
+                    <div class="o_ra_filter_pills">
+                        <button t-att-class="'o_ra_filter_pill' + (state.stockCondFilter === null ? ' o_ra_filter_pill_active' : '')"
+                                t-on-click="() => this.setStockCondFilter(null)" t-esc="tr('All')"/>
+                        <t t-foreach="stockGradeOptions" t-as="g" t-key="g.value">
+                            <button t-att-class="'o_ra_filter_pill' + (state.stockCondFilter === g.value ? ' o_ra_filter_pill_active' : '')"
+                                    t-on-click="() => this.setStockCondFilter(g.value)" t-esc="g.label"/>
+                        </t>
+                    </div>
+                </div>
+                <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading stock…')"/>
+                <t t-else="">
+                    <!-- Desktop Table View -->
+                    <div class="o_recycle_tbl_wrap">
+                        <table class="o_recycle_data_table">
+                            <thead><tr>
+                                <th t-esc="tr('Product')"/><th t-esc="tr('Storage Zone')"/><th t-esc="tr('Condition')"/><th t-esc="tr('Quantity')"/>
+                            </tr></thead>
+                            <tbody>
+                                <tr t-foreach="filteredStock" t-as="st" t-key="st.id">
+                                    <td style="font-weight:600;" t-esc="m2oName(st.product_id)"/>
+                                    <td t-esc="m2oName(st.zone_id)"/>
+                                    <td><span t-att-class="'o_ra_badge ' + (st.condition ? 'o_ra_badge_info' : 'o_ra_badge_muted')" t-esc="st.condition_label or tr('No grade')"/></td>
+                                    <td t-esc="st.quantity"/>
+                                </tr>
+                                <tr t-if="!filteredStock.length">
+                                    <td colspan="4" class="o_recycle_tbl_empty" t-esc="tr('No stock found.')"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card View -->
+                    <div class="o_ra_mobile_card_view">
+                        <t t-foreach="filteredStock" t-as="st" t-key="'srt-stk-'+st.id">
+                            <div class="o_ra_mobile_card">
+                                <div class="o_ra_mobile_card_header">
+                                    <span class="o_ra_mobile_card_id" t-esc="m2oName(st.product_id)"/>
+                                    <span t-att-class="'o_ra_badge ' + (st.condition ? 'o_ra_badge_info' : 'o_ra_badge_muted')" t-esc="st.condition_label or tr('No grade')"/>
+                                </div>
+                                <div class="o_ra_mobile_card_body">
+                                    <div class="o_ra_mobile_card_field">
+                                        <span class="o_ra_mobile_card_lbl" t-esc="tr('Storage Zone')"/>
+                                        <span class="o_ra_mobile_card_val" t-esc="m2oName(st.zone_id)"/>
+                                    </div>
+                                    <div class="o_ra_mobile_card_field">
+                                        <span class="o_ra_mobile_card_lbl" t-esc="tr('Quantity')"/>
+                                        <span class="o_ra_mobile_card_val" t-esc="st.quantity"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-if="!filteredStock.length" class="o_ra_empty_state">
+                            <div class="o_ra_empty_state_icon">&#x1F4CA;</div>
+                            <div class="o_ra_empty_state_title" t-esc="tr('No stock found.')"/>
+                        </div>
+                    </div>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ REPORT DAMAGED (PREVIOUSLY STORED) MATERIAL ═══ -->
+        <t t-elif="state.view === 'damage_report_form'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x26A0;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Report Damaged Material')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Report material already in storage that was damaged and must be written off. The warehouse manager must approve before any stock is deducted.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.damageReportSuccess" class="o_ra_form_success" t-esc="state.damageReportSuccess"/>
+                <div t-if="state.damageReportError" class="o_ra_form_error" t-esc="state.damageReportError"/>
+                <div class="o_recycle_detail_sheet">
+                    <div class="o_ra_form_group">
+                        <label class="o_ra_form_label"><t t-esc="tr('Material')"/> <span class="o_ra_required">*</span></label>
+                        <select class="o_ra_form_input" t-model="state.damageReportForm.product_id"
+                                t-on-change="onDamageProductChange">
+                            <option value="" t-esc="tr('Select a material…')"/>
+                            <t t-foreach="state.products" t-as="p" t-key="p.id">
+                                <option t-att-value="p.id" t-esc="p.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <!-- The grade picker exists ONLY for a material that has
+                         grades, and it lists that material's own — set by the
+                         admin in the backend. A material with none needs no
+                         grade, and showing an empty or borrowed list would ask
+                         the sorter for something that does not exist. -->
+                    <div class="o_ra_form_group" t-if="damageMaterialIsGraded">
+                        <label class="o_ra_form_label"><t t-esc="tr('Damaged Grade')"/> <span class="o_ra_required">*</span></label>
+                        <select class="o_ra_form_input" t-model="state.damageReportForm.condition"
+                                t-on-change="onDamageStockKeyChange">
+                            <option value="" t-esc="tr('Select the grade…')"/>
+                            <t t-foreach="state.damageConditions" t-as="c" t-key="c.value">
+                                <option t-att-value="c.value" t-esc="c.label"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="o_ra_form_group"
+                         t-if="state.damageReportForm.product_id and !damageMaterialIsGraded and !state.damageConditionsLoading">
+                        <div class="text-muted" t-esc="tr('This material has no grades — enter the damaged quantity.')"/>
+                    </div>
+                    <div class="o_ra_form_group">
+                        <label class="o_ra_form_label"><t t-esc="tr('Quantity')"/> <span class="o_ra_required">*</span></label>
+                        <input type="number" class="o_ra_form_input" min="0" step="0.1" t-model="state.damageReportForm.quantity"/>
+                        <!-- AVAILABLE, not the raw quantity: stock already
+                             promised to an order is not the sorter's to write
+                             off. -->
+                        <div class="text-muted" t-if="state.damageAvailable !== null">
+                            <t t-esc="damageMaterialIsGraded ? tr('Free in this grade') : tr('Free now')"/>: <t t-esc="state.damageAvailable"/>
+                        </div>
+                    </div>
+                    <div class="o_ra_form_group">
+                        <label class="o_ra_form_label"><t t-esc="tr('Reason')"/> <span class="o_ra_required">*</span></label>
+                        <textarea class="o_ra_form_input" rows="3" t-model="state.damageReportForm.reason"/>
+                    </div>
+                    <div class="o_ra_form_group">
+                        <label class="o_ra_form_label" t-esc="tr('Photo (optional)')"/>
+                        <input type="file" accept="image/*" class="o_ra_form_input" t-on-change="onDamageImageChange"/>
+                    </div>
+                </div>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                    <button class="o_ra_action_btn" t-att-disabled="state.damageReportSaving" t-on-click="submitDamageReport">
+                        <t t-if="state.damageReportSaving" t-esc="tr('Saving…')"/>
+                        <t t-else="">&#x1F4E8; <t t-esc="tr('Submit Report')"/></t>
+                    </button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ MY SHIPMENTS — identical to Input/Reception's shipments_list ═══ -->
+        <t t-elif="state.view === 'shipments_list'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F5C2;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('My Shipments')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Shipments you are sorting or have already sorted, with damage requests.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <!-- Responsive Filter Bar -->
+                <div class="o_ra_filter_responsive">
+                    <input type="text" class="o_ra_form_input o_ra_search_input"
+                           t-att-placeholder="tr('Search shipment or driver…')" t-model="state.shipmentSearch"/>
+                    <div class="o_ra_filter_pills">
+                        <button t-att-class="'o_ra_filter_pill' + (state.shipmentStateFilter === 'sorting' ? ' o_ra_filter_pill_active' : '')"
+                                t-on-click="() => this.state.shipmentStateFilter = 'sorting'" t-esc="tr('In Sorting')"/>
+                        <button t-att-class="'o_ra_filter_pill' + (state.shipmentStateFilter === 'sorted' ? ' o_ra_filter_pill_active' : '')"
+                                t-on-click="() => this.state.shipmentStateFilter = 'sorted'" t-esc="tr('Stored (Sorted)')"/>
+                    </div>
+                </div>
+                <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+
+                <!-- Desktop Table View -->
+                <div t-else="" class="o_recycle_tbl_wrap">
+                    <table class="o_recycle_data_table">
+                        <thead><tr>
+                            <th t-esc="tr('ID')"/><th t-esc="tr('Shipment')"/><th t-esc="tr('Actual Weight (kg)')"/><th t-esc="tr('Sorted At')"/><th t-esc="tr('Damaged (%)')"/><th t-esc="tr('Damage Approval')"/><th t-esc="tr('Status')"/><th style="width:60px"/>
+                        </tr></thead>
+                        <tbody>
+                            <tr t-foreach="filteredShipments" t-as="s" t-key="s.id" class="o_ra_tbl_row" t-on-click="() => this.openShipmentDetail(s)">
+                                <td t-esc="s.id"/>
+                                <td style="font-weight:600;" t-esc="s.name || ('SH-' + s.id)"/>
+                                <td t-esc="s.actual_weight || '—'"/>
+                                <td t-esc="formatDate(s.sorted_at)"/>
+                                <td t-esc="(s.damage_pct || 0).toFixed(1) + '%'"/>
+                                <td t-esc="stateLabel(s.damage_request_state,'damage')"/>
+                                <td><span t-att-class="'o_ra_badge ' + stateBadgeClass(s.state)" t-esc="stateLabel(s.state,'shipment')"/></td>
+                                <td>
+                                    <span t-if="s.state === 'sorting'" class="o_ra_mini_btn" t-on-click.stop="() => this._openProc(s.id)">&#x25B6;&#xFE0F;</span>
+                                </td>
+                            </tr>
+                            <tr t-if="!filteredShipments.length">
+                                <td colspan="8" class="o_recycle_tbl_empty" t-esc="tr('No shipments yet.')"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div t-if="!state.loading" class="o_ra_mobile_card_view">
+                    <t t-foreach="filteredShipments" t-as="s" t-key="'card-'+s.id">
+                        <div class="o_ra_mobile_card" t-on-click="() => this.openShipmentDetail(s)">
+                            <div class="o_ra_mobile_card_header">
+                                <span class="o_ra_mobile_card_id" t-esc="s.name || ('SH-' + s.id)"/>
+                                <span t-att-class="'o_ra_badge ' + stateBadgeClass(s.state)" t-esc="stateLabel(s.state,'shipment')"/>
+                            </div>
+                            <div class="o_ra_mobile_card_body">
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Actual Weight (kg)')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="s.actual_weight || '—'"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Sorted At')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="formatDate(s.sorted_at)"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Damaged (%)')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="(s.damage_pct || 0).toFixed(1) + '%'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_mobile_card_footer">
+                                <span class="o_ra_mobile_card_lbl" t-esc="'#' + s.id"/>
+                                <div class="o_ra_mobile_card_actions">
+                                    <span t-if="s.state === 'sorting'" class="o_ra_mobile_card_btn o_ra_mobile_card_btn_primary"
+                                          t-on-click.stop="() => this._openProc(s.id)">&#x25B6;&#xFE0F; <t t-esc="tr('Continue')"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    <div t-if="!filteredShipments.length" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F5C2;&#xFE0F;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No shipments yet.')"/>
+                    </div>
+                </div>
+
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                    <button class="o_ra_action_btn" t-on-click="openSortQueue">&#x1F5C2;&#xFE0F; <t t-esc="tr('Process Sorting')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ SHIPMENT DETAIL — identical to Input/Reception's shipment_detail ═══ -->
+        <t t-elif="state.view === 'shipment_detail'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F4E6;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="state.selectedShipment.name || ('SH-' + state.selectedShipment.id)"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Shipment details and contents.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div class="o_recycle_detail_sheet">
+                    <div class="o_recycle_detail_grid">
+                        <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Actual Weight (kg)')"/><span class="o_recycle_detail_val" t-esc="state.selectedShipment.actual_weight || '—'"/></div>
+                        <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Sorting Zone')"/><span class="o_recycle_detail_val" t-esc="m2oName(state.selectedShipment.sorting_zone_id) || '—'"/></div>
+                        <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Storage Zone')"/><span class="o_recycle_detail_val" t-esc="m2oName(state.selectedShipment.storage_zone_id) || '—'"/></div>
+                        <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Damaged (%)')"/><span class="o_recycle_detail_val" t-esc="(state.selectedShipment.damage_pct || 0).toFixed(1) + '%'"/></div>
+                        <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Status')"/><span t-att-class="'o_ra_badge ' + stateBadgeClass(state.selectedShipment.state)" t-esc="stateLabel(state.selectedShipment.state,'shipment')"/></div>
+                    </div>
+                </div>
+                <div style="margin-top:1rem;">
+                    <h3 class="o_ra_section_title" t-esc="tr('Contents')"/>
+                    <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+                    <t t-else="">
+                        <!-- Desktop Table View -->
+                        <div class="o_recycle_tbl_wrap">
+                            <table class="o_recycle_data_table">
+                                <thead><tr><th t-esc="tr('Product')"/><th t-esc="tr('Quantity')"/><th t-esc="tr('Condition')"/></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="state.selectedShipmentLines" t-as="l" t-key="l.id">
+                                        <td style="font-weight:600;" t-esc="m2oName(l.product_id)"/>
+                                        <td t-esc="l.quantity"/>
+                                        <td>
+                                            <span t-if="l.is_damaged" class="o_ra_badge o_ra_badge_danger" t-esc="tr('Damaged')"/>
+                                            <span t-elif="l.condition" class="o_ra_badge o_ra_badge_info" t-esc="l.condition_label or l.condition"/>
+                                            <span t-else="" class="o_ra_badge o_ra_badge_muted" t-esc="tr('No grade')"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="!state.selectedShipmentLines.length">
+                                        <td colspan="3" class="o_recycle_tbl_empty" t-esc="tr('No lines.')"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Card View -->
+                        <div class="o_ra_mobile_card_view">
+                            <t t-foreach="state.selectedShipmentLines" t-as="l" t-key="'card-'+l.id">
+                                <div class="o_ra_mobile_card">
+                                    <div class="o_ra_mobile_card_header">
+                                        <span class="o_ra_mobile_card_id" t-esc="m2oName(l.product_id)"/>
+                                        <span t-if="l.is_damaged" class="o_ra_badge o_ra_badge_danger" t-esc="tr('Damaged')"/>
+                                        <span t-elif="l.condition" class="o_ra_badge o_ra_badge_info" t-esc="l.condition_label or l.condition"/>
+                                        <span t-else="" class="o_ra_badge o_ra_badge_muted" t-esc="tr('No grade')"/>
+                                    </div>
+                                    <div class="o_ra_mobile_card_body">
+                                        <div class="o_ra_mobile_card_field">
+                                            <span class="o_ra_mobile_card_lbl" t-esc="tr('Quantity')"/>
+                                            <span class="o_ra_mobile_card_val" t-esc="l.quantity"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                            <div t-if="!state.selectedShipmentLines.length" class="o_ra_empty_state">
+                                <div class="o_ra_empty_state_icon">&#x1F4E6;</div>
+                                <div class="o_ra_empty_state_title" t-esc="tr('No lines.')"/>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ SORTING QUEUE (priority ordered) — o_ra_* theme ═══ -->
+        <t t-elif="state.view === 'sort_queue'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F5C2;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Process Sorting')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Accepted shipments waiting to be sorted, in priority order.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+                <t t-else="">
+                    <!-- Desktop Table View -->
+                    <div class="o_recycle_tbl_wrap">
+                        <table class="o_recycle_data_table">
+                            <thead><tr>
+                                <th t-esc="tr('Priority')"/><th t-esc="tr('Shipment')"/><th t-esc="tr('Driver')"/><th t-esc="tr('Weight (kg)')"/><th t-esc="tr('Received')"/><th/>
+                            </tr></thead>
+                            <tbody>
+                                <tr t-foreach="state.queue" t-as="s" t-key="s.id">
+                                    <td>
+                                        <span t-att-class="'o_ra_badge' + (s.priority === topPriority ? ' o_ra_badge_success' : '')" t-esc="s.priority"/>
+                                        <span t-att-class="'o_ra_badge ' + priorityClass(s.priority)" t-esc="priorityLabel(s.priority)"/>
+                                    </td>
+                                    <td style="font-weight:600;" t-esc="s.name || ('SH-' + s.id)"/>
+                                    <td t-esc="s.driver_name || '—'"/>
+                                    <td t-esc="s.actual_weight || s.expected_weight || '—'"/>
+                                    <td t-esc="formatDate(s.received_at)"/>
+                                    <td>
+                                        <span t-if="s.priority === topPriority" class="o_ra_mini_btn"
+                                              t-on-click="() => this.startSorting(s)">&#x25B6;&#xFE0F; <t t-esc="tr('Start Sorting')"/></span>
+                                        <span t-else="" class="o_ra_badge" t-esc="tr('Waiting for higher priority')"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="!state.queue.length">
+                                    <td colspan="6" class="o_recycle_tbl_empty" t-esc="tr('No shipments waiting for sorting.')"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card View -->
+                    <div class="o_ra_mobile_card_view">
+                        <t t-foreach="state.queue" t-as="s" t-key="'card-'+s.id">
+                            <div class="o_ra_mobile_card">
+                                <div class="o_ra_mobile_card_header">
+                                    <span class="o_ra_mobile_card_id" t-esc="s.name || ('SH-' + s.id)"/>
+                                    <span t-att-class="'o_ra_badge ' + priorityClass(s.priority)" t-esc="priorityLabel(s.priority)"/>
+                                </div>
+                                <div class="o_ra_mobile_card_body">
+                                    <div class="o_ra_mobile_card_field">
+                                        <span class="o_ra_mobile_card_lbl" t-esc="tr('Driver')"/>
+                                        <span class="o_ra_mobile_card_val" t-esc="s.driver_name || '—'"/>
+                                    </div>
+                                    <div class="o_ra_mobile_card_field">
+                                        <span class="o_ra_mobile_card_lbl" t-esc="tr('Weight (kg)')"/>
+                                        <span class="o_ra_mobile_card_val" t-esc="s.actual_weight || s.expected_weight || '—'"/>
+                                    </div>
+                                    <div class="o_ra_mobile_card_field">
+                                        <span class="o_ra_mobile_card_lbl" t-esc="tr('Received')"/>
+                                        <span class="o_ra_mobile_card_val" t-esc="formatDate(s.received_at)"/>
+                                    </div>
+                                </div>
+                                <div class="o_ra_mobile_card_footer">
+                                    <span/>
+                                    <div class="o_ra_mobile_card_actions">
+                                        <span t-if="s.priority === topPriority" class="o_ra_mobile_card_btn o_ra_mobile_card_btn_primary"
+                                              t-on-click="() => this.startSorting(s)">&#x25B6;&#xFE0F; <t t-esc="tr('Start Sorting')"/></span>
+                                        <span t-else="" class="o_ra_badge" t-esc="tr('Waiting for higher priority')"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-if="!state.queue.length" class="o_ra_empty_state">
+                            <div class="o_ra_empty_state_icon">&#x1F5C2;&#xFE0F;</div>
+                            <div class="o_ra_empty_state_title" t-esc="tr('No shipments waiting for sorting.')"/>
+                        </div>
+                    </div>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ SORT PROCESS — o_ra_* theme ═══ -->
+        <t t-elif="state.view === 'sort_process'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x2699;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Sort Shipment')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Assign a sorting zone, log materials, then move to storage.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <t t-if="state.procSuccess">
+                    <div class="o_ra_success_page">
+                        <div class="o_ra_success_card" style="text-align:center;">
+                            <div class="o_ra_empty_state_icon">&#x2705;</div>
+                            <h2 class="o_ra_section_title" t-esc="tr('Shipment moved to storage!')"/>
+                            <p class="o_recycle_detail_lbl">
+                                <strong t-esc="state.procSuccess.name"/>&#160;—&#160;<t t-esc="tr('Usable quantities were added to the warehouse stock.')"/>
+                            </p>
+                            <div class="o_ra_actions_row" style="justify-content:center;margin-top:1.5rem;">
+                                <button class="o_ra_action_btn" t-on-click="openSortQueue">&#x1F5C2;&#xFE0F; <t t-esc="tr('Process Another')"/></button>
+                                <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="goHome">&#x1F3E0; <t t-esc="tr('Back to Home')"/></button>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <t t-elif="!state.proc">
+                    <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+                    <div t-else="" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F4E6;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No shipment selected')"/>
+                    </div>
+                    <div class="o_ra_bottom_nav">
+                        <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                    </div>
+                </t>
+                <t t-else="">
+                    <t t-if="state.procError">
+                        <div class="o_ra_form_error" t-esc="state.procError"/>
+                    </t>
+                    <div class="o_recycle_detail_sheet" style="margin-bottom:1rem;">
+                        <div class="o_recycle_detail_grid">
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Shipment')"/><span class="o_recycle_detail_val" t-esc="state.proc.name"/></div>
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Driver')"/><span class="o_recycle_detail_val" t-esc="state.proc.driver_name || '—'"/></div>
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Sorting Zone')"/><span class="o_recycle_detail_val" t-esc="m2oName(state.proc.sorting_zone_id) || '—'"/></div>
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Damage Approval')"/><span class="o_recycle_detail_val" t-esc="stateLabel(state.proc.damage_request_state,'damage')"/></div>
+                        </div>
+                        <t t-if="state.proc.damage_request_state === 'rejected' &amp;&amp; state.proc.damage_reject_reason">
+                            <div class="o_ra_form_error" style="margin-top:0.75rem;"><strong t-esc="tr('Rejection reason')"/>: <t t-esc="state.proc.damage_reject_reason"/></div>
+                        </t>
+                    </div>
+
+                    <!-- Expected materials declared before arrival — visible through the whole process -->
+                    <t t-if="state.expectedLines.length">
+                        <div class="o_recycle_detail_sheet" style="margin-bottom:1rem;">
+                            <h3 class="o_ra_section_title" t-esc="tr('Expected Materials')"/>
+                            <table class="o_recycle_data_table o_ra_stack_sm">
+                                <thead><tr><th t-esc="tr('Product')"/><th t-esc="tr('Expected Quantity')"/><th t-esc="tr('Unit')"/></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="state.expectedLines" t-as="e" t-key="e.product_id">
+                                        <td style="font-weight:600;" t-att-data-label="tr('Product')" t-esc="e.product_name"/>
+                                        <td t-att-data-label="tr('Expected Quantity')" t-esc="e.qty"/>
+                                        <td t-att-data-label="tr('Unit')" t-esc="e.uom_name"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+
+                    <!-- Step 1: sorting zone -->
+                    <t t-if="!state.proc.sorting_zone_id">
+                        <div class="o_recycle_detail_sheet">
+                            <div class="o_ra_form_group">
+                                <label class="o_ra_form_label"><t t-esc="tr('Sorting Zone')"/> *</label>
+                                <select class="o_ra_form_input" t-model="state.selectedSortingZone">
+                                    <option value="" t-esc="tr('Select a sorting zone…')"/>
+                                    <t t-foreach="state.sortingZones" t-as="z" t-key="z.id">
+                                        <option t-att-value="z.id" t-esc="z.name + (z.warehouse_id ? ' (' + z.warehouse_id[1] + ')' : '')"/>
+                                    </t>
+                                </select>
+                                <span class="o_ra_form_hint" t-esc="tr('The shipment moves from the receiving zone to this sorting zone. After that it can no longer be released.')"/>
+                            </div>
+                        </div>
+                        <div class="o_ra_bottom_nav">
+                            <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="releaseSorting">&#x1F513; <t t-esc="tr('Release Reservation')"/></button>
+                            <button class="o_ra_action_btn" t-att-class="!state.selectedSortingZone ? 'o_ra_btn_muted' : ''"
+                                    t-att-disabled="!state.selectedSortingZone" t-on-click="setSortingZone">
+                                &#x1F4CD; <t t-esc="tr('Move to Sorting Zone')"/>
+                            </button>
+                        </div>
+                    </t>
+
+                    <!-- Step 2: STORAGE — one zone for all, or a zone per material -->
+                    <t t-elif="state.showStorageZonePicker">
+                        <div class="o_recycle_detail_sheet" style="margin-bottom:1rem;">
+                            <h3 class="o_ra_section_title" t-esc="tr('Storage')"/>
+                            <!-- Mode toggle: the two choices stacked, full width,
+                                 clear on a phone. -->
+                            <div class="o_ra_storage_modes">
+                                <button t-att-class="'o_ra_storage_mode_btn' + (state.storageMode === 'whole' ? ' o_ra_storage_mode_active' : '')"
+                                        t-on-click="() => this.setStorageMode('whole')">
+                                    &#x1F4E6; <t t-esc="tr('One zone for the whole shipment')"/>
+                                </button>
+                                <button t-att-class="'o_ra_storage_mode_btn' + (state.storageMode === 'per_material' ? ' o_ra_storage_mode_active' : '')"
+                                        t-on-click="() => this.setStorageMode('per_material')">
+                                    &#x1F5C2;&#xFE0F; <t t-esc="tr('A zone per material')"/>
+                                </button>
+                            </div>
+
+                            <!-- WHOLE: one zone select + the materials that go in it. -->
+                            <t t-if="state.storageMode === 'whole'">
+                                <div class="o_ra_form_group" style="margin-top:1rem;">
+                                    <label class="o_ra_form_label"><t t-esc="tr('Storage Zone')"/> *</label>
+                                    <select class="o_ra_form_input" t-model="state.selectedStorageZone">
+                                        <option value="" t-esc="tr('Select a storage zone…')"/>
+                                        <t t-foreach="state.storageZones" t-as="z" t-key="z.id">
+                                            <option t-att-value="z.id" t-esc="z.name"/>
+                                        </t>
+                                    </select>
+                                    <span class="o_ra_form_hint" t-esc="tr('All sorted materials will be placed in this zone.')"/>
+                                </div>
+                                <div class="o_ra_store_list">
+                                    <t t-foreach="state.lines" t-as="l" t-key="l_index">
+                                        <div class="o_ra_store_row" t-if="!l.is_damaged">
+                                            <div class="o_ra_store_row_main">
+                                                <span class="o_ra_store_row_name" t-esc="l.product_name"/>
+                                                <span class="o_ra_store_row_qty"><t t-esc="l.quantity"/> <t t-esc="l.uom_name"/></span>
+                                            </div>
+                                            <span t-if="l.condition" class="o_ra_badge o_ra_badge_info" t-esc="l.condition_label or l.condition"/>
+                                            <span t-else="" class="o_ra_badge o_ra_badge_muted" t-esc="tr('No grade')"/>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+
+                            <!-- PER MATERIAL: one stacked card per material, each
+                                 with its own zone select — reads cleanly on mobile. -->
+                            <t t-else="">
+                                <div t-if="state.procSaving &amp;&amp; !state.storageLines.length" class="o_ra_loading" t-esc="tr('Loading…')"/>
+                                <div class="o_ra_store_list" t-else="">
+                                    <div class="o_ra_store_assign_card" t-foreach="state.storageLines" t-as="sl" t-key="sl.id">
+                                        <div class="o_ra_store_row_main">
+                                            <span class="o_ra_store_row_name" t-esc="sl.name"/>
+                                            <span class="o_ra_store_row_qty"><t t-esc="sl.quantity"/></span>
+                                        </div>
+                                        <span t-if="sl.condition" class="o_ra_badge o_ra_badge_info" t-esc="sl.condition"/>
+                                        <select class="o_ra_form_input" t-model="sl.zone_id">
+                                            <option value="" t-esc="tr('Select a storage zone…')"/>
+                                            <t t-foreach="state.storageZones" t-as="z" t-key="z.id">
+                                                <option t-att-value="z.id" t-esc="z.name"/>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <div t-if="!state.storageLines.length" class="o_recycle_tbl_empty" t-esc="tr('Nothing to store.')"/>
+                                </div>
+                            </t>
+                        </div>
+                        <div class="o_ra_bottom_nav">
+                            <button class="o_recycle_back_btn" t-on-click="() => this.state.showStorageZonePicker = false">&#8592; <t t-esc="tr('Back')"/></button>
+                            <button t-if="state.storageMode === 'whole'" class="o_ra_action_btn" t-att-disabled="state.procSaving || !state.selectedStorageZone" t-on-click="confirmStorageZoneAndFinish">
+                                <t t-if="state.procSaving" t-esc="tr('Saving…')"/>
+                                <t t-else="">&#x2705; <t t-esc="tr('Finish Storage')"/></t>
+                            </button>
+                            <button t-else="" class="o_ra_action_btn" t-att-disabled="state.procSaving" t-on-click="confirmPerMaterialZonesAndFinish">
+                                <t t-if="state.procSaving" t-esc="tr('Saving…')"/>
+                                <t t-else="">&#x2705; <t t-esc="tr('Finish Storage')"/></t>
+                            </button>
+                        </div>
+                    </t>
+
+                    <!-- Step 3: materials + finish -->
+                    <t t-else="">
+                        <div class="o_recycle_detail_sheet" style="margin-bottom:1rem;">
+                            <h3 class="o_ra_section_title" t-esc="tr('Materials')"/>
+                            <!-- Everything declared has been entered, so there
+                                 is nothing left to add. The button is hidden
+                                 rather than disabled: a control that cannot do
+                                 anything still reads as work outstanding. -->
+                            <div class="o_ra_form_grid" t-if="!state.sortingAllComplete">
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Product')"/>
+                                    <!-- Only what THIS shipment declared, and
+                                         only what is still outstanding. A
+                                         material fully entered disappears; a
+                                         graded one stays until every grade has
+                                         been looked for. -->
+                                    <select class="o_ra_form_input" t-model="state.lineProduct"
+                                            t-on-change="onSortLineProductChange">
+                                        <option value="" t-esc="tr('Select a product…')"/>
+                                        <t t-foreach="sortableProducts" t-as="p" t-key="p.product_id">
+                                            <option t-att-value="p.product_id" t-esc="p.product_name"/>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label">
+                                        <t t-esc="tr('Quantity')"/>
+                                        <!-- The unit is the MATERIAL's, shown
+                                             and never chosen — a sorter who
+                                             could pick one could enter pieces
+                                             against a material sold by weight. -->
+                                        <t t-if="selectedProductUnitName"> (<t t-esc="selectedProductUnitName"/>)</t>
+                                    </label>
+                                    <input type="number" class="o_ra_form_input" min="0" step="0.1" t-model="state.lineQty"/>
+                                    <div t-if="selectedRemainingQty !== null" class="o_ra_form_hint">
+                                        <t t-esc="tr('Remaining for this material:')"/>
+                                        <strong><t t-esc="selectedRemainingQty"/> <t t-esc="selectedProductUnitName"/></strong>
+                                    </div>
+                                </div>
+                                <!-- Did it survive? Asked first, because the
+                                     answer decides whether a grade is even a
+                                     question: damaged goods are written off,
+                                     not sold at some quality. -->
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Damaged?')"/>
+                                    <label class="o_ra_switch">
+                                        <input type="checkbox" t-model="state.lineIsDamaged"/>
+                                        <span t-esc="state.lineIsDamaged ? tr('Damaged — written off') : tr('Usable — goes to storage')"/>
+                                    </label>
+                                </div>
+                                <!-- This material's OWN grades, set by the
+                                     admin. Hidden entirely when the material is
+                                     ungraded or the line is damaged — offering
+                                     a picker with nothing meaningful in it asks
+                                     the sorter a question with no answer. -->
+                                <div class="o_ra_form_group"
+                                     t-if="!state.lineIsDamaged and lineMaterialIsGraded">
+                                    <label class="o_ra_form_label">
+                                        <t t-esc="tr('Grade')"/> <span class="o_ra_required">*</span>
+                                    </label>
+                                    <select class="o_ra_form_input" t-model="state.lineCondition">
+                                        <option value="" t-esc="tr('Select the grade…')"/>
+                                        <t t-foreach="state.lineConditions" t-as="c" t-key="c.value">
+                                            <option t-att-value="c.value" t-esc="c.label"/>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="o_ra_form_group"
+                                     t-if="!state.lineIsDamaged and state.lineProduct and !lineMaterialIsGraded and !state.lineConditionsLoading">
+                                    <div class="text-muted" t-esc="tr('This material has no grades — quantity only.')"/>
+                                </div>
+                                <div class="o_ra_form_group o_ra_form_actions">
+                                    <button class="o_ra_action_btn" t-on-click="addLine">&#x2795; <t t-esc="tr('Add Line')"/></button>
+                                    <!-- Undo sits next to Add, because that is
+                                         where the sorter is looking a second
+                                         after a mistyped quantity. Hunting the
+                                         row's ✖ down a scrolled list on a phone
+                                         is how a typo turns into stock. Only
+                                         unsaved lines are taken back. -->
+                                    <button class="o_ra_action_btn o_ra_action_btn_ghost"
+                                            t-att-disabled="!canUndoLine"
+                                            t-on-click="undoLastLine">&#x21A9;&#xFE0F; <t t-esc="tr('Undo Last Line')"/></button>
+                                </div>
+                            </div>
+                            <table class="o_recycle_data_table o_ra_stack_sm" t-if="state.lines.length" style="margin-top:1rem;">
+                                <thead><tr><th t-esc="tr('Product')"/><th t-esc="tr('Quantity')"/><th t-esc="tr('Condition')"/><th t-esc="tr('Lost')"/><th/></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="state.lines" t-as="l" t-key="l_index">
+                                        <td style="font-weight:600;" t-att-data-label="tr('Product')" t-esc="l.product_name"/>
+                                        <td t-att-data-label="tr('Quantity')">
+                                            <t t-esc="l.quantity"/>
+                                            <span t-if="l.uom_name" class="o_ra_form_hint" style="display:inline;margin-inline-start:4px;" t-esc="l.uom_name"/>
+                                        </td>
+                                        <td t-att-data-label="tr('Condition')">
+                                            <span t-if="l.is_damaged" class="o_ra_badge o_ra_badge_danger" t-esc="tr('Damaged')"/>
+                                            <span t-elif="l.condition" class="o_ra_badge o_ra_badge_info" t-esc="l.condition_label or l.condition"/>
+                                            <span t-else="" class="o_ra_badge o_ra_badge_muted" t-esc="tr('No grade')"/>
+                                        </td>
+                                        <!-- Declared minus entered, shown once
+                                             per MATERIAL — on the line that
+                                             completes it. Before that the
+                                             figure is an artefact of how far
+                                             the sorter has got, and would read
+                                             as loss that has not happened. -->
+                                        <td t-att-data-label="tr('Lost')">
+                                            <t t-set="loss" t-value="lineLoss(l_index)"/>
+                                            <t t-if="loss">
+                                                <span t-att-class="'o_ra_badge ' + (loss.pct > 0 ? 'o_ra_badge_warning' : 'o_ra_badge_success')">
+                                                    <t t-esc="loss.pct"/>% <t t-if="loss.qty">(<t t-esc="loss.qty"/> <t t-esc="loss.uom_name"/>)</t>
+                                                </span>
+                                            </t>
+                                            <span t-else="" class="o_ra_form_hint">—</span>
+                                        </td>
+                                        <td class="o_ra_stack_action">
+                                            <span t-if="!l.saved" class="o_ra_mini_btn" t-on-click="() => this.removeLine(l_index)">&#x2716;&#xFE0F;</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <!-- reconciliation cards: ALWAYS a single horizontal (scrollable) row -->
+                            <div t-if="state.lines.length" class="o_ra_kpi_row_scroll" style="margin-top:1rem;">
+                                <!-- ANY damage waits for the manager, however
+                                     little. The 40% line that used to be drawn
+                                     here made the small write-offs — the common
+                                     ones — invisible: quantity vanished on the
+                                     sorter's word and only large losses were
+                                     ever seen. Who decides a write-off does not
+                                     depend on its size. -->
+                                <div t-att-class="'o_ra_kpi ' + (hasDamageLocal ? 'o_ra_kpi_card_amber' : 'o_ra_kpi_card_green')">
+                                    <div t-att-class="'o_ra_kpi_icon ' + (hasDamageLocal ? 'o_ra_kpi_icon_amber' : 'o_ra_kpi_icon_green')"><span t-esc="hasDamageLocal ? '⛔' : '✅'"/></div>
+                                    <div class="o_ra_kpi_body">
+                                        <div class="o_ra_kpi_lbl" t-esc="tr('Total damaged of the shipment')"/>
+                                        <div class="o_ra_kpi_val" t-esc="damagePctLocal + '%'"/>
+                                        <div class="o_ra_kpi_sub"
+                                             t-esc="hasDamageLocal ? tr('Damaged quantity is sent to the manager for review — you can still store the sound materials now.') : tr('Nothing marked damaged — you can move it to storage directly.')"/>
+                                    </div>
+                                </div>
+                                <t t-foreach="weightCheck.uomGroups || []" t-as="g" t-key="g.uom_name">
+                                    <div t-att-class="'o_ra_kpi ' + (g.entered > g.expected ? 'o_ra_kpi_card_amber' : 'o_ra_kpi_card_green')">
+                                        <div t-att-class="'o_ra_kpi_icon ' + (g.entered > g.expected ? 'o_ra_kpi_icon_amber' : 'o_ra_kpi_icon_green')"><span t-esc="g.entered > g.expected ? '⛔' : '✅'"/></div>
+                                        <div class="o_ra_kpi_body">
+                                            <div class="o_ra_kpi_lbl" t-esc="g.uom_name"/>
+                                            <div class="o_ra_kpi_val" t-esc="(Math.round(g.entered * 100) / 100) + ' / ' + (Math.round(g.expected * 100) / 100) + ' ' + g.uom_name"/>
+                                            <div class="o_ra_kpi_sub" t-esc="g.entered > g.expected ? tr('Exceeds what was declared — not allowed') : ''"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+
+                            <!-- per-product breakdown: shows the tier each material falls in -->
+                            <t t-if="state.lines.length &amp;&amp; (weightCheck.products || []).length">
+                                <table class="o_recycle_data_table o_ra_stack_sm" style="margin-top:1rem;">
+                                    <thead><tr><th t-esc="tr('Product')"/><th t-esc="tr('Entered')"/><th t-esc="tr('Expected')"/><th t-esc="tr('Unit')"/><th t-esc="tr('Shortage')"/></tr></thead>
+                                    <tbody>
+                                        <tr t-foreach="weightCheck.products" t-as="pr" t-key="pr.product_id">
+                                            <td style="font-weight:600;" t-att-data-label="tr('Product')" t-esc="pr.product_name"/>
+                                            <td t-att-data-label="tr('Entered')" t-esc="Math.round(pr.entered * 100) / 100"/>
+                                            <td t-att-data-label="tr('Expected')" t-esc="Math.round(pr.expected * 100) / 100"/>
+                                            <td t-att-data-label="tr('Unit')" t-esc="pr.uom_name"/>
+                                            <td t-att-data-label="tr('Shortage')"><span t-att-class="'o_ra_badge ' + shortfallClass(pr.pct)" t-esc="(pr.pct == null || pr.pct &lt;= 0 ? '—' : (Math.round(pr.pct * 100) / 100) + '%')"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <!-- missing / extra materials vs. what was declared -->
+                            <t t-if="weightCheck.status === 'mismatch'">
+                                <div class="o_ra_form_error" style="margin-top:1rem;">
+                                    <t t-if="(weightCheck.missing || []).length">
+                                        <div><strong t-esc="tr('Missing materials')"/>: <t t-esc="weightCheck.missing.map(m => m.name).join(', ')"/></div>
+                                    </t>
+                                    <t t-if="(weightCheck.extra || []).length">
+                                        <div><strong t-esc="tr('Not declared for this shipment')"/>: <t t-esc="weightCheck.extra.map(m => m.name).join(', ')"/></div>
+                                    </t>
+                                </div>
+                            </t>
+                            <!-- What is about to be stored, totalled PER UNIT.
+                                 Kilograms and pieces do not add up, so one flat
+                                 "total entered" was a number about nothing: 40
+                                 says nothing true about a shipment carrying
+                                 30 kg and 10 items. The damaged part is called
+                                 out separately because it is not going to
+                                 storage at all — it waits for the manager. -->
+                            <div t-if="state.lines.length" class="o_recycle_detail_sheet o_ra_confirm_preview" style="margin-top:1rem;">
+                                <div class="o_ra_form_label" t-esc="tr('Before you confirm')"/>
+                                <div class="o_ra_table_scroll">
+                                    <table class="o_recycle_data_table o_ra_stack_sm">
+                                        <thead>
+                                            <tr>
+                                                <th t-esc="tr('Unit')"/>
+                                                <th t-esc="tr('Lines')"/>
+                                                <th t-esc="tr('To storage')"/>
+                                                <th t-esc="tr('Damaged')"/>
+                                                <th t-esc="tr('Total entered')"/>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="confirmPreview" t-as="u" t-key="u.uom_name">
+                                                <td style="font-weight:600;" t-att-data-label="tr('Unit')" t-esc="u.uom_name or tr('No unit')"/>
+                                                <td t-att-data-label="tr('Lines')" t-esc="u.lines"/>
+                                                <td t-att-data-label="tr('To storage')"><span class="o_ra_badge o_ra_badge_success"><t t-esc="u.storable"/> <t t-esc="u.uom_name"/></span></td>
+                                                <td t-att-data-label="tr('Damaged')">
+                                                    <span t-if="u.damaged" class="o_ra_badge o_ra_badge_danger"><t t-esc="u.damaged"/> <t t-esc="u.uom_name"/></span>
+                                                    <span t-else="" class="o_ra_form_hint">—</span>
+                                                </td>
+                                                <td style="font-weight:600;" t-att-data-label="tr('Total entered')"><t t-esc="u.total"/> <t t-esc="u.uom_name"/></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div t-if="hasDamageLocal" class="o_ra_form_hint"
+                                     t-esc="tr('The damaged quantity stays in the sorting zone until the warehouse manager decides.')"/>
+                            </div>
+                        </div>
+
+                        <!-- Damage: DESCRIBE it and move on. The request is filed
+                             to the manager as part of finishing; the sound
+                             materials are stored now — the sorter never waits for
+                             an approve/reject. -->
+                        <t t-if="hasDamageLocal">
+                            <div class="o_recycle_detail_sheet" style="border:1px solid rgba(217,119,6,0.4);">
+                                <div class="o_ra_form_hint" t-esc="tr('The damaged quantity is sent to the warehouse manager for review. You can store the sound materials now — no need to wait.')"/>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label"><t t-esc="tr('Damage Reason')"/> <span class="o_ra_required">*</span></label>
+                                    <textarea class="o_ra_form_input" rows="2" t-model="state.damageReason"
+                                              t-att-placeholder="tr('Describe what was damaged and why.')"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- weight over actual: hard error, no exceptions — must correct the entered quantities -->
+                        <t t-if="!damageBlocked &amp;&amp; weightCheck.status === 'over'">
+                            <div class="o_recycle_detail_sheet" style="border:1px solid rgba(239,68,68,0.4);">
+                                <div class="o_ra_form_error" t-esc="tr('Enter a lower weight and matching quantity.')"/>
+                            </div>
+                        </t>
+
+                        <!-- shortage between threshold_1 and threshold_2: a reason is mandatory, then proceeds normally -->
+                        <t t-if="!damageBlocked &amp;&amp; weightCheck.status === 'reason_needed'">
+                            <div class="o_recycle_detail_sheet" style="border:1px solid rgba(217,119,6,0.4);">
+                                <div class="o_ra_form_hint" t-esc="tr('Some materials are short of what was declared. Choose a reason before finishing.')"/>
+                                <div class="o_ra_form_group">
+                                    <label class="o_ra_form_label" t-esc="tr('Shortage Reason')"/>
+                                    <select class="o_ra_form_input" t-model="state.shortageReasonCategory">
+                                        <option value="" t-esc="tr('Select a reason…')"/>
+                                        <option value="humidity_evaporation" t-esc="tr('Humidity / Evaporation')"/>
+                                        <option value="excluded_from_sorting" t-esc="tr('Materials excluded from sorting')"/>
+                                        <option value="original_qty_error" t-esc="tr('Error in the original declared quantity')"/>
+                                        <option value="other" t-esc="tr('Other')"/>
+                                    </select>
+                                </div>
+                                <div class="o_ra_form_group" t-if="state.shortageReasonCategory === 'other'">
+                                    <label class="o_ra_form_label" t-esc="tr('Describe the reason')"/>
+                                    <textarea class="o_ra_form_input" rows="2" t-model="state.weightShortageReason"
+                                              t-att-placeholder="tr('There is a difference between the entered quantities and what was declared for this shipment. Please describe the reason.')"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- shortage strictly over threshold_2, or an exact-match unit mismatched:
+                             Finish is disabled, only Transfer to Manager is offered -->
+                        <t t-if="!damageBlocked &amp;&amp; weightCheck.status === 'blocked'">
+                            <div class="o_recycle_detail_sheet" style="border:1px solid rgba(239,68,68,0.4);">
+                                <div class="o_ra_form_error" t-esc="tr('These materials need the warehouse manager\'s approval before this shipment can be stored.')"/>
+                            </div>
+                        </t>
+                        <t t-if="!damageBlocked &amp;&amp; state.proc.sort_escalation_state === 'pending'">
+                            <div class="o_recycle_detail_sheet" style="border:1px solid rgba(239,68,68,0.4);">
+                                <div class="o_ra_form_error" t-esc="tr('This shipment was transferred to the warehouse manager and is awaiting review.')"/>
+                            </div>
+                        </t>
+
+                        <!-- action row: End Storage OR Transfer to Manager, reactive to weightCheck.status.
+                             Damage no longer hides this row — the sorter proceeds to storage with
+                             a description; the button just needs that description first. -->
+                        <t t-if="state.proc.sort_escalation_state !== 'pending'">
+                            <div class="o_recycle_detail_sheet o_ra_actions_row">
+                                <button t-if="weightCheck.status !== 'blocked'" class="o_ra_action_btn"
+                                        t-att-disabled="state.procSaving || !state.lines.length || weightCheck.status === 'over' || weightCheck.status === 'mismatch' || (hasDamageLocal &amp;&amp; !state.damageReason.trim())"
+                                        t-on-click="proceedFromMaterials">
+                                    <t t-if="state.procSaving" t-esc="tr('Saving…')"/>
+                                    <t t-else="">&#x2705; <t t-esc="tr('End Storage')"/></t>
+                                </button>
+                                <button t-if="weightCheck.status === 'blocked'" class="o_ra_action_btn"
+                                        t-att-disabled="state.procSaving" t-on-click="transferBlockedToManager">
+                                    <t t-if="state.procSaving" t-esc="tr('Saving…')"/>
+                                    <t t-else="">&#x1F4E8; <t t-esc="tr('Transfer to Manager')"/></t>
+                                </button>
+                            </div>
+                        </t>
+
+                        <div class="o_ra_bottom_nav">
+                            <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </t>
+
+        <!-- ═══ PROFILE ═══ -->
+        <t t-elif="state.view === 'profile'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F464;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('My Profile')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.profileLoading" class="o_ra_loading" t-esc="tr('Loading…')"></div>
+                <div t-if="!state.profileLoading" class="o_ra_profile_card">
+                    <div class="o_ra_profile_avatar_wrap">
+                        <div class="o_ra_profile_3d_sphere">
+                            <span class="o_ra_sphere_letter" t-esc="(userName || 'E')[0].toUpperCase()"/>
+                        </div>
+                        <div class="o_ra_profile_name" t-esc="state.userProfile?.name"/>
+                        <div class="o_ra_profile_role_badge"><span t-esc="profileRoleLabel"/></div>
+                    </div>
+                    <t t-if="!state.profileEditMode">
+                        <div class="o_ra_profile_fields">
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F4E7;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Email')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.email || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F511;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Login')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.login || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F4F1;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Phone')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.phone || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F4DD;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('National ID')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.national_id || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F3F7;&#xFE0F;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Role')"/>
+                                    <span class="o_ra_profile_field_val">
+                                        <span class="o_ra_badge o_ra_badge_info" t-esc="profileRoleLabel"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F3ED;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Warehouse')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.warehouse || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F4CD;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Address')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.street || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F3E2;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('City')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.city || '—'"/>
+                                </div>
+                            </div>
+                            <div class="o_ra_profile_field">
+                                <span class="o_ra_profile_field_icon">&#x1F30D;</span>
+                                <div class="o_ra_profile_field_body">
+                                    <span class="o_ra_profile_field_lbl" t-esc="tr('Country')"/>
+                                    <span class="o_ra_profile_field_val" t-esc="state.userProfile?.country || '—'"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_actions">
+                            <button class="o_ra_action_btn" t-on-click="startEditProfile">&#x270F;&#xFE0F; <t t-esc="tr('Edit')"/></button>
+                            <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="logout">&#x1F6AA; <t t-esc="tr('Log Out')"/></button>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <div class="o_ra_profile_edit_form">
+                            <t t-if="state.profileSaveError">
+                                <div class="o_ra_emp_form_error" t-esc="state.profileSaveError"/>
+                            </t>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl"><t t-esc="tr('Name')"/> <span class="o_ra_required">*</span></label>
+                                <input class="o_ra_emp_form_input" type="text"
+                                       t-att-value="state.profileForm.name"
+                                       t-on-input="(e) => { this.state.profileForm.name = e.target.value; }"/>
+                            </div>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl" t-esc="tr('Email')"/>
+                                <input class="o_ra_emp_form_input o_ra_input_disabled" type="text"
+                                       t-att-value="state.userProfile?.email" disabled="disabled"/>
+                            </div>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl" t-esc="tr('Phone')"/>
+                                <input class="o_ra_emp_form_input" type="text"
+                                       t-att-value="state.profileForm.phone"
+                                       t-on-input="(e) => { this.state.profileForm.phone = e.target.value; }"/>
+                            </div>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl" t-esc="tr('National ID')"/>
+                                <input class="o_ra_emp_form_input" type="text"
+                                       t-att-value="state.profileForm.national_id"
+                                       t-on-input="(e) => { this.state.profileForm.national_id = e.target.value; }"/>
+                            </div>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl" t-esc="tr('Role')"/>
+                                <input class="o_ra_emp_form_input o_ra_input_disabled" type="text"
+                                       t-att-value="state.userProfile?.role" disabled="disabled"/>
+                            </div>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl" t-esc="tr('Address')"/>
+                                <input class="o_ra_emp_form_input" type="text"
+                                       t-att-value="state.profileForm.street"
+                                       t-on-input="(e) => { this.state.profileForm.street = e.target.value; }"/>
+                            </div>
+                            <div class="o_ra_emp_form_field">
+                                <label class="o_ra_emp_form_lbl" t-esc="tr('City')"/>
+                                <input class="o_ra_emp_form_input" type="text"
+                                       t-att-value="state.profileForm.city"
+                                       t-on-input="(e) => { this.state.profileForm.city = e.target.value; }"/>
+                            </div>
+                        </div>
+                        <div class="o_ra_profile_actions">
+                            <button class="o_ra_action_btn" t-att-disabled="state.profileSaving" t-on-click="saveProfile">
+                                &#x1F4BE; <t t-esc="state.profileSaving ? tr('Saving…') : tr('Save')"/>
+                            </button>
+                            <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="cancelEditProfile" t-esc="tr('Cancel')"/>
+                        </div>
+                    </t>
+                </div>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══ SETTINGS ═══ -->
+        <t t-elif="state.view === 'settings'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x2699;&#xFE0F;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Settings')"></div>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Customize your dashboard appearance and preferences.')"></div>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+
+                <!-- APPEARANCE -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x1F3A8;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('Appearance')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_purple">
+                                    <t t-if="state.darkMode">&#x1F319;</t>
+                                    <t t-else="">&#x2600;&#xFE0F;</t>
+                                </div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Dark Mode')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Toggle between light and dark theme')"></div>
+                                </div>
+                            </div>
+                            <button t-att-class="'o_ra_settings_toggle' + (state.darkMode ? ' o_ra_settings_toggle_on' : '')"
+                                    t-on-click="toggleDarkMode">
+                                <span t-att-class="'o_ra_settings_toggle_knob' + (state.darkMode ? ' o_ra_settings_toggle_knob_on' : '')"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LANGUAGE -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x1F310;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('Language')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_lang_options">
+                            <button t-att-class="'o_ra_settings_lang_btn' + (state.lang === 'en' ? ' o_ra_settings_lang_active' : '')"
+                                    t-on-click="() => this.setLang('en')">
+                                <span class="o_ra_settings_lang_flag">&#x1F1FA;&#x1F1F8;</span>
+                                <span class="o_ra_settings_lang_name">English</span>
+                                <span t-if="state.lang === 'en'" class="o_ra_settings_lang_check">&#x2713;</span>
+                            </button>
+                            <button t-att-class="'o_ra_settings_lang_btn' + (state.lang === 'ar' ? ' o_ra_settings_lang_active' : '')"
+                                    t-on-click="() => this.setLang('ar')">
+                                <span class="o_ra_settings_lang_flag">&#x1F1F8;&#x1F1E6;</span>
+                                <span class="o_ra_settings_lang_name">العربية</span>
+                                <span t-if="state.lang === 'ar'" class="o_ra_settings_lang_check">&#x2713;</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRIVACY & SECURITY -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x1F512;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('Privacy &amp; Security')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_blue">&#x1F511;</div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Change Password')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Update your account password')"></div>
+                                </div>
+                            </div>
+                            <button class="o_ra_settings_action_btn" t-on-click="openChangePassword">&#x27A1;</button>
+                        </div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_green">&#x1F4BB;</div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Active Sessions')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Manage your active sessions')"></div>
+                                </div>
+                            </div>
+                            <button class="o_ra_settings_action_btn" t-on-click="showActiveSessions">&#x27A1;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SYSTEM INFO -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_section_header">
+                        <div class="o_ra_settings_section_icon">&#x2139;&#xFE0F;</div>
+                        <div class="o_ra_settings_section_title" t-esc="tr('System Information')"></div>
+                    </div>
+                    <div class="o_ra_settings_card">
+                        <div class="o_ra_settings_sys_rows">
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('Platform')"></span>
+                                <span class="o_ra_settings_sys_val">Odoo 19.0</span>
+                            </div>
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('Module')"></span>
+                                <span class="o_ra_settings_sys_val">Recycle WMS v1.0</span>
+                            </div>
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('User')"></span>
+                                <span class="o_ra_settings_sys_val" t-esc="userName"></span>
+                            </div>
+                            <div class="o_ra_settings_sys_row">
+                                <span class="o_ra_settings_sys_lbl" t-esc="tr('Role')"></span>
+                                <span class="o_ra_settings_sys_val" t-esc="tr('Sorting Employee')"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGOUT -->
+                <div class="o_ra_settings_section">
+                    <div class="o_ra_settings_card o_ra_settings_logout_card" t-on-click="logout">
+                        <div class="o_ra_settings_card_content">
+                            <div class="o_ra_settings_card_left">
+                                <div class="o_ra_settings_card_icon_wrap o_ra_settings_card_icon_red">&#x1F6AA;</div>
+                                <div class="o_ra_settings_card_info">
+                                    <div class="o_ra_settings_card_title" t-esc="tr('Logout')"></div>
+                                    <div class="o_ra_settings_card_desc" t-esc="tr('Sign out of your account')"></div>
+                                </div>
+                            </div>
+                            <div class="o_ra_settings_logout_arrow">&#x27A1;</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOAST -->
+                <t t-if="state.settingsSaved">
+                    <div class="o_ra_settings_toast">
+                        <span class="o_ra_settings_toast_icon">&#x2713;</span>
+                        <span t-esc="tr('Settings saved successfully!')"></span>
+                    </div>
+                </t>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════ ACTIVE SESSIONS ═══════════════════ -->
+        <t t-elif="state.view === 'active_sessions'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F4BB;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Active Sessions')"/>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('Devices currently signed in to your account.')"/>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.sessionsLoading" class="o_ra_loading" t-esc="tr('Loading…')"/>
+                <div t-else="" class="o_recycle_tbl_wrap">
+                    <table class="o_recycle_data_table">
+                        <thead><tr>
+                            <th t-esc="tr('Device')"/><th t-esc="tr('IP Address')"/><th t-esc="tr('Last Action')"/><th t-esc="tr('Last Activity')"/><th/>
+                        </tr></thead>
+                        <tbody>
+                            <tr t-foreach="state.sessions" t-as="s" t-key="s.id" class="o_ra_tbl_row">
+                                <td style="font-weight:600;">
+                                    <span t-esc="s.device_type === 'mobile' ? '📱' : '💻'"/>
+                                    <t t-esc="(s.device_name || s.platform || '—') + ' · ' + (s.browser || '—')"/>
+                                </td>
+                                <td t-esc="s.ip_address || '—'"/>
+                                <td t-esc="s.last_event === 'logout' ? tr('Logout') : tr('Login')"/>
+                                <td t-esc="formatDate(s.last_activity)"/>
+                                <td>
+                                    <span t-if="s.is_current" class="o_ra_badge o_ra_badge_success" t-esc="tr('This device')"/>
+                                </td>
+                            </tr>
+                            <tr t-if="!state.sessions.length">
+                                <td colspan="5" class="o_recycle_tbl_empty" t-esc="tr('No active sessions found.')"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div t-if="!state.sessionsLoading" class="o_ra_mobile_card_view">
+                    <t t-foreach="state.sessions" t-as="s" t-key="'sess-'+s.id">
+                        <div class="o_ra_mobile_card">
+                            <div class="o_ra_mobile_card_header">
+                                <span class="o_ra_mobile_card_id" t-esc="(s.device_name || s.platform || '—') + ' · ' + (s.browser || '—')"/>
+                                <span t-if="s.is_current" class="o_ra_badge o_ra_badge_success" t-esc="tr('This device')"/>
+                            </div>
+                            <div class="o_ra_mobile_card_body">
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('IP Address')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="s.ip_address || '—'"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Last Action')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="s.last_event === 'logout' ? tr('Logout') : tr('Login')"/>
+                                </div>
+                                <div class="o_ra_mobile_card_field">
+                                    <span class="o_ra_mobile_card_lbl" t-esc="tr('Last Activity')"/>
+                                    <span class="o_ra_mobile_card_val" t-esc="formatDate(s.last_activity)"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    <div t-if="!state.sessions.length" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F4BB;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No active sessions found.')"/>
+                    </div>
+                </div>
+
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════ NOTIFICATIONS ═══════════════════ -->
+        <t t-elif="state.view === 'notifications'">
+            <div class="o_ra_page_hero">
+                <span class="o_ra_page_hero_icon">&#x1F514;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Notifications')"/>
+                    <div class="o_ra_page_hero_desc" t-esc="tr('System alerts and updates for you')"/>
+                </div>
+            </div>
+            <div class="o_recycle_view_container">
+                <div t-if="state.notifLoading" class="o_ra_loading" t-esc="tr('Loading…')"/>
+                <t t-if="!state.notifLoading">
+                    <div t-if="!state.notifications.length" class="o_ra_empty_state">
+                        <div class="o_ra_empty_state_icon">&#x1F515;</div>
+                        <div class="o_ra_empty_state_title" t-esc="tr('No notifications')"/>
+                    </div>
+                    <t t-else="">
+                        <div class="o_ra_settings_card" style="padding:0;overflow:hidden;">
+                            <t t-foreach="state.notifications" t-as="n" t-key="n.id">
+                                <div class="o_ra_notif_row" t-att-class="n.is_read ? '' : 'o_ra_notif_unread'">
+                                    <div class="o_ra_notif_icon" t-esc="n.icon"/>
+                                    <div class="o_ra_notif_body">
+                                        <div class="o_ra_notif_title" t-esc="n.title"/>
+                                        <div class="o_ra_notif_msg" t-esc="n.message"/>
+                                        <div class="o_ra_notif_time" t-esc="formatDate(n.time)"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+                <div class="o_ra_bottom_nav">
+                    <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                </div>
+            </div>
+        </t>
+
+            </div><!-- /.tw-main-scroll -->
+        </div><!-- /.tw-main -->
+    </div>
+    </t>
+
+</templates>

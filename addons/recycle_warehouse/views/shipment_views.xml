@@ -1,0 +1,718 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================ -->
+    <!--  Shipment — List view (admin / manager / sorting / output)       -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_shipment_list" model="ir.ui.view">
+        <field name="name">recycle.shipment.list</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <list string="Shipments"
+                  decoration-info="state in ('receiving', 'sorting')"
+                  decoration-success="state in ('accepted', 'sorted')"
+                  decoration-warning="state == 'escalated'"
+                  decoration-muted="state == 'pending'">
+                <field name="priority" string="Prio" optional="show"/>
+                <field name="name" string="Shipment ID"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="driver_name" string="Driver" optional="show"/>
+                <field name="expected_weight" string="Expected (kg)" optional="show"/>
+                <field name="actual_weight" string="Actual (kg)" optional="show"/>
+                <field name="weight_diff_pct" string="Diff %"
+                       decoration-danger="weight_diff_pct &gt; 5"
+                       decoration-success="weight_diff_pct &gt; 0 and weight_diff_pct &lt;= 5"
+                       optional="show"/>
+                <field name="receiver_user_id" string="Received By" optional="show"/>
+                <field name="received_at" string="Received At" optional="show"/>
+                <field name="sorter_user_id" string="Sorted By" optional="hide"/>
+                <field name="sorted_at" string="Sorted At" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('accepted', 'sorted')"
+                       decoration-info="state in ('receiving', 'sorting')"
+                       decoration-warning="state == 'escalated'"
+                       decoration-muted="state == 'pending'"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  My Processed Shipments — dedicated list for input employees     -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_my_processed_list" model="ir.ui.view">
+        <field name="name">recycle.shipment.my_processed.list</field>
+        <field name="model">recycle.shipment</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <list string="My Processed Shipments"
+                  decoration-success="state in ('accepted', 'sorted')"
+                  decoration-warning="state == 'escalated'"
+                  decoration-info="state == 'sorting'"
+                  decoration-muted="state == 'receiving'">
+                <field name="name" string="Shipment ID"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="driver_name" string="Driver"/>
+                <field name="expected_weight" string="Expected (kg)"/>
+                <field name="actual_weight" string="Actual (kg)"/>
+                <field name="weight_diff_pct" string="Weight Diff %"
+                       decoration-danger="weight_diff_pct &gt; 5"
+                       decoration-success="weight_diff_pct &gt; 0 and weight_diff_pct &lt;= 5"/>
+                <field name="received_at" string="Processed At"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('accepted', 'sorted')"
+                       decoration-warning="state == 'escalated'"
+                       decoration-info="state == 'sorting'"
+                       decoration-muted="state == 'receiving'"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Shipment — Form view                                            -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_shipment_form" model="ir.ui.view">
+        <field name="name">recycle.shipment.form</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <form string="Shipment">
+                <header>
+                    <button name="action_start_receiving" string="Start Reception"
+                            type="object" class="btn-primary"
+                            invisible="state != 'pending'"
+                            groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_accept" string="Accept Shipment"
+                            type="object" class="btn-primary"
+                            invisible="state != 'receiving' or weight_diff_pct &gt; 5"
+                            groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_escalate" string="Transfer to Manager"
+                            type="object" class="btn-warning"
+                            invisible="state != 'receiving' or weight_diff_pct &lt;= 5"
+                            groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_release" string="Release"
+                            type="object"
+                            invisible="state != 'receiving'"
+                            groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_resolve_escalated" string="Approve &amp; Send to Sorting"
+                            type="object" class="btn-primary"
+                            invisible="state != 'escalated'"
+                            groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_start_sorting" string="Start Sorting"
+                            type="object" class="btn-primary"
+                            invisible="state != 'accepted'"
+                            groups="recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_finish_sorting" string="Finish Sorting"
+                            type="object" class="btn-primary"
+                            invisible="state != 'sorting'"
+                            groups="recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_print_report" string="Export PDF Report"
+                            type="object" class="btn-secondary"
+                            groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending,receiving,accepted,sorting,sorted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- Weight mismatch alert on form -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'escalated'">
+                        <i class="fa fa-exclamation-triangle fa-fw me-2" title="Warning"/>
+                        <strong>Awaiting Manager Review</strong> — This shipment was transferred because
+                        the weight difference exceeded the 5% tolerance.
+                    </div>
+
+                    <group>
+                        <group string="Shipment Details">
+                            <field name="warehouse_id"
+                                   readonly="state != 'pending'"
+                                   options="{'no_create': True}"
+                                   groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                            <field name="warehouse_id" readonly="1"
+                                   groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_output"/>
+                            <field name="driver_name"
+                                   readonly="state != 'pending'"
+                                   groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                            <field name="driver_name" readonly="1"
+                                   groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_output"/>
+                            <field name="priority"
+                                   readonly="state != 'pending'"
+                                   groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                            <field name="priority" readonly="1"
+                                   groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_output"/>
+                            <field name="expected_weight"
+                                   readonly="state != 'pending'"
+                                   groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                            <field name="expected_weight" readonly="1"
+                                   groups="recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_output"/>
+                        </group>
+                        <group string="Weight &amp; Reception">
+                            <field name="backend_shipment_id"
+                                   groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                            <field name="actual_weight"
+                                   readonly="state not in ('pending', 'receiving')"/>
+                            <field name="weight_diff_pct" readonly="1"
+                                   decoration-danger="weight_diff_pct &gt; 5"
+                                   decoration-success="weight_diff_pct &gt; 0 and weight_diff_pct &lt;= 5"
+                                   widget="float"/>
+                            <field name="receiver_user_id" readonly="1"/>
+                            <field name="received_at" readonly="1"/>
+                            <field name="sorter_user_id" readonly="1"/>
+                            <field name="sorted_at" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Sorted Products" name="products">
+                            <field name="line_ids" readonly="state != 'sorting'">
+                                <list editable="bottom">
+                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="quantity"/>
+                                    <!-- Damage is an OUTCOME, grade is a
+                                         quality. They were one column of four
+                                         fixed words; now the flag says whether
+                                         the quantity survived, and the grade —
+                                         whatever this material's admin named
+                                         them — says what it survived as. -->
+                                    <field name="is_damaged" widget="boolean_toggle"/>
+                                    <field name="condition" string="Grade"
+                                           readonly="is_damaged"
+                                           placeholder="—"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="total_good_qty" string="Good Items"/>
+                                <field name="total_damaged_qty" string="Damaged Items"/>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note" placeholder="Internal notes about this shipment…"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Shipment — Search view                                          -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_shipment_search" model="ir.ui.view">
+        <field name="name">recycle.shipment.search</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <search string="Search Shipments">
+                <field name="name" string="Shipment ID"/>
+                <field name="backend_shipment_id" string="Backend Shipment ID"/>
+                <field name="driver_name" string="Driver Name"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="sorting_zone_id" string="Sorting Zone"/>
+                <field name="storage_zone_id" string="Storage Zone"/>
+                <separator/>
+                <filter string="Zone Type: Receiving" name="zone_receiving"
+                        domain="['|', ('sorting_zone_id.zone_type','=','receiving'), ('storage_zone_id.zone_type','=','receiving')]"/>
+                <filter string="Zone Type: Sorting" name="zone_sorting"
+                        domain="['|', ('sorting_zone_id.zone_type','=','sorting'), ('storage_zone_id.zone_type','=','sorting')]"/>
+                <filter string="Zone Type: Storage" name="zone_storage"
+                        domain="['|', ('sorting_zone_id.zone_type','=','storage'), ('storage_zone_id.zone_type','=','storage')]"/>
+                <filter string="Zone Type: Output" name="zone_output"
+                        domain="['|', ('sorting_zone_id.zone_type','=','output'), ('storage_zone_id.zone_type','=','output')]"/>
+                <separator/>
+                <filter string="Pending" name="filter_pending"
+                        domain="[('state', '=', 'pending')]"/>
+                <filter string="In Reception" name="filter_receiving"
+                        domain="[('state', '=', 'receiving')]"/>
+                <filter string="Transferred to Manager" name="filter_escalated"
+                        domain="[('state', '=', 'escalated')]"/>
+                <filter string="Accepted" name="filter_accepted"
+                        domain="[('state', '=', 'accepted')]"/>
+                <filter string="In Sorting" name="filter_sorting"
+                        domain="[('state', '=', 'sorting')]"/>
+                <filter string="Sorted" name="filter_sorted"
+                        domain="[('state', '=', 'sorted')]"/>
+                <separator/>
+                <filter string="Reserved by Me" name="filter_mine"
+                        domain="['|', ('receiver_user_id', '=', uid), ('sorter_user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Archived" name="filter_archived"
+                        domain="[('recycle_archived', '=', True)]"/>
+                <separator/>
+                <filter string="Group by Status" name="group_state"
+                        context="{'group_by': 'state'}"/>
+                <filter string="Group by Warehouse" name="group_warehouse"
+                        context="{'group_by': 'warehouse_id'}"/>
+                <filter string="Group by Sorting Zone" name="group_zone"
+                        context="{'group_by': 'sorting_zone_id'}"/>
+            </search>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Shipment — Graph + Pivot                                        -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_shipment_graph" model="ir.ui.view">
+        <field name="name">recycle.shipment.graph</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <graph string="Shipments by Warehouse" type="bar">
+                <field name="warehouse_id"/>
+                <field name="actual_weight" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_recycle_shipment_pivot" model="ir.ui.view">
+        <field name="name">recycle.shipment.pivot</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <pivot string="Shipments">
+                <field name="warehouse_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="actual_weight" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+
+    <!-- ================================================================ -->
+    <!--  Admin read-only Shipment list (no create / no delete)          -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_shipment_list_admin_ro" model="ir.ui.view">
+        <field name="name">recycle.shipment.list.admin.ro</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <list string="Shipments" create="0" delete="0"
+                  decoration-info="state in ('receiving', 'sorting')"
+                  decoration-success="state in ('accepted', 'sorted')"
+                  decoration-warning="state == 'escalated'"
+                  decoration-muted="state == 'pending'">
+                <field name="priority" string="Prio" optional="show"/>
+                <field name="name" string="Shipment ID"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="driver_name" string="Driver" optional="show"/>
+                <field name="expected_weight" string="Expected (kg)" optional="show"/>
+                <field name="actual_weight" string="Actual (kg)" optional="show"/>
+                <field name="weight_diff_pct" string="Diff %"
+                       decoration-danger="weight_diff_pct &gt; 5"
+                       decoration-success="weight_diff_pct &gt; 0 and weight_diff_pct &lt;= 5"
+                       optional="show"/>
+                <field name="receiver_user_id" string="Received By" optional="show"/>
+                <field name="received_at" string="Received At" optional="show"/>
+                <field name="sorter_user_id" string="Sorted By" optional="hide"/>
+                <field name="sorted_at" string="Sorted At" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('accepted', 'sorted')"
+                       decoration-info="state in ('receiving', 'sorting')"
+                       decoration-warning="state == 'escalated'"
+                       decoration-muted="state == 'pending'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Admin read-only Shipment form (view only — no workflow buttons) -->
+    <record id="view_recycle_shipment_form_admin_ro" model="ir.ui.view">
+        <field name="name">recycle.shipment.form.admin.ro</field>
+        <field name="model">recycle.shipment</field>
+        <field name="arch" type="xml">
+            <form string="Shipment" edit="0" create="0">
+                <header>
+                    <button name="action_print_report" string="Export PDF Report"
+                            type="object" class="btn-secondary"
+                            groups="recycle_warehouse.group_recycle_admin"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending,receiving,accepted,sorting,sorted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="warehouse_id" readonly="1"/>
+                            <field name="driver_name" readonly="1"/>
+                            <field name="priority" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="expected_weight" readonly="1"/>
+                            <field name="actual_weight" readonly="1"/>
+                            <field name="weight_diff_pct" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="receiver_user_id" readonly="1"/>
+                            <field name="received_at" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="sorter_user_id" readonly="1"/>
+                            <field name="sorted_at" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="note" readonly="1"/>
+                    <notebook>
+                        <page string="Sorted Products">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="is_damaged" widget="boolean_toggle"/>
+                                    <field name="condition_label" string="Grade"/>
+                                </list>
+                            </field>
+                        </page>
+                        <!-- What this delivery COST, next to what it brought.
+                             The warehouse-wide damage log answers "how much did
+                             we lose"; this page answers "which delivery was
+                             that?", which is the question asked while looking
+                             at a shipment. -->
+                        <page string="Damage Recorded" name="damage"
+                              invisible="damage_entry_count == 0">
+                            <field name="damage_entry_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="occurred_at" string="Damaged At"/>
+                                    <field name="product_id"/>
+                                    <field name="condition_label" string="Grade"/>
+                                    <field name="quantity" sum="Total"/>
+                                    <field name="uom_id" string="Unit"/>
+                                    <field name="recorded_by"/>
+                                    <field name="reason" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Admin read-only action -->
+    <record id="action_recycle_shipment_admin_ro" model="ir.actions.act_window">
+        <field name="name">Shipments</field>
+        <field name="res_model">recycle.shipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_recycle_shipment_list_admin_ro')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_recycle_shipment_form_admin_ro')})]"/>
+    </record>
+
+    <!-- ================================================================ -->
+    <!--  Actions                                                         -->
+    <!-- ================================================================ -->
+    <record id="action_recycle_shipment" model="ir.actions.act_window">
+        <field name="name">Shipments</field>
+        <field name="res_model">recycle.shipment</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+    </record>
+
+    <!-- My processed shipments uses the dedicated list view -->
+    <record id="action_my_processed_shipments" model="ir.actions.act_window">
+        <field name="name">My Processed Shipments</field>
+        <field name="res_model">recycle.shipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('receiver_user_id', '=', uid)]</field>
+        <field name="view_id" ref="view_recycle_my_processed_list"/>
+    </record>
+
+    <!-- ================================================================ -->
+    <!--  Available for Sorting — list view (sorting employees)          -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_available_sorting_list" model="ir.ui.view">
+        <field name="name">recycle.shipment.available_sorting.list</field>
+        <field name="model">recycle.shipment</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <list string="Shipments Ready for Sorting"
+                  decoration-success="state == 'accepted'"
+                  default_order="priority, received_at">
+                <field name="priority" string="Prio" optional="show"/>
+                <field name="name" string="Shipment ID"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="driver_name" string="Driver" optional="show"/>
+                <field name="expected_weight" string="Declared (kg)" optional="show"/>
+                <field name="actual_weight" string="Actual (kg)"/>
+                <field name="weight_diff_pct" string="Diff %"
+                       decoration-danger="weight_diff_pct &gt; 5"
+                       decoration-success="weight_diff_pct &gt; 0 and weight_diff_pct &lt;= 5"
+                       optional="show"/>
+                <field name="receiver_user_id" string="Received By" optional="show"/>
+                <field name="received_at" string="Received At"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'accepted'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Dedicated sorting form: clean, focused on the sorting workflow -->
+    <record id="view_recycle_shipment_sorting_form" model="ir.ui.view">
+        <field name="name">recycle.shipment.sorting.form</field>
+        <field name="model">recycle.shipment</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <form string="Sort Shipment">
+                <header>
+                    <button name="action_start_sorting" string="Start Sorting (Reserve)"
+                            type="object" class="btn-primary oe_highlight"
+                            invisible="state != 'accepted'"
+                            groups="recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_finish_sorting" string="Finish Sorting"
+                            type="object" class="btn-success oe_highlight"
+                            invisible="state != 'sorting'"
+                            groups="recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <button name="action_release_sorting" string="Release (Unreserve)"
+                            type="object" class="btn-secondary"
+                            invisible="state != 'sorting'"
+                            groups="recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_admin"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="accepted,sorting,sorted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- Reserve prompt -->
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'accepted'">
+                        <i class="fa fa-hand-pointer-o fa-fw me-2" title="Select"/>
+                        <strong>Ready for Sorting</strong> — Click <strong>"Start Sorting (Reserve)"</strong> to claim this shipment and begin product classification.
+                    </div>
+                    <!-- Active sorting banner -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'sorting'">
+                        <i class="fa fa-spinner fa-fw me-2" title="Loading"/>
+                        <strong>Sorting in Progress</strong> — Add all product lines below, then click <strong>"Finish Sorting"</strong> to update stock and complete the process.
+                    </div>
+                    <!-- Done banner -->
+                    <div class="alert alert-success" role="alert"
+                         invisible="state != 'sorted'">
+                        <i class="fa fa-check-circle fa-fw me-2" title="Success"/>
+                        <strong>Sorting Complete</strong> — Products have been added to warehouse stock.
+                    </div>
+
+                    <group>
+                        <group string="Shipment Info">
+                            <field name="warehouse_id" readonly="1"/>
+                            <field name="driver_name" readonly="1"/>
+                            <field name="priority" readonly="1"/>
+                            <field name="expected_weight" readonly="1"/>
+                            <field name="actual_weight" readonly="1"/>
+                            <field name="weight_diff_pct" readonly="1"
+                                   decoration-danger="weight_diff_pct &gt; 5"
+                                   decoration-success="weight_diff_pct &lt;= 5"/>
+                        </group>
+                        <group string="Reception &amp; Sorting Details">
+                            <field name="receiver_user_id" readonly="1"/>
+                            <field name="received_at" readonly="1"/>
+                            <field name="sorter_user_id" readonly="1"/>
+                            <field name="sorted_at" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Product classification section -->
+                    <separator string="Product Classification"/>
+                    <field name="line_ids"
+                           readonly="state != 'sorting'">
+                        <list editable="bottom" string="Sorted Products">
+                            <field name="product_id" options="{'no_create': True}"/>
+                            <field name="quantity" string="Quantity"/>
+                            <field name="is_damaged" widget="boolean_toggle"/>
+                            <field name="condition" string="Grade"
+                                   readonly="is_damaged" placeholder="—"/>
+                        </list>
+                    </field>
+
+                    <group class="oe_subtotal_footer">
+                        <!-- "Usable" is everything not written off, rather than
+                             a list of grade names. The old label named two of
+                             four fixed grades and was wrong for any material
+                             the admin graded differently. -->
+                        <field name="total_good_qty" string="Usable Items"/>
+                        <field name="total_damaged_qty" string="Damaged Items"/>
+                    </group>
+
+                    <group string="Notes" invisible="state not in ('sorting', 'sorted')">
+                        <field name="note" nolabel="1"
+                               placeholder="Internal notes about this sorting session…"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- My sorted shipments — list view (sorter = current user) -->
+    <record id="view_recycle_my_sorted_list" model="ir.ui.view">
+        <field name="name">recycle.shipment.my_sorted.list</field>
+        <field name="model">recycle.shipment</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <list string="My Shipments"
+                  decoration-warning="state == 'sorting'"
+                  decoration-success="state == 'sorted'">
+                <field name="name" string="Shipment ID"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="driver_name" string="Driver" optional="show"/>
+                <field name="total_good_qty" string="Usable Qty"/>
+                <field name="total_damaged_qty" string="Damaged Qty"/>
+                <field name="sorted_at" string="Sorted At"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'sorting'"
+                       decoration-success="state == 'sorted'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_available_for_sorting" model="ir.actions.act_window">
+        <field name="name">Sort Shipments</field>
+        <field name="res_model">recycle.shipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'accepted')]</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'list','view_id':ref('view_recycle_available_sorting_list')}),
+            (0,0,{'view_mode':'form','view_id':ref('view_recycle_shipment_sorting_form')})]"/>
+    </record>
+
+    <record id="action_my_sorted_shipments" model="ir.actions.act_window">
+        <field name="name">My Shipments</field>
+        <field name="res_model">recycle.shipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('sorter_user_id', '=', uid)]</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'list','view_id':ref('view_recycle_my_sorted_list')}),
+            (0,0,{'view_mode':'form','view_id':ref('view_recycle_shipment_sorting_form')})]"/>
+    </record>
+
+    <!-- ================================================================ -->
+    <!--  Process Shipments — Reception Wizard (input employees)         -->
+    <!-- ================================================================ -->
+    <record id="view_recycle_receive_wizard_form" model="ir.ui.view">
+        <field name="name">recycle.receive.wizard.form</field>
+        <field name="model">recycle.receive.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Process Shipment">
+
+                <!-- ── STEP 1: Load a shipment ── -->
+                <div invisible="shipment_id">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fa fa-info-circle fa-fw me-2" title="Information"/>
+                        <strong>Step 1 — Load Shipment</strong><br/>
+                        Choose your input method, then load and reserve the shipment before entering the weight.
+                    </div>
+                    <group>
+                        <field name="input_mode" widget="radio"
+                               options="{'horizontal': true}"/>
+                        <field name="shipment_ref"
+                               invisible="input_mode != 'manual'"
+                               placeholder="e.g. SHP00007  (or use a USB barcode scanner gun)"/>
+                        <field name="barcode_image"
+                               invisible="input_mode != 'scan'"
+                               widget="image"
+                               options="{'accepted_file_extensions': 'image/*', 'size': [220, 220]}"/>
+                    </group>
+                    <div class="mt-2 mb-3">
+                        <button name="action_load"
+                                string="Load &amp; Reserve Shipment"
+                                type="object" class="btn-primary me-2"
+                                invisible="input_mode != 'manual'"/>
+                        <button name="action_scan_barcode"
+                                string="Scan Barcode Image"
+                                type="object" class="btn-primary"
+                                invisible="input_mode != 'scan'"/>
+                    </div>
+                </div>
+
+                <!-- ── STEP 2: Shipment reserved — enter weight ── -->
+                <div invisible="not shipment_id">
+                    <div class="alert alert-success mb-3" role="alert">
+                        <i class="fa fa-check-circle fa-fw me-2" title="Success"/>
+                        <strong>Shipment Reserved</strong> — Enter the actual weight and then accept or transfer.
+                    </div>
+                    <group>
+                        <group string="Shipment Details">
+                            <field name="shipment_id" readonly="1"/>
+                            <field name="warehouse_id" readonly="1"/>
+                            <field name="driver_name" readonly="1"/>
+                            <field name="priority" readonly="1"/>
+                            <field name="expected_weight" readonly="1"/>
+                            <field name="state" readonly="1" widget="badge"
+                                   decoration-info="state in ('receiving', 'sorting')"
+                                   decoration-success="state in ('accepted', 'sorted')"
+                                   decoration-warning="state == 'escalated'"
+                                   decoration-muted="state == 'pending'"/>
+                        </group>
+                        <group string="Weighing">
+                            <field name="actual_weight"/>
+                            <field name="diff_pct" readonly="1"/>
+                        </group>
+                    </group>
+                </div>
+
+                <!-- ── Weight OVER tolerance warning ── -->
+                <div class="alert alert-danger" role="alert"
+                     invisible="not shipment_id or diff_pct &lt;= 5">
+                    <h5 class="alert-heading">
+                        <i class="fa fa-exclamation-triangle fa-fw me-2" title="Warning"/>
+                        Weight Mismatch Detected
+                    </h5>
+                    <p>
+                        The difference exceeds the <strong>5% tolerance</strong>.
+                        Direct acceptance is <strong>blocked</strong>.
+                    </p>
+                    <hr/>
+                    <p class="mb-0">
+                        Use <strong>"Transfer to Warehouse Manager"</strong> below to escalate for review.
+                    </p>
+                </div>
+
+                <!-- ── Weight within tolerance hint ── -->
+                <div class="alert alert-success" role="alert"
+                     invisible="not shipment_id or diff_pct &gt; 5 or not actual_weight">
+                    <i class="fa fa-thumbs-up fa-fw me-2" title="Thumbs Up"/>
+                    Weight is within the 5% tolerance — you may <strong>Accept</strong> the shipment.
+                </div>
+
+                <footer>
+                    <button name="action_accept"
+                            string="Accept &amp; Send to Sorting"
+                            type="object" class="btn-primary oe_highlight"
+                            invisible="not shipment_id or diff_pct &gt; 5"/>
+                    <button name="action_transfer"
+                            string="Transfer to Warehouse Manager"
+                            type="object" class="btn-warning"
+                            invisible="not shipment_id or diff_pct &lt;= 5"/>
+                    <button name="action_release"
+                            string="Release (Unreserve)"
+                            type="object" class="btn-secondary"
+                            invisible="not shipment_id"/>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recycle_receive_wizard" model="ir.actions.act_window">
+        <field name="name">Process Shipments</field>
+        <field name="res_model">recycle.receive.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Archive: archived shipments, same filters/search identity -->
+    <record id="action_recycle_shipment_archive" model="ir.actions.act_window">
+        <field name="name">Shipments Archive</field>
+        <field name="res_model">recycle.shipment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[("recycle_archived","=",True)]</field>
+        <field name="search_view_id" ref="view_recycle_shipment_search"/>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No archived shipments</p></field>
+    </record>
+</odoo>

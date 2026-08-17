@@ -1,0 +1,176 @@
+/* ── Dawrha — Profile Completion Page styles ──────────────────────────
+   Uses the shared theme variables declared in the website layout
+   (--surface, --border, --text, --muted, --g500 …) so it automatically
+   follows Light / Dark mode. RTL is handled via [dir="rtl"] and logical
+   properties, matching the site-wide language toggle.
+   ==================================================================== */
+
+.dw-profile-section { padding-bottom: 64px; }
+
+.dw-profile-form { max-width: 900px; margin: 24px auto 0; }
+
+/* ── Cards / sections ─────────────────────────────────────────────── */
+.dw-profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--card-sh);
+    padding: 24px 24px 28px;
+    margin-bottom: 22px;
+    transition: background .25s, border-color .25s, box-shadow .25s;
+}
+
+.dw-profile-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+.dw-profile-card-title span:first-child { font-size: 22px; }
+
+/* ── Responsive field grid ────────────────────────────────────────── */
+.dw-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+}
+.dw-field-full { grid-column: 1 / -1; }
+
+.dw-profile-form .dw-field { display: flex; flex-direction: column; gap: 7px; }
+
+.dw-profile-form .dw-field label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.dw-profile-form .dw-field input,
+.dw-profile-form .dw-field select {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color .18s, box-shadow .18s, background .25s;
+}
+.dw-profile-form .dw-field input::placeholder { color: var(--muted); opacity: .7; }
+
+.dw-profile-form .dw-field input:focus,
+.dw-profile-form .dw-field select:focus {
+    border-color: var(--g500);
+    box-shadow: 0 0 0 3px var(--g100);
+}
+
+/* File inputs */
+.dw-profile-form input[type="file"] {
+    padding: 10px 12px;
+    cursor: pointer;
+}
+
+/* Invalid state (set by profile_completion.js) */
+.dw-profile-form .dw-field-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, .15) !important;
+}
+
+.dw-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ── Alerts ───────────────────────────────────────────────────────── */
+.dw-profile-alert {
+    max-width: 900px;
+    margin: 0 auto 18px;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 14.5px;
+    font-weight: 600;
+}
+.dw-alert-success {
+    background: var(--g50);
+    color: var(--g600);
+    border: 1px solid var(--g100);
+}
+.dw-alert-error {
+    background: rgba(239, 68, 68, .1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, .28);
+}
+html[data-theme="dark"] .dw-alert-error { color: #fca5a5; }
+
+/* ── Actions ──────────────────────────────────────────────────────── */
+.dw-profile-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.dw-profile-submit { flex: 1; min-width: 180px; padding: 14px 24px; font-size: 16px; }
+
+/* ── Duplicate modal ──────────────────────────────────────────────── */
+.dw-profile-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(3px);
+    padding: 20px;
+}
+.dw-profile-modal.dw-modal-open { display: flex; }
+
+.dw-modal-box {
+    background: var(--modal-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    max-width: 440px;
+    width: 100%;
+    padding: 32px 28px 26px;
+    text-align: center;
+    box-shadow: var(--card-sh-h);
+    animation: dwModalIn .22s ease;
+}
+@keyframes dwModalIn {
+    from { transform: translateY(12px) scale(.97); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+}
+.dw-modal-icon { font-size: 46px; margin-bottom: 8px; }
+.dw-modal-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+.dw-modal-text  { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.dw-modal-actions { display: flex; gap: 10px; }
+.dw-modal-actions .dw-btn { flex: 1; padding: 12px 18px; }
+
+/* ── RTL support (Arabic) ─────────────────────────────────────────── */
+[dir="rtl"] .dw-profile-form,
+[dir="rtl"] .dw-profile-card-title,
+[dir="rtl"] .dw-profile-form .dw-field label,
+[dir="rtl"] .dw-modal-box { text-align: right; }
+
+[dir="rtl"] .dw-profile-form .dw-field input,
+[dir="rtl"] .dw-profile-form .dw-field select { direction: rtl; }
+
+/* Keep email / phone / numeric inputs left-aligned even in RTL */
+[dir="rtl"] .dw-profile-form input[type="email"],
+[dir="rtl"] .dw-profile-form input[type="date"],
+[dir="rtl"] .dw-profile-form input[name="phone"],
+[dir="rtl"] .dw-profile-form input[name="national_id"] {
+    direction: ltr;
+    text-align: right;
+}
+
+/* ── Mobile responsive ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .dw-profile-grid { grid-template-columns: 1fr; }
+    .dw-profile-card { padding: 20px 16px 22px; }
+    .dw-profile-actions { flex-direction: column; }
+    .dw-profile-submit { width: 100%; }
+}

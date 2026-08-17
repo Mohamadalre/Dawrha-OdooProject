@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Reconcile material suggestions with the backend.
+
+        A proposal auto-sends the moment it is created; if the backend is
+        unreachable it lands in 'failed' and re-sendable. This job re-pushes every
+        failed proposal on a short interval, so one made while the connection was
+        down turns up in the backend as soon as it returns — without anyone
+        re-opening the record.
+    -->
+    <record id="ir_cron_resend_product_suggestions" model="ir.cron">
+        <field name="name">Recycle: resend failed material suggestions</field>
+        <field name="model_id" ref="model_recycle_product_suggestion"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_resend_pending()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

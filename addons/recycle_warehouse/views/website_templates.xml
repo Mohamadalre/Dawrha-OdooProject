@@ -1,0 +1,2559 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<!-- ================================================================ -->
+<!-- Dawrha — Master Layout (Dark/Light Mode · Responsive · Pro UI)   -->
+<!-- ================================================================ -->
+<template id="dawrha_layout" name="Dawrha Layout">
+    <html>
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+            <meta name="theme-color" content="#10b981"/>
+            <meta name="apple-mobile-web-app-capable" content="yes"/>
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+            <meta name="apple-mobile-web-app-title" content="Dawrha"/>
+            <link rel="manifest" href="/recycle_warehouse/static/src/manifest.json"/>
+            <link rel="apple-touch-icon" href="/recycle_warehouse/static/src/img/icon_logo.png"/>
+            <link rel="icon" type="image/png" href="/recycle_warehouse/static/src/img/icon_logo.png" sizes="32x32"/>
+            <link rel="icon" type="image/png" href="/recycle_warehouse/static/src/img/icon_logo.png" sizes="192x192"/>
+            <title><t t-esc="page_title or 'Dawrha'"/> | Dawrha</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Cairo:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+
+            <!-- Translation engine -->
+            <script src="/recycle_warehouse/static/src/js/website_i18n.js"></script>
+
+            <!-- ① Inject saved theme + lang BEFORE first paint → no flash -->
+            <script>
+                (function(){
+                    var t = localStorage.getItem('dw-theme') || 'light';
+                    document.documentElement.setAttribute('data-theme', t);
+                    var l = localStorage.getItem('recycle_wms_lang');
+                    if (l === 'ar') {
+                        document.documentElement.setAttribute('dir', 'rtl');
+                        document.documentElement.setAttribute('lang', 'ar');
+                    }
+                })();
+            </script>
+
+            <style>
+/* ── CSS variables ─────────────────────────────────────────────── */
+:root {
+    /* Brand — Dawrha primary green (#1FB876 spec) */
+    --g900:#064e3b; --g800:#065f46; --g700:#047857;
+    --g600:#059669; --g500:#1fb876; --g400:#34d399;
+    --g100:#d1fae5; --g50:#ecfdf5;
+
+    /* Light mode */
+    --bg:          #f8fafc;
+    --bg2:         #f1f5f9;
+    --surface:     #ffffff;
+    --surface2:    #f8fafc;
+    --border:      rgba(15,23,42,.09);
+    --text:        #0f172a;
+    --muted:       #64748b;
+    --nav-bg:      rgba(255,255,255,.88);
+    --card-sh:     0 1px 4px rgba(15,23,42,.07);
+    --card-sh-h:   0 20px 44px rgba(15,23,42,.12);
+    --footer-bg:   #0f172a;
+    --footer-txt:  #94a3b8;
+    --input-bg:    #f8fafc;
+    --modal-bg:    #fff;
+    --grid-line:   rgba(15,23,42,.035);
+    /* Aurora background accents (soft, colorful — adapt per theme) */
+    --fx1:         rgba(31,184,118,.11);
+    --fx2:         rgba(56,189,248,.09);
+    --fx3:         rgba(163,230,53,.08);
+}
+html[data-theme="dark"] {
+    /* Dark mode — deep navy identity (#0B1220 spec) */
+    --bg:          #0b1220;
+    --bg2:         #0f172a;
+    --surface:     #121c30;
+    --surface2:    #182338;
+    --border:      rgba(148,163,184,.14);
+    --text:        #f1f5f9;
+    --muted:       #94a3b8;
+    --nav-bg:      rgba(11,18,32,.92);
+    --card-sh:     0 1px 4px rgba(0,0,0,.35);
+    --card-sh-h:   0 20px 44px rgba(0,0,0,.45);
+    --footer-bg:   #080d18;
+    --footer-txt:  #94a3b8;
+    --input-bg:    #182338;
+    --modal-bg:    #121c30;
+    --g100:        rgba(31,184,118,.14);
+    --g50:         rgba(31,184,118,.07);
+    --grid-line:   rgba(148,163,184,.06);
+    /* Aurora accents — richer glow so dark mode is never flat black */
+    --fx1:         rgba(31,184,118,.20);
+    --fx2:         rgba(45,212,191,.13);
+    --fx3:         rgba(59,130,246,.12);
+}
+
+/* ── Reset + Base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Never let a wide child (e.g. an activity table) force horizontal
+       page scroll/zoom-out on mobile — every such element must scroll
+       internally instead (see .dw-acc-activity's wrapper). */
+    max-width: 100vw;
+    overflow-x: hidden;
+    /* Layered identity background on EVERY page:
+       colorful aurora glows + subtle mesh grid + theme base color */
+    background:
+        radial-gradient(46% 38% at 10% 6%,  var(--fx1) 0%, transparent 70%),
+        radial-gradient(42% 36% at 92% 14%, var(--fx2) 0%, transparent 70%),
+        radial-gradient(52% 44% at 85% 92%, var(--fx3) 0%, transparent 72%),
+        radial-gradient(40% 36% at 6% 88%,  var(--fx2) 0%, transparent 72%),
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        var(--bg);
+    background-size: auto, auto, auto, auto, 44px 44px, 44px 44px, auto;
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background .25s, color .25s;
+}
+/* Arabic typography: clear geometric Arabic face across the whole site */
+html[dir="rtl"] body, html[lang="ar"] body {
+    font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+}
+a { text-decoration: none; color: inherit; }
+img { max-width: 100%; }
+.container { max-width: 1280px; margin: 0 auto; padding: 0 24px; width: 100%; }
+
+/* ── Navbar ──────────────────────────────────────────────────────── */
+.dw-nav {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border);
+    transition: background .25s;
+}
+.dw-nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px; gap: 12px;
+}
+.dw-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 900; font-size: 24px; letter-spacing: -0.6px; flex-shrink: 0;
+    text-decoration: none;
+}
+.dw-logo-img { height: 32px; }
+.dw-logo-text {
+    background: linear-gradient(135deg, var(--g700), var(--g400));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+}
+.dw-nav-right { display: flex; align-items: center; gap: 6px; }
+.dw-links { display: flex; align-items: center; gap: 4px; }
+.dw-link {
+    padding: 8px 14px; border-radius: 10px;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    transition: all .15s; white-space: nowrap;
+}
+.dw-link:hover { color: var(--g700); background: var(--g50); }
+.dw-link.active {
+    color: var(--g700); background: var(--g100);
+    font-weight: 600;
+}
+
+/* Theme toggle */
+.dw-theme-btn {
+    width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .15s; flex-shrink: 0;
+}
+.dw-theme-btn:hover { border-color: var(--g500); transform: scale(1.08); }
+
+/* Hamburger */
+.dw-ham {
+    display: none; flex-direction: column; gap: 5px; cursor: pointer;
+    padding: 8px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+}
+.dw-ham span {
+    display: block; width: 22px; height: 2px;
+    background: var(--text); border-radius: 2px;
+    transition: all .25s;
+}
+
+/* Mobile nav */
+.dw-nav-drawer {
+    display: none; flex-direction: column; gap: 4px;
+    padding: 12px 16px 16px; border-top: 1px solid var(--border);
+    background: var(--nav-bg);
+}
+.dw-nav-drawer.open { display: flex; }
+.dw-nav-drawer .dw-link { padding: 12px 16px; border-radius: 10px; font-size: 15px; }
+
+@media (max-width: 820px) {
+    .dw-links { display: none; }
+    .dw-ham { display: flex; }
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.dw-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 12px 24px; border-radius: 12px;
+    font-size: 15px; font-weight: 600; cursor: pointer; border: none;
+    transition: all .18s; white-space: nowrap; gap: 8px;
+}
+.dw-btn-primary {
+    background: linear-gradient(135deg, var(--g700), var(--g500));
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(16,185,129,.32);
+}
+.dw-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(16,185,129,.44); }
+.dw-btn-secondary {
+    background: var(--surface); color: var(--muted);
+    border: 1.5px solid var(--border);
+}
+.dw-btn-secondary:hover { border-color: var(--g500); color: var(--g700); background: var(--g50); }
+
+/* ── Stats cards (reusable) ──────────────────────────────────────── */
+.dw-stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px; max-width: 1080px; margin: 0 auto;
+}
+.dw-stat-card { text-align: center; padding: 28px 20px; }
+.dw-stat-icon { font-size: 40px; line-height: 1; margin-bottom: 10px; }
+.dw-stat-num {
+    font-size: 38px; font-weight: 900;
+    background: linear-gradient(135deg, var(--g700), var(--g400));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+}
+.dw-stat-lbl { color: var(--muted); font-weight: 600; font-size: 15px; margin-top: 4px; }
+
+/* ── Hero ────────────────────────────────────────────────────────── */
+.dw-hero {
+    padding: 72px 0 56px;
+    /* Radial glow for depth (mesh grid now lives on the body, site-wide) */
+    background-image:
+        radial-gradient(ellipse 60% 50% at 50% 0%, var(--g50), transparent);
+}
+.dw-hero-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 56px; align-items: center;
+}
+.dw-hero h1 {
+    font-size: 50px; font-weight: 900; line-height: 1.08;
+    letter-spacing: -1.5px; color: var(--text); margin-bottom: 22px;
+}
+.dw-hero h1 .grad {
+    background: linear-gradient(135deg, var(--g700), var(--g400));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+}
+.dw-hero p { font-size: 18px; color: var(--muted); margin-bottom: 32px; line-height: 1.7; }
+.dw-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.dw-hero-img {
+    border-radius: 24px; overflow: hidden;
+    box-shadow: 0 32px 72px rgba(6,78,59,.18);
+    position: relative;
+}
+.dw-hero-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(4,120,87,.1), transparent);
+    pointer-events: none;
+}
+.dw-hero-img img { width: 100%; height: 400px; object-fit: cover; display: block; }
+
+/* ── Section ─────────────────────────────────────────────────────── */
+.dw-section { padding: 32px 0 80px; }
+.dw-section-title {
+    font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
+    margin-bottom: 12px; color: var(--text);
+}
+/* Brand signature: short green accent underline below every section title */
+.dw-section-title::after {
+    content: ''; display: block; width: 56px; height: 4px;
+    border-radius: 2px; background: linear-gradient(90deg, var(--g700), var(--g400));
+    margin-top: 12px;
+}
+.dw-section-title[style*="text-align:center"]::after,
+div[style*="text-align:center"] > .dw-section-title::after,
+.container[style*="text-align:center"] .dw-section-title::after {
+    margin-left: auto; margin-right: auto;
+}
+.dw-section-sub { font-size: 17px; color: var(--muted); margin-bottom: 40px; max-width: 560px; }
+
+/* ── Feature sections (How it works / Why) ───────────────────────── */
+/* Semi-transparent band so the aurora/grid body background shows through */
+.dw-feat-section { padding: 64px 0; background: rgba(15,23,42,.035); }
+html[data-theme="dark"] .dw-feat-section { background: rgba(255,255,255,.025); }
+.dw-feat-grid {
+    display: grid; gap: 28px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.dw-feat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px 24px;
+    box-shadow: var(--card-sh); transition: all .2s;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.dw-feat-card:hover { box-shadow: var(--card-sh-h); transform: translateY(-4px); border-color: var(--g100); }
+.dw-feat-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--g700), var(--g500));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #fff;
+}
+.dw-feat-card h3 { font-size: 17px; font-weight: 700; color: var(--text); }
+.dw-feat-card p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+/* ── Job Cards Grid ──────────────────────────────────────────────── */
+.dw-grid {
+    display: grid; gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.dw-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 26px;
+    box-shadow: var(--card-sh); transition: all .2s;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.dw-card:hover {
+    box-shadow: var(--card-sh-h); border-color: var(--g100);
+    transform: translateY(-4px);
+}
+.dw-card h3 { font-size: 18px; font-weight: 700; color: var(--text); }
+.dw-card .desc {
+    font-size: 14px; color: var(--muted); line-height: 1.65;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; min-height: 44px;
+}
+.dw-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.dw-meta svg { flex-shrink: 0; }
+.dw-pill {
+    align-self: flex-start; margin-top: auto;
+    background: var(--g100); color: var(--g700);
+    font-size: 12px; font-weight: 700;
+    padding: 4px 14px; border-radius: 100px;
+}
+.dw-card .dw-btn { margin-top: 8px; text-align: center; }
+
+/* ── About page ──────────────────────────────────────────────────── */
+.dw-about-hero {
+    padding: 80px 0 56px;
+    text-align: center;
+}
+.dw-about-hero h1 {
+    font-size: 52px; font-weight: 900; letter-spacing: -1.5px;
+    color: var(--text); margin-bottom: 20px;
+}
+.dw-about-hero p { font-size: 20px; color: var(--muted); max-width: 680px; margin: 0 auto; line-height: 1.7; }
+.dw-about-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--g100); color: var(--g700);
+    font-size: 13px; font-weight: 700; padding: 6px 16px;
+    border-radius: 100px; margin-bottom: 24px;
+    border: 1px solid var(--g500);
+}
+.dw-visionmission {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin: 56px 0;
+}
+.dw-vm-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 36px 32px;
+    box-shadow: var(--card-sh); transition: all .2s;
+    position: relative; overflow: hidden;
+}
+.dw-vm-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--g700), var(--g400));
+}
+.dw-vm-card:hover { box-shadow: var(--card-sh-h); transform: translateY(-3px); }
+.dw-vm-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--g600); margin-bottom: 14px;
+}
+.dw-vm-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 14px; color: var(--text); }
+.dw-vm-card p { font-size: 15px; color: var(--muted); line-height: 1.75; }
+.dw-what-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;
+    margin-top: 40px;
+}
+.dw-what-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px 20px; box-shadow: var(--card-sh);
+    transition: all .2s;
+}
+.dw-what-item:hover { box-shadow: var(--card-sh-h); transform: translateY(-3px); }
+.dw-what-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--g700), var(--g500));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #fff;
+}
+.dw-what-item p { font-size: 15px; font-weight: 600; color: var(--text); padding-top: 10px; }
+
+/* ── Forms ───────────────────────────────────────────────────────── */
+.dw-form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 36px; max-width: 640px;
+    box-shadow: var(--card-sh);
+}
+.dw-field { margin-bottom: 22px; }
+.dw-field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 7px; color: var(--text); }
+.dw-field input, .dw-field textarea {
+    width: 100%; padding: 13px 16px; font-size: 15px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--input-bg); font-family: inherit; color: var(--text);
+    transition: border .15s;
+}
+.dw-field input:focus, .dw-field textarea:focus {
+    outline: none; border-color: var(--g500);
+    box-shadow: 0 0 0 3px rgba(16,185,129,.15);
+}
+.dw-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+/* ── Alerts ──────────────────────────────────────────────────────── */
+.dw-alert { border-radius: 14px; padding: 16px 22px; font-size: 14px; margin-bottom: 24px; line-height:1.6; }
+.dw-alert-error  { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.dw-alert-success { background:var(--g50); color:var(--g700); border:1px solid var(--g100); }
+.dw-alert-info   { background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; text-align:center; font-size:15px; padding:28px 24px; border-radius:16px; }
+html[data-theme="dark"] .dw-alert-info { background:rgba(14,165,233,.08); color:#7dd3fc; border-color:rgba(14,165,233,.15); }
+.dw-alert ul { margin: 0; padding-left: 18px; }
+
+/* ── Table ───────────────────────────────────────────────────────── */
+.dw-table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden; box-shadow: var(--card-sh);
+    overflow-x: auto;
+}
+.dw-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
+.dw-table th {
+    text-align: left; padding: 14px 20px; background: var(--bg2);
+    color: var(--muted); font-weight: 700; font-size: 12px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+.dw-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); color: var(--text); }
+.dw-td-lbl { display: none; }
+/* Mobile: tables become stacked cards — no horizontal scrolling (spec §18) */
+@media (max-width: 640px) {
+    .dw-table { min-width: 0; }
+    .dw-table thead { display: none; }
+    .dw-table, .dw-table tbody, .dw-table tr, .dw-table td { display: block; width: 100%; }
+    .dw-table tr {
+        border: 1px solid var(--border); border-radius: 14px;
+        margin: 12px; padding: 6px 2px; background: var(--surface2);
+        width: auto;
+    }
+    .dw-table td {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 12px; padding: 9px 14px; border-bottom: none;
+        text-align: end !important;
+    }
+    .dw-td-lbl {
+        display: inline-block; font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px;
+        color: var(--muted); text-align: start; flex-shrink: 0;
+    }
+}
+.dw-table tr:last-child td { border-bottom: none; }
+.dw-table tr:hover td { background: var(--bg2); }
+.dw-status { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 100px; }
+.st-applied  { background:var(--bg2); color:var(--muted); }
+.st-interview{ background:#fef9c3; color:#a16207; }
+.st-accepted { background:var(--g100); color:var(--g700); }
+.st-rejected { background:#fee2e2; color:#b91c1c; }
+
+/* ── Detail / Account pages ──────────────────────────────────────── */
+.dw-breadcrumb { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+.dw-breadcrumb a { color: var(--g700); font-weight: 600; }
+.dw-detail-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px; box-shadow: var(--card-sh);
+}
+.dw-detail-card h1 { font-size: 36px; font-weight: 900; margin-bottom: 14px; letter-spacing: -0.5px; }
+.dw-richtext { color: var(--muted); line-height: 1.75; margin: 20px 0 30px; }
+.dw-avatar {
+    width: 88px; height: 88px; border-radius: 9999px;
+    background: linear-gradient(135deg, var(--g700), var(--g500));
+    color: #fff; font-size: 36px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(16,185,129,.3);
+}
+.dw-account-row { display: flex; gap: 12px; font-size: 15px; margin-bottom: 12px; color: var(--muted); }
+.dw-account-row strong { color: var(--text); min-width: 120px; display: inline-block; font-weight: 700; }
+
+/* ── Apply split layout ──────────────────────────────────────────── */
+.dw-apply-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: stretch; }
+.dw-apply-img {
+    border-radius: 24px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(6,78,59,.18);
+}
+.dw-apply-img img { width: 100%; height: 100%; min-height: 420px; object-fit: cover; display: block; }
+
+/* ── Modal ───────────────────────────────────────────────────────── */
+.dw-modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(9,14,28,.65); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.dw-modal {
+    background: var(--modal-bg); border-radius: 24px; padding: 40px 36px;
+    max-width: 440px; width: 100%; text-align: center;
+    box-shadow: 0 40px 100px rgba(0,0,0,.4); border: 1px solid var(--border);
+}
+.dw-modal-icon {
+    width: 68px; height: 68px; margin: 0 auto 18px;
+    border-radius: 9999px; background: #fef3c7; color: #b45309;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 900;
+}
+.dw-modal h3 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+.dw-modal p  { font-size: 15px; color: var(--muted); margin-bottom: 24px; }
+
+/* ── Contact ─────────────────────────────────────────────────────── */
+.dw-meta { display: flex; align-items: center; gap: 8px; }
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.dw-footer {
+    margin-top: auto;
+    background: var(--footer-bg);
+    padding: 40px 0; font-size: 14px; color: var(--footer-txt);
+    border-top: 1px solid rgba(255,255,255,.05);
+}
+.dw-footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.dw-footer-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 900; font-size: 22px;
+    background: linear-gradient(135deg, var(--g500), #6ee7b7);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    display: block; margin-bottom: 6px;
+}
+.dw-footer a { color: var(--footer-txt); font-weight: 500; margin-left: 20px; transition: color .15s; }
+.dw-footer a:hover { color: var(--g500); }
+.dw-footer-copy { font-size: 13px; opacity: .7; }
+
+/* ── RTL ──────────────────────────────────────────────────────────── */
+[dir="rtl"] .dw-footer a { margin-left: 0; margin-right: 20px; }
+[dir="rtl"] .dw-table th { text-align: right; }
+[dir="rtl"] .dw-hero-grid { direction: rtl; }
+[dir="rtl"] .dw-hero-actions { direction: rtl; }
+[dir="rtl"] .dw-meta svg { margin-left: 8px; margin-right: 0; }
+[dir="rtl"] .dw-breadcrumb a + a::before { content: "\\"; }
+[dir="rtl"] input, [dir="rtl"] textarea { text-align: start; }
+
+/* Language switcher pills */
+.dw-lang-btn {
+    width: 44px; height: 40px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .15s; flex-shrink: 0; padding: 0 8px;
+}
+.dw-lang-btn:hover { border-color: var(--g500); }
+.dw-lang-active { background: var(--g100); color: var(--g700); border-color: var(--g500); }
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .dw-hero-grid   { grid-template-columns: 1fr; gap: 40px; }
+    .dw-hero h1     { font-size: 36px; }
+    .dw-apply-grid  { grid-template-columns: 1fr; }
+    .dw-visionmission { grid-template-columns: 1fr; }
+    .dw-about-hero h1 { font-size: 36px; }
+}
+@media (max-width: 600px) {
+    .dw-hero        { padding: 48px 0 40px; }
+    .dw-hero h1     { font-size: 28px; letter-spacing: -0.5px; }
+    .dw-hero p      { font-size: 16px; }
+    .dw-section-title { font-size: 24px; }
+    .dw-detail-card { padding: 24px; }
+    .dw-vm-card     { padding: 24px 20px; }
+    .dw-about-hero  { padding: 56px 0 40px; }
+    .dw-about-hero h1 { font-size: 28px; }
+    .dw-about-hero p  { font-size: 16px; }
+    .dw-hero-actions { flex-direction: column; }
+    .dw-hero-actions .dw-btn { width: 100%; text-align: center; }
+    .dw-logo-img    { height: 26px; }
+    .dw-logo-text   { font-size: 20px; }
+    .dw-footer-logo img { height: 20px; }
+}
+            </style>
+        </head>
+        <body>
+
+            <!-- ── Navbar ── -->
+            <nav class="dw-nav">
+                <div class="container dw-nav-inner">
+                    <a href="/" class="dw-logo">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" class="dw-logo-img" style="height:32px;"/>
+                        <span class="dw-logo-text" data-i18n="Dawrha">Dawrha</span>
+                    </a>
+
+                    <!-- Desktop links -->
+                    <div class="dw-links">
+                        <a href="/" t-attf-class="dw-link #{'active' if nav_active == 'home' else ''}" data-i18n="Home">Home</a>
+                        <a href="/about" t-attf-class="dw-link #{'active' if nav_active == 'about' else ''}" data-i18n="About">About</a>
+                        <a t-if="not has_accepted_applicant" href="/jobs" t-attf-class="dw-link #{'active' if nav_active == 'openings' else ''}" data-i18n="Jobs">Jobs</a>
+                        <t t-if="not is_public and not is_staff">
+                            <a href="/my/applications" t-attf-class="dw-link #{'active' if nav_active == 'applications' else ''}" data-i18n="My Applications">My Applications</a>
+                        </t>
+                        <t t-if="is_admin">
+                            <a href="/my/jobs" t-attf-class="dw-link #{'active' if nav_active == 'myjobs' else ''}" data-i18n="My Jobs">My Jobs</a>
+                        </t>
+                        <a href="/contact" t-attf-class="dw-link #{'active' if nav_active == 'contact' else ''}" data-i18n="Contact">Contact</a>
+                        <t t-if="not is_public">
+                            <a href="/account" t-attf-class="dw-link #{'active' if nav_active == 'account' else ''}" data-i18n="Account">Account</a>
+                            <a href="/dawrha/logout" target="_top" class="dw-link" data-i18n="Logout">Logout</a>
+                        </t>
+                        <t t-if="is_public">
+                            <a href="/web/login" target="_top" class="dw-link" data-i18n="Sign in">Sign in</a>
+                            <a href="/register" class="dw-link" style="background:linear-gradient(135deg,var(--g700),var(--g500));color:#fff;font-weight:700;" data-i18n="Register">Register</a>
+                        </t>
+                    </div>
+
+                    <div class="dw-nav-right">
+                        <!-- Language EN/AR -->
+                        <button class="dw-lang-btn dw-lang-active" data-lang="en" onclick="dwSetLang('en')" title="English">EN</button>
+                        <button class="dw-lang-btn" data-lang="ar" onclick="dwSetLang('ar')" title="العربية">AR</button>
+                        <!-- Dark / Light toggle -->
+                        <button class="dw-theme-btn" id="dw-theme-btn" title="Toggle dark mode" onclick="dwToggleTheme()">🌙</button>
+                        <!-- Hamburger -->
+                        <div class="dw-ham" id="dw-ham" onclick="dwToggleNav()">
+                            <span/><span/><span/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile drawer -->
+                <div class="dw-nav-drawer" id="dw-nav-drawer">
+                    <a href="/" t-attf-class="dw-link #{'active' if nav_active == 'home' else ''}" data-i18n="🏠 Home">🏠 Home</a>
+                    <a href="/about" t-attf-class="dw-link #{'active' if nav_active == 'about' else ''}" data-i18n="ℹ️ About">ℹ️ About</a>
+                    <a t-if="not has_accepted_applicant" href="/jobs" t-attf-class="dw-link #{'active' if nav_active == 'openings' else ''}" data-i18n="💼 Jobs">💼 Jobs</a>
+                    <t t-if="not is_public and not is_staff">
+                        <a href="/my/applications" t-attf-class="dw-link #{'active' if nav_active == 'applications' else ''}" data-i18n="📋 My Applications">📋 My Applications</a>
+                    </t>
+                    <t t-if="is_admin">
+                        <a href="/my/jobs" t-attf-class="dw-link #{'active' if nav_active == 'myjobs' else ''}" data-i18n="💼 My Jobs">💼 My Jobs</a>
+                    </t>
+                    <a href="/contact" t-attf-class="dw-link #{'active' if nav_active == 'contact' else ''}" data-i18n="📞 Contact">📞 Contact</a>
+                    <t t-if="not is_public">
+                        <a href="/account" t-attf-class="dw-link #{'active' if nav_active == 'account' else ''}" data-i18n="👤 Account">👤 Account</a>
+                        <a href="/dawrha/logout" target="_top" class="dw-link" data-i18n="🚪 Logout">🚪 Logout</a>
+                    </t>
+                    <t t-if="is_public">
+                        <a href="/web/login" target="_top" class="dw-link" data-i18n="🔑 Sign in">🔑 Sign in</a>
+                        <a href="/register" class="dw-link" style="background:var(--g100);color:var(--g700);font-weight:700;" data-i18n="✍️ Register">✍️ Register</a>
+                    </t>
+                </div>
+            </nav>
+
+            <main><t t-out="0"/></main>
+
+            <footer class="dw-footer">
+                <div class="container dw-footer-inner">
+                    <span>
+                        <span class="dw-footer-logo">
+                            <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="height:24px;margin-right:8px;vertical-align:middle;"/>
+                            Dawrha
+                        </span>
+                        <span class="dw-footer-copy" data-i18n="© 2026 Dawrha — Smart Recycling Platform">© 2026 Dawrha — Smart Recycling Platform</span>
+                    </span>
+                    <span>
+                        <a href="/about" data-i18n="About">About</a>
+                        <a t-if="not has_accepted_applicant" href="/jobs" data-i18n="Jobs">Jobs</a>
+                        <a href="/contact" data-i18n="Contact">Contact</a>
+                    </span>
+                </div>
+            </footer>
+
+            <!-- ── Scripts ── -->
+            <script>
+                // ── Theme ──────────────────────────────────────────
+                function dwUpdateThemeBtn() {
+                    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    var btn = document.getElementById('dw-theme-btn');
+                    if (btn) btn.textContent = dark ? '☀️' : '🌙';
+                }
+                function dwToggleTheme() {
+                    var current = document.documentElement.getAttribute('data-theme');
+                    var next = current === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-theme', next);
+                    localStorage.setItem('dw-theme', next);
+                    dwUpdateThemeBtn();
+                }
+                dwUpdateThemeBtn();
+
+                // ── Instant navbar active state on click ──────────
+                // The clicked item lights up green immediately (before
+                // the new page loads) and stays lit — desktop + drawer.
+                document.addEventListener('click', function (e) {
+                    var link = e.target.closest ? e.target.closest('.dw-link') : null;
+                    if (!link || !link.getAttribute('href')) return;
+                    var all = document.querySelectorAll('.dw-link');
+                    for (var i = 0; i &lt; all.length; i++) all[i].classList.remove('active');
+                    link.classList.add('active');
+                });
+
+                // ── Mobile nav ─────────────────────────────────────
+                function dwToggleNav() {
+                    var drawer = document.getElementById('dw-nav-drawer');
+                    if (drawer) drawer.classList.toggle('open');
+                }
+                // Close on outside click
+                document.addEventListener('click', function(e) {
+                    var ham = document.getElementById('dw-ham');
+                    var drawer = document.getElementById('dw-nav-drawer');
+                    if (drawer &amp;&amp; !drawer.contains(e.target) &amp;&amp; ham &amp;&amp; !ham.contains(e.target)) {
+                        drawer.classList.remove('open');
+                    }
+                });
+
+                // ── Run i18n after page is fully loaded ──
+                if (typeof dwApplyTranslations === 'function') {
+                    if (document.readyState === 'complete') {
+                        dwApplyTranslations();
+                    } else {
+                        window.addEventListener('load', dwApplyTranslations);
+                    }
+                }
+            </script>
+        </body>
+    </html>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Home Page (redesigned)                                            -->
+<!-- ================================================================ -->
+<!-- Reusable statistic card (icon + big number + translatable label) -->
+<template id="home_stat_card" name="Dawrha Stat Card">
+    <div class="dw-detail-card dw-stat-card">
+        <div class="dw-stat-icon"><t t-esc="stat_icon"/></div>
+        <div class="dw-stat-num" t-esc="stat_value"/>
+        <div class="dw-stat-lbl" t-att-data-i18n="stat_label"><t t-esc="stat_label"/></div>
+    </div>
+</template>
+
+<template id="home_page" name="Home">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">Home</t>
+
+        <!-- ── Hero ── -->
+        <section class="dw-hero">
+            <div class="container dw-hero-grid">
+                <div>
+                    <div class="dw-about-badge" data-i18n="🌱 Sustainability-Driven Platform">🌱 Sustainability-Driven Platform</div>
+                    <h1 data-i18n="Dawrha — Build a Smarter Future Through Recycling" class="dw-i18n-wrap">Dawrha — <span class="grad">Build a Smarter Future</span> Through Recycling</h1>
+                    <p data-i18n="Dawrha is a modern platform that connects individuals, warehouses, and recycling operations to efficiently manage waste collection, sorting, and sustainable resource recovery.">Dawrha is a modern platform that connects individuals, warehouses, and recycling operations to efficiently manage waste collection, sorting, and sustainable resource recovery.</p>
+                    <div class="dw-hero-actions">
+                        <a t-if="not has_accepted_applicant" href="/jobs" class="dw-btn dw-btn-primary" data-i18n="💼 View Open Positions">💼 View Open Positions</a>
+                        <a href="/about" class="dw-btn dw-btn-secondary" data-i18n="Learn More">Learn More</a>
+                    </div>
+                </div>
+                <div class="dw-hero-img">
+                    <t t-call="recycle_warehouse.image_carousel"/>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Live stats (all values from DB — no static numbers) ── -->
+        <section class="dw-section" style="padding-top:0;">
+            <div class="container">
+                <div class="dw-stats-grid">
+                    <t t-call="recycle_warehouse.home_stat_card">
+                        <t t-set="stat_icon">🏭</t>
+                        <t t-set="stat_value" t-value="warehouse_count"/>
+                        <t t-set="stat_label">Warehouses</t>
+                    </t>
+                    <t t-call="recycle_warehouse.home_stat_card">
+                        <t t-set="stat_icon">👷</t>
+                        <t t-set="stat_value" t-value="employee_count"/>
+                        <t t-set="stat_label">Employees</t>
+                    </t>
+                    <t t-call="recycle_warehouse.home_stat_card">
+                        <t t-set="stat_icon">📦</t>
+                        <t t-set="stat_value" t-value="order_count"/>
+                        <t t-set="stat_label">Orders</t>
+                    </t>
+                    <t t-call="recycle_warehouse.home_stat_card">
+                        <t t-set="stat_icon">♻️</t>
+                        <t t-set="stat_value" t-value="tons_recycled"/>
+                        <t t-set="stat_label">Tons Recycled</t>
+                    </t>
+                    <t t-call="recycle_warehouse.home_stat_card">
+                        <t t-set="stat_icon">📈</t>
+                        <t t-set="stat_value" t-value="growth_display"/>
+                        <t t-set="stat_label">Monthly Growth</t>
+                    </t>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── How it Works ── -->
+        <section class="dw-feat-section">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="How the Platform Works">How the Platform Works</h2>
+                <p class="dw-section-sub" data-i18n="Four simple steps from collection to value creation.">Four simple steps from collection to value creation.</p>
+                <div class="dw-feat-grid">
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">🗂️</div>
+                        <h3 data-i18n="1. Collect Recyclable Materials">1. Collect Recyclable Materials</h3>
+                        <p data-i18n="Gather and register incoming recyclable materials at the receiving warehouse zone.">Gather and register incoming recyclable materials at the receiving warehouse zone.</p>
+                    </div>
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">🔄</div>
+                        <h3 data-i18n="2. Sort &amp; Manage Operations">2. Sort &amp; Manage Operations</h3>
+                        <p data-i18n="Sort materials by type and condition across dedicated warehouse zones with smart tracking.">Sort materials by type and condition across dedicated warehouse zones with smart tracking.</p>
+                    </div>
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">👷</div>
+                        <h3 data-i18n="3. Assign Workers &amp; Track Performance">3. Assign Workers &amp; Track Performance</h3>
+                        <p data-i18n="Coordinate employees, manage shifts, and monitor attendance and performance in real time.">Coordinate employees, manage shifts, and monitor attendance and performance in real time.</p>
+                    </div>
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">♻️</div>
+                        <h3 data-i18n="4. Recycle &amp; Generate Value">4. Recycle &amp; Generate Value</h3>
+                        <p data-i18n="Process sorted materials into valuable resources, generate orders, and deliver to customers.">Process sorted materials into valuable resources, generate orders, and deliver to customers.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Why Dawrha ── -->
+        <section class="dw-section" style="padding-top:64px;">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="Why Dawrha?">Why Dawrha?</h2>
+                <p class="dw-section-sub" data-i18n="We're building the infrastructure for a cleaner, smarter planet.">We're building the infrastructure for a cleaner, smarter planet.</p>
+                <div class="dw-feat-grid">
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">🌍</div>
+                        <h3 data-i18n="Reduce Environmental Pollution">Reduce Environmental Pollution</h3>
+                        <p data-i18n="Every ton recycled through Dawrha reduces landfill waste and carbon emissions.">Every ton recycled through Dawrha reduces landfill waste and carbon emissions.</p>
+                    </div>
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">🏭</div>
+                        <h3 data-i18n="Smart Warehouse Management">Smart Warehouse Management</h3>
+                        <p data-i18n="Digitize your entire warehouse workflow — from receiving to stock to orders — in one system.">Digitize your entire warehouse workflow — from receiving to stock to orders — in one system.</p>
+                    </div>
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">📊</div>
+                        <h3 data-i18n="Real-Time Material Tracking">Real-Time Material Tracking</h3>
+                        <p data-i18n="Know exactly what's in your warehouse at any moment with live inventory and shipment tracking.">Know exactly what's in your warehouse at any moment with live inventory and shipment tracking.</p>
+                    </div>
+                    <div class="dw-feat-card">
+                        <div class="dw-feat-icon">🤝</div>
+                        <h3 data-i18n="Efficient Workforce Coordination">Efficient Workforce Coordination</h3>
+                        <p data-i18n="Manage all your employees, shifts, and attendance seamlessly across multiple warehouses.">Manage all your employees, shifts, and attendance seamlessly across multiple warehouses.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dw-feat-section">
+            <div class="container" style="text-align:center;">
+                <h2 class="dw-section-title" data-i18n="Ready to Join Us?">Ready to Join Us?</h2>
+                <p class="dw-section-sub" data-i18n="Explore our open positions and start your journey with Dawrha.">Explore our open positions and start your journey with Dawrha.</p>
+                <a t-if="not has_accepted_applicant" href="/jobs" class="dw-btn dw-btn-primary" style="font-size:18px;padding:16px 40px;" data-i18n="💼 Browse Open Positions">💼 Browse Open Positions</a>
+            </div>
+        </section>
+    </t>
+</template>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- Jobs List Page (only job openings)                              -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<template id="jobs_list_page" name="Jobs">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">Jobs</t>
+
+        <style>
+        /* ── Jobs toolbar + horizontal cards (spec §17) ── */
+        .dw-jobs-toolbar {
+            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+            margin-bottom: 24px;
+        }
+        .dw-jobs-search {
+            flex: 1; min-width: 220px; position: relative;
+        }
+        .dw-jobs-search input {
+            width: 100%; padding: 13px 44px 13px 16px; font-size: 15px;
+            border: 2px solid var(--border); border-radius: 14px;
+            background: var(--surface); color: var(--text);
+            font-family: inherit; outline: none;
+            transition: border .2s, box-shadow .2s;
+        }
+        [dir="rtl"] .dw-jobs-search input { padding: 13px 16px 13px 44px; }
+        .dw-jobs-search input:focus {
+            border-color: var(--g500);
+            box-shadow: 0 0 0 4px rgba(31,184,118,.14);
+        }
+        .dw-jobs-search .ico {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            inset-inline-end: 14px; color: var(--muted); pointer-events: none;
+        }
+        .dw-jobs-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .dw-jobs-tab {
+            padding: 10px 18px; border-radius: 100px;
+            border: 1.5px solid var(--border); background: var(--surface);
+            color: var(--muted); font-size: 13px; font-weight: 700;
+            cursor: pointer; font-family: inherit; transition: all .18s;
+        }
+        .dw-jobs-tab:hover { border-color: var(--g500); color: var(--g700); }
+        .dw-jobs-tab.active {
+            background: var(--g100); border-color: var(--g500); color: var(--g700);
+        }
+        .dw-job-row {
+            display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 18px; padding: 20px 22px; margin-bottom: 14px;
+            box-shadow: var(--card-sh);
+            transition: transform .18s, box-shadow .18s, border-color .18s;
+        }
+        .dw-job-row:hover {
+            transform: translateY(-2px); box-shadow: var(--card-sh-h);
+            border-color: rgba(31,184,118,.4);
+        }
+        .dw-job-ico {
+            flex: 0 0 52px; height: 52px; border-radius: 14px;
+            background: var(--g100); color: var(--g700);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .dw-job-main { flex: 1 1 240px; min-width: 0; }
+        .dw-job-main h3 { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+        .dw-job-main .desc {
+            font-size: 13px; color: var(--muted);
+            overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        .dw-job-tags { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .dw-job-row .dw-btn { flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .dw-job-row { flex-direction: column; align-items: stretch; text-align: center; }
+            .dw-job-ico { margin: 0 auto; }
+            .dw-job-tags { justify-content: center; }
+            .dw-job-row .dw-btn { width: 100%; }
+        }
+        </style>
+
+        <!-- ── Open Positions ── -->
+        <section class="dw-feat-section" id="openings">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="Open Positions">Open Positions</h2>
+                <p class="dw-section-sub" data-i18n="Join our eco-friendly operations team and make a real impact.">Join our eco-friendly operations team and make a real impact.</p>
+
+                <!-- Search + type tabs -->
+                <div class="dw-jobs-toolbar" t-if="jobs">
+                    <div class="dw-jobs-search">
+                        <input type="text" id="dwJobSearch" placeholder="Search positions…"
+                               oninput="dwFilterJobs()"/>
+                        <span class="ico">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="dw-jobs-tabs">
+                        <button type="button" class="dw-jobs-tab active" data-type="all"
+                                onclick="dwJobTab(this)" data-i18n="All">All</button>
+                        <button type="button" class="dw-jobs-tab" data-type="manager"
+                                onclick="dwJobTab(this)" data-i18n="🏭 Warehouse Management">🏭 Warehouse Management</button>
+                        <button type="button" class="dw-jobs-tab" data-type="employee"
+                                onclick="dwJobTab(this)" data-i18n="♻️ Recycling Operations">♻️ Recycling Operations</button>
+                    </div>
+                </div>
+
+                <t t-if="not jobs">
+                    <div class="dw-alert dw-alert-info" data-i18n="There are no open positions at the moment. Please check back soon.">
+                        <div style="font-size:32px;margin-bottom:10px;">📭</div>
+                        There are no open positions at the moment. Please check back soon.
+                    </div>
+                </t>
+
+                <div id="dwJobsList">
+                    <div t-foreach="jobs" t-as="job" class="dw-job-row"
+                         t-att-data-name="(job.name or '').lower()"
+                         t-att-data-type="'manager' if job.recycle_job_type == 'manager' else 'employee'">
+                        <div class="dw-job-ico">
+                            <t t-if="job.recycle_job_type == 'manager'">🏭</t>
+                            <t t-elif="job.recycle_job_type == 'input'">📥</t>
+                            <t t-elif="job.recycle_job_type == 'sorting'">♻️</t>
+                            <t t-elif="job.recycle_job_type == 'output'">📤</t>
+                            <t t-else="">♻️</t>
+                        </div>
+                        <div class="dw-job-main">
+                            <h3 t-esc="job.name"/>
+                            <div class="desc">
+                                <t t-esc="excerpts.get(job.id) or 'Join our eco-friendly operations team and make a real impact.'"/>
+                            </div>
+                        </div>
+                        <div class="dw-job-tags">
+                            <span t-if="is_admin and job.recycle_publish" class="dw-status st-accepted" data-i18n="Published">Published</span>
+                            <span t-if="is_admin and not job.recycle_publish" class="dw-status st-applied" data-i18n="Unpublished">Unpublished</span>
+                            <span class="dw-pill" style="margin:0;">
+                                <t t-if="job.recycle_job_type == 'manager'"><span data-i18n="🏭 Warehouse Management">🏭 Warehouse Management</span></t>
+                                <t t-elif="job.recycle_job_type == 'input'"><span data-i18n="📥 Input Employee">📥 Input Employee</span></t>
+                                <t t-elif="job.recycle_job_type == 'sorting'"><span data-i18n="♻️ Sorting Employee">♻️ Sorting Employee</span></t>
+                                <t t-elif="job.recycle_job_type == 'output'"><span data-i18n="📤 Output Employee">📤 Output Employee</span></t>
+                                <t t-else=""><span data-i18n="♻️ Recycling Operations">♻️ Recycling Operations</span></t>
+                            </span>
+                            <span class="dw-pill" style="margin:0;">
+                                <t t-esc="int(job.no_of_recruitment) if job.no_of_recruitment else 1"/>
+                                <span data-i18n="open role(s)">open role(s)</span>
+                            </span>
+                        </div>
+                        <a t-attf-href="/jobs/#{job.id}" class="dw-btn dw-btn-primary" data-i18n="View &amp; Apply →">View &amp; Apply →</a>
+                    </div>
+                    <div id="dwJobsEmpty" class="dw-alert dw-alert-info" style="display:none;"
+                         data-i18n="No positions match your search.">No positions match your search.</div>
+                </div>
+
+                <script>
+                    var dwJobType = 'all';
+                    function dwJobTab(btn) {
+                        dwJobType = btn.getAttribute('data-type');
+                        var tabs = document.querySelectorAll('.dw-jobs-tab');
+                        for (var i = 0; i &lt; tabs.length; i++) tabs[i].classList.remove('active');
+                        btn.classList.add('active');
+                        dwFilterJobs();
+                    }
+                    function dwFilterJobs() {
+                        var q = (document.getElementById('dwJobSearch').value || '').toLowerCase().trim();
+                        var rows = document.querySelectorAll('#dwJobsList .dw-job-row');
+                        var visible = 0;
+                        for (var i = 0; i &lt; rows.length; i++) {
+                            var r = rows[i];
+                            var okType = dwJobType === 'all' || r.getAttribute('data-type') === dwJobType;
+                            var okText = !q || (r.getAttribute('data-name') || '').indexOf(q) !== -1;
+                            var show = okType &amp;&amp; okText;
+                            r.style.display = show ? '' : 'none';
+                            if (show) visible++;
+                        }
+                        var empty = document.getElementById('dwJobsEmpty');
+                        if (empty) empty.style.display = visible ? 'none' : 'block';
+                    }
+                </script>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- About Page                                                         -->
+<!-- ================================================================ -->
+<template id="about_page" name="About Dawrha">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">About</t>
+
+        <!-- Hero -->
+        <section class="dw-about-hero">
+            <div class="container">
+                <div class="dw-about-badge" data-i18n="🎯 Our Story &amp; Mission">🎯 Our Story &amp; Mission</div>
+                <h1 data-i18n="About Dawrha" class="dw-i18n-wrap">About <span style="background:linear-gradient(135deg,var(--g700),var(--g400));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Dawrha</span></h1>
+                <p data-i18n="Dawrha is a sustainability-driven platform designed to revolutionize the recycling industry by digitizing waste collection, warehouse management, and workforce coordination.">Dawrha is a sustainability-driven platform designed to revolutionize the recycling industry by digitizing waste collection, warehouse management, and workforce coordination.</p>
+            </div>
+        </section>
+
+        <!-- Static hero image (slider is reserved for the home page) -->
+        <section class="dw-section" style="padding-top:0;">
+            <div class="container">
+                <img src="/recycle_warehouse/static/img/hero4.jpg" alt="Dawrha recycling facility"
+                     draggable="false"
+                     style="width:100%;max-height:420px;object-fit:cover;border-radius:24px;box-shadow:var(--card-sh-h);"/>
+            </div>
+        </section>
+
+        <!-- Vision + Mission -->
+        <section class="dw-section" style="padding-top:0;">
+            <div class="container">
+                <div class="dw-visionmission">
+
+                    <div class="dw-vm-card">
+                        <div class="dw-vm-label" data-i18n="🌍 Our Vision">🌍 Our Vision</div>
+                        <h2 data-i18n="A Cleaner, Smarter World">A Cleaner, Smarter World</h2>
+                        <p data-i18n="To create a cleaner and more sustainable world by optimizing recycling processes through smart technology. We envision a future where waste is not a problem — it's a resource.">To create a cleaner and more sustainable world by optimizing recycling processes through smart technology. We envision a future where waste is not a problem — it's a resource.</p>
+                    </div>
+
+                    <div class="dw-vm-card">
+                        <div class="dw-vm-label" data-i18n="🎯 Our Mission">🎯 Our Mission</div>
+                        <h2 data-i18n="Connecting the Recycling Ecosystem">Connecting the Recycling Ecosystem</h2>
+                        <p data-i18n="To connect recycling warehouses, employees, and operations in a unified system that improves efficiency, transparency, and environmental impact — making sustainable business the norm.">To connect recycling warehouses, employees, and operations in a unified system that improves efficiency, transparency, and environmental impact — making sustainable business the norm.</p>
+                    </div>
+
+                </div>
+
+                <!-- What we do -->
+                <h2 class="dw-section-title" style="margin-top:56px;" data-i18n="What We Do">What We Do</h2>
+                <p class="dw-section-sub" data-i18n="Everything you need to run a modern, efficient recycling operation.">Everything you need to run a modern, efficient recycling operation.</p>
+                <div class="dw-what-list">
+                    <div class="dw-what-item">
+                        <div class="dw-what-icon">🏭</div>
+                        <p data-i18n="Manage Recycling Warehouses">Manage Recycling Warehouses</p>
+                    </div>
+                    <div class="dw-what-item">
+                        <div class="dw-what-icon">📦</div>
+                        <p data-i18n="Track Recyclable Materials">Track Recyclable Materials</p>
+                    </div>
+                    <div class="dw-what-item">
+                        <div class="dw-what-icon">⚡</div>
+                        <p data-i18n="Improve Recycling Efficiency">Improve Recycling Efficiency</p>
+                    </div>
+                    <div class="dw-what-item">
+                        <div class="dw-what-icon">👷</div>
+                        <p data-i18n="Coordinate Warehouse Workforce">Coordinate Warehouse Workforce</p>
+                    </div>
+                    <div class="dw-what-item">
+                        <div class="dw-what-icon">📊</div>
+                        <p data-i18n="Real-Time Operations Tracking">Real-Time Operations Tracking</p>
+                    </div>
+                    <div class="dw-what-item">
+                        <div class="dw-what-icon">🌱</div>
+                        <p data-i18n="Drive Environmental Sustainability">Drive Environmental Sustainability</p>
+                    </div>
+                </div>
+
+                <div style="margin-top:56px;text-align:center;">
+                    <a t-if="not has_accepted_applicant" href="/jobs" class="dw-btn dw-btn-primary" style="margin-right:16px;" data-i18n="💼 View Open Positions">💼 View Open Positions</a>
+                    <a href="/contact" class="dw-btn dw-btn-secondary" data-i18n="📞 Get in Touch">📞 Get in Touch</a>
+                </div>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Job detail                                                         -->
+<!-- ================================================================ -->
+<template id="job_detail_page" name="Job Detail">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title" t-value="job.name"/>
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <div class="dw-breadcrumb">
+                    <a href="/" data-i18n="Home">Home</a> / <a href="/jobs" data-i18n="Jobs">Jobs</a> / <t t-esc="job.name"/>
+                </div>
+                <div class="dw-detail-card">
+                    <h1 t-esc="job.name"/>
+                    <span class="dw-pill" style="margin-bottom:20px;display:inline-block;">
+                        <t t-if="job.recycle_job_type == 'manager'"><span data-i18n="🏭 Warehouse Management">🏭 Warehouse Management</span></t>
+                        <t t-elif="job.recycle_job_type == 'input'"><span data-i18n="📥 Input Employee">📥 Input Employee</span></t>
+                        <t t-elif="job.recycle_job_type == 'sorting'"><span data-i18n="♻️ Sorting Employee">♻️ Sorting Employee</span></t>
+                        <t t-elif="job.recycle_job_type == 'output'"><span data-i18n="📤 Output Employee">📤 Output Employee</span></t>
+                        <t t-else=""><span data-i18n="♻️ Recycling Operations">♻️ Recycling Operations</span></t>
+                    </span>
+                    <div class="dw-richtext" t-if="job.recycle_description">
+                        <t t-out="job.recycle_description"/>
+                    </div>
+                    <div class="dw-richtext" t-if="not job.recycle_description" data-i18n="Join our eco-friendly operations team and make a real impact in the sustainability sector.">
+                        Join our eco-friendly operations team and make a real impact in the sustainability sector.
+                    </div>
+                    <t t-if="request.params.get('noadmin')">
+                        <div class="dw-alert dw-alert-error" data-i18n="🔒 Administrators manage job postings and cannot apply to them.">
+                            🔒 Administrators manage job postings and cannot apply to them.
+                        </div>
+                    </t>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <a t-if="not is_admin and not is_staff" t-attf-href="/jobs/apply/#{job.id}" class="dw-btn dw-btn-primary" data-i18n="Apply Now →">Apply Now →</a>
+                        <a href="/jobs" class="dw-btn dw-btn-secondary" data-i18n="← Back to Jobs">← Back to Jobs</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Profile Completion (before applying)                                  -->
+<!-- ================================================================ -->
+<template id="profile_complete_page" name="Complete Profile">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title" t-value="'Complete Profile'"/>
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <div class="dw-breadcrumb">
+                    <a href="/jobs" data-i18n="Jobs">Jobs</a> / <a t-attf-href="/jobs/#{job.id}"><t t-esc="job.name"/></a> / <span data-i18n="Complete Profile">Complete Profile</span>
+                </div>
+                <h2 class="dw-section-title" data-i18n="Complete Your Profile">Complete Your Profile</h2>
+                <p class="dw-section-sub" data-i18n="Please fill in your information before applying.">Please fill in your information before applying.</p>
+
+                <t t-if="error">
+                    <div class="dw-alert dw-alert-error" style="max-width:640px;">
+                        <t t-esc="error"/>
+                    </div>
+                </t>
+
+                <div class="dw-apply-grid">
+                    <div class="dw-form-card" style="max-width:none;">
+                        <form method="post" enctype="multipart/form-data" t-attf-action="/jobs/apply/#{job.id}/complete-profile">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="dw_lang" class="dw_lang_input"/>
+                            <div class="dw-field">
+                                <label data-i18n="National ID *">National ID *</label>
+                                <input type="text" name="national_id" required="required"
+                                       t-att-value="nid_val"
+                                       placeholder="Digits only (5–20)"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Address">Address</label>
+                                <input type="text" name="street" t-att-value="street_val"
+                                       placeholder="Street address"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="City">City</label>
+                                <input type="text" name="city" t-att-value="city_val"
+                                       placeholder="City"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Profile Image">Profile Image</label>
+                                <input type="file" name="profile_image" accept="image/*"/>
+                                <div class="dw-hint" data-i18n="Optional. Upload a profile picture.">Optional. Upload a profile picture.</div>
+                            </div>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">
+                                <button type="submit" class="dw-btn dw-btn-primary" style="flex:1;padding:14px 24px;font-size:16px;" data-i18n="Save &amp; Continue →">Save &amp; Continue →</button>
+                                <a t-attf-href="/jobs/#{job.id}" class="dw-btn dw-btn-secondary" data-i18n="Cancel">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="dw-apply-img">
+                        <img src="/recycle_warehouse/static/img/hero4.jpg"
+                             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&amp;fit=crop&amp;w=1200&amp;q=80';"
+                             alt="Dawrha recycling facility"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Apply form                                                         -->
+<!-- ================================================================ -->
+<template id="job_apply_page" name="Apply">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title" t-value="'Apply: %s' % job.name"/>
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <div class="dw-breadcrumb">
+                    <a href="/jobs" data-i18n="Home">Home</a> / <a t-attf-href="/jobs/#{job.id}"><t t-esc="job.name"/></a> / <span data-i18n="Apply">Apply</span>
+                </div>
+                <h2 class="dw-section-title"><t t-esc="'Apply: ' + job.name"/></h2>
+
+                <t t-if="domain_blocked">
+                    <div class="dw-alert dw-alert-error">
+                        <span data-i18n="Applications are only accepted from email addresses ending with">Applications are only accepted from email addresses ending with</span>
+                        <strong>@<t t-esc="domain_blocked"/></strong>.
+                        <span data-i18n="Your account email">Your account email</span> (<t t-esc="email"/>) <span data-i18n="is not allowed.">is not allowed.</span>
+                    </div>
+                    <a href="/jobs" class="dw-btn dw-btn-secondary" data-i18n="← Back to Jobs">← Back to Jobs</a>
+                </t>
+
+                <t t-if="dup_error">
+                    <div class="dw-modal-backdrop" id="dwDupModal">
+                        <div class="dw-modal">
+                            <div class="dw-modal-icon">!</div>
+                            <h3 t-esc="dup_title"/>
+                            <p t-raw="dup_msg"/>
+                            <button type="button" class="dw-btn dw-btn-primary"
+                                    onclick="document.getElementById('dwDupModal').style.display='none'">
+                                OK / حسناً
+                            </button>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="not domain_blocked">
+                    <t t-if="errors">
+                        <div class="dw-alert dw-alert-error">
+                            <ul><li t-foreach="errors" t-as="err" t-esc="err"/></ul>
+                        </div>
+                    </t>
+                    <div class="dw-apply-grid">
+                <div class="dw-form-card" style="max-width:none;">
+                            <form method="post" enctype="multipart/form-data" t-attf-action="/jobs/apply/#{job.id}">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="dw_lang" class="dw_lang_input"/>
+                                <div class="dw-field">
+                                    <label data-i18n="Email">Email</label>
+                                    <input type="text" t-att-value="email" readonly="readonly"/>
+                                </div>
+                                <div class="dw-field">
+                                    <label data-i18n="Phone Number *">Phone Number *</label>
+                                    <input type="tel" name="phone" t-att-value="phone" required="required" placeholder="e.g. 0991234567"/>
+                                </div>
+                                <div class="dw-field">
+                                    <label data-i18n="National ID *">National ID *</label>
+                                    <input type="text" t-att-value="national_id" readonly="readonly"/>
+                                </div>
+                                <div class="dw-field">
+                                    <label data-i18n="Files (CV, certificates...) *">Files (CV, certificates...) *</label>
+                                    <input type="file" name="attachments" multiple="multiple" required="required"/>
+                                    <div class="dw-hint" data-i18n="You can select multiple files. CV is required.">You can select multiple files. CV is required.</div>
+                                </div>
+                                <div class="dw-field">
+                                    <label data-i18n="Description">Description</label>
+                                    <textarea name="description" rows="4" placeholder="Tell us briefly about yourself..."><t t-esc="description or ''"/></textarea>
+                                </div>
+                                <div class="dw-field">
+                                    <label data-i18n="Profile Link (LinkedIn / GitHub)">Profile Link (LinkedIn / GitHub)</label>
+                                    <input type="url" name="profile_url" t-att-value="profile_url" placeholder="https://linkedin.com/in/your-profile"/>
+                                    <div class="dw-hint" data-i18n="Optional — must start with https://">Optional — must start with https://</div>
+                                </div>
+                                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                    <button type="submit" class="dw-btn dw-btn-primary" data-i18n="Submit Application →">Submit Application →</button>
+                                    <a t-attf-href="/jobs/#{job.id}" class="dw-btn dw-btn-secondary" data-i18n="Cancel">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="dw-apply-img">
+                            <img src="/recycle_warehouse/static/img/hero4.jpg"
+                                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&amp;fit=crop&amp;w=1200&amp;q=80';"
+                                 alt="Dawrha recycling facility"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Account page                                                       -->
+<!-- ================================================================ -->
+<template id="account_page" name="My Account">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">My Account</t>
+
+        <style>
+        /* ── Account layout: sidebar + main (spec §11 + §17) ── */
+        .dw-acc-layout {
+            display: grid; grid-template-columns: 280px 1fr;
+            gap: 24px; align-items: start;
+        }
+        .dw-acc-layout > * { min-width: 0; }
+        .dw-acc-side {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 28px 20px 16px;
+            box-shadow: var(--card-sh); text-align: center;
+            position: sticky; top: 88px;
+        }
+        .dw-profile-avatar {
+            width: 92px; height: 92px; border-radius: 9999px;
+            margin: 0 auto 14px;
+            background: linear-gradient(135deg, var(--g700), var(--g500));
+            color: #fff; font-size: 36px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 28px rgba(31,184,118,.3);
+            overflow: hidden; cursor: pointer; position: relative;
+        }
+        .dw-profile-avatar:hover::after {
+            content: '📷'; position: absolute; inset: 0;
+            background: rgba(0,0,0,.5); display: flex;
+            align-items: center; justify-content: center; font-size: 26px;
+        }
+        .dw-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .dw-acc-name { font-size: 20px; font-weight: 800; color: var(--text); }
+        .dw-acc-role { margin: 6px 0 18px; }
+        .dw-acc-nav { display: flex; flex-direction: column; gap: 4px; text-align: start; }
+        .dw-acc-nav a, .dw-acc-nav button {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px; border-radius: 12px; border: none;
+            background: none; width: 100%; cursor: pointer;
+            font-size: 14px; font-weight: 600; color: var(--muted);
+            font-family: inherit; transition: all .18s; text-align: start;
+        }
+        .dw-acc-nav a:hover, .dw-acc-nav button:hover {
+            color: var(--g700); background: var(--g50);
+        }
+        .dw-acc-nav .active { color: var(--g700); background: var(--g100); }
+        .dw-acc-nav .danger:hover { color: #dc2626; background: rgba(220,38,38,.08); }
+        .dw-acc-divider { height: 1px; background: var(--border); margin: 10px 4px; }
+
+        /* Welcome banner */
+        .dw-acc-welcome {
+            position: relative; overflow: hidden;
+            border-radius: 20px; padding: 30px 28px;
+            background:
+                radial-gradient(ellipse 70% 120% at 85% 0%, rgba(31,184,118,.28), transparent),
+                linear-gradient(135deg, var(--g900), var(--g700));
+            color: #fff; box-shadow: var(--card-sh-h);
+        }
+        .dw-acc-welcome::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 36px 36px;
+        }
+        .dw-acc-welcome h3 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+        .dw-acc-welcome p { font-size: 14px; opacity: .85; max-width: 520px; }
+
+        /* Info + activity cards */
+        .dw-acc-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 24px; box-shadow: var(--card-sh);
+            margin-top: 24px; transition: box-shadow .25s;
+        }
+        .dw-acc-card:hover { box-shadow: var(--card-sh-h); }
+        .dw-acc-card h4 {
+            font-size: 16px; font-weight: 800; color: var(--text);
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+        .dw-acc-card h4::after {
+            content: ''; flex: 0 0 34px; height: 4px; border-radius: 2px;
+            background: var(--g500); margin-inline-start: 6px;
+        }
+        .dw-profile-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+            text-align: start;
+        }
+        .dw-profile-item label {
+            display: block; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px;
+            color: var(--muted); margin-bottom: 4px;
+        }
+        .dw-profile-item span {
+            font-size: 15px; font-weight: 600; color: var(--text);
+            word-break: break-word;
+        }
+        .dw-acc-stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px; margin-top: 24px;
+        }
+        .dw-profile-stat {
+            background: linear-gradient(135deg, rgba(31,184,118,.09), rgba(31,184,118,.03));
+            border: 1px solid rgba(31,184,118,.14);
+            border-radius: 16px; padding: 18px 14px; text-align: center;
+            transition: transform .18s, box-shadow .18s;
+        }
+        .dw-profile-stat:hover { transform: translateY(-3px); box-shadow: var(--card-sh-h); }
+        .dw-profile-stat .num {
+            font-size: 26px; font-weight: 900;
+            background: linear-gradient(135deg, var(--g700), var(--g400));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dw-profile-stat .lbl {
+            font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 2px;
+        }
+        .dw-acc-activity { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .dw-acc-activity th {
+            text-align: left; padding: 10px 14px; font-weight: 700; font-size: 12px;
+            text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted);
+            border-bottom: 2px solid var(--border);
+        }
+        .dw-acc-activity td {
+            padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text);
+        }
+        .dw-acc-activity tr:last-child td { border-bottom: none; }
+        .dw-acc-activity tr:hover td { background: var(--surface2); }
+        .dw-acc-activity .act-title { font-weight: 600; color: var(--text); }
+        .dw-acc-activity .act-date { color: var(--muted); font-size: 13px; }
+        @media (max-width: 900px) {
+            .dw-acc-layout { grid-template-columns: 1fr; }
+            .dw-acc-side { position: static; }
+            .dw-acc-welcome-mobile { display: block !important; }
+            .dw-acc-welcome:not(.dw-acc-welcome-mobile) { display: none !important; }
+        }
+        @media (max-width: 600px) {
+            .dw-acc-welcome { padding: 22px 18px; }
+            .dw-acc-welcome-mobile { padding: 22px 18px; margin-bottom: 16px; }
+            .dw-acc-welcome p, .dw-acc-welcome-mobile p { max-width: 100%; }
+            .dw-profile-grid { grid-template-columns: 1fr; }
+            .dw-acc-activity { font-size: 13px; }
+            .dw-acc-activity th, .dw-acc-activity td { padding: 8px 10px; }
+            .dw-acc-nav a, .dw-acc-nav button { white-space: normal; }
+        }
+        .dw-acc-welcome-mobile { display: none; }
+        </style>
+
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="My Account">My Account</h2>
+
+                <t t-if="pwd_success">
+                    <div class="dw-alert dw-alert-success" style="max-width:640px;" data-i18n="✅ Your password has been updated successfully.">
+                        ✅ Your password has been updated successfully.
+                    </div>
+                </t>
+                <t t-if="no_dashboard">
+                    <div class="dw-alert dw-alert-error" style="max-width:640px;" data-i18n="🔒 The dashboard is available only to accepted employees.">
+                        🔒 The dashboard is available only to accepted employees.
+                    </div>
+                </t>
+                <t t-if="saved_nid">
+                    <div class="dw-alert dw-alert-success" style="max-width:640px;" data-i18n="✅ National ID saved successfully!">✅ National ID saved successfully!</div>
+                </t>
+
+                <div class="dw-acc-layout">
+
+                    <!-- ── Welcome banner (visible on mobile only, above everything) ── -->
+                    <div class="dw-acc-welcome dw-acc-welcome-mobile">
+                        <h3><span data-i18n="Welcome back,">Welcome back,</span> <t t-esc="account_name"/> 👋</h3>
+                        <p data-i18n="Track your applications, manage your personal information, and keep your account secure — all from one place.">
+                            Track your applications, manage your personal information, and keep your account secure — all from one place.
+                        </p>
+                    </div>
+
+                    <!-- ── Sidebar ── -->
+                    <aside class="dw-acc-side">
+                        <div class="dw-profile-avatar" onclick="document.getElementById('dwAvatarInput').click();">
+                            <t t-if="account_image_uri">
+                                <img t-att-src="account_image_uri" alt=""/>
+                            </t>
+                            <t t-else="">
+                                <t t-esc="(account_name or '?')[:1].upper()"/>
+                            </t>
+                        </div>
+                        <form method="post" action="/account/edit-profile" enctype="multipart/form-data" style="display:none;">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="dw_lang" class="dw_lang_input"/>
+                            <input type="file" id="dwAvatarInput" name="profile_image" accept="image/*" onchange="this.form.submit();"/>
+                        </form>
+                        <div class="dw-acc-name" t-esc="account_name"/>
+                        <div class="dw-acc-role">
+                            <span class="dw-pill" style="margin:0;" t-esc="account_role"/>
+                        </div>
+
+                        <nav class="dw-acc-nav">
+                            <a href="/account" class="active"><span>🏠</span> <span data-i18n="Overview">Overview</span></a>
+                            <a t-if="is_staff" href="/recycle/open-dashboard" target="_top"><span>🖥️</span> <span data-i18n="Dashboard">Dashboard</span></a>
+                            <a href="/my/applications"><span>📋</span> <span data-i18n="My Applications">My Applications</span></a>
+                            <button type="button" onclick="dwOpenEditProfile()"><span>✏️</span> <span data-i18n="Edit Profile">Edit Profile</span></button>
+                            <button type="button" onclick="dwOpenPwd()"><span>🔑</span> <span data-i18n="Set Password">Set Password</span></button>
+                            <div class="dw-acc-divider"></div>
+                            <a href="/dawrha/logout" target="_top" class="danger"><span>🚪</span> <span data-i18n="Logout">Logout</span></a>
+                        </nav>
+                    </aside>
+
+                    <!-- ── Main content ── -->
+                    <div>
+                        <!-- Welcome banner -->
+                        <div class="dw-acc-welcome">
+                            <h3><span data-i18n="Welcome back,">Welcome back,</span> <t t-esc="account_name"/> 👋</h3>
+                            <p data-i18n="Track your applications, manage your personal information, and keep your account secure — all from one place.">
+                                Track your applications, manage your personal information, and keep your account secure — all from one place.
+                            </p>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="dw-acc-stats">
+                            <div class="dw-profile-stat">
+                                <div class="num" t-esc="applications_count"/>
+                                <div class="lbl" data-i18n="Applications">Applications</div>
+                            </div>
+                            <div class="dw-profile-stat">
+                                <div class="num" style="font-size:20px;padding-top:4px;" t-esc="account_role"/>
+                                <div class="lbl" data-i18n="Role">Role</div>
+                            </div>
+                            <div class="dw-profile-stat" t-if="account_warehouse">
+                                <div class="num" style="font-size:20px;padding-top:4px;" t-esc="account_warehouse"/>
+                                <div class="lbl" data-i18n="Warehouse">Warehouse</div>
+                            </div>
+                            <div class="dw-profile-stat">
+                                <div class="num" style="font-size:20px;padding-top:4px;" t-esc="member_since or '♻'"/>
+                                <div class="lbl" data-i18n="Member Since">Member Since</div>
+                            </div>
+                        </div>
+
+                        <!-- Account details -->
+                        <div class="dw-acc-card">
+                            <h4 data-i18n="Account Details">Account Details</h4>
+                            <div class="dw-profile-grid">
+                                <div class="dw-profile-item">
+                                    <label data-i18n="Email">Email</label>
+                                    <span t-esc="account_email"/>
+                                </div>
+                                <div class="dw-profile-item" t-if="not is_admin_user">
+                                    <label data-i18n="National ID">National ID</label>
+                                    <span t-if="user_has_nid" t-esc="account_national_id"/>
+                                    <span t-else="" style="color:var(--muted);font-weight:400;" data-i18n="Not set">Not set</span>
+                                </div>
+                                <div class="dw-profile-item" t-if="account_address">
+                                    <label data-i18n="Address">Address</label>
+                                    <span t-esc="account_address"/>
+                                </div>
+                                <div class="dw-profile-item" t-if="account_warehouse">
+                                    <label data-i18n="Warehouse">Warehouse</label>
+                                    <span t-esc="account_warehouse"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent activity -->
+                        <div class="dw-acc-card">
+                            <h4 data-i18n="Recent Activity">Recent Activity</h4>
+                            <t t-if="recent_activity">
+                                <div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                                <table class="dw-acc-activity" style="min-width:520px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Position</th>
+                                            <th>Stage</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="recent_activity" t-as="act">
+                                            <td class="act-title" t-esc="act['title']"/>
+                                            <td t-esc="act['stage']"/>
+                                            <td class="act-date" t-esc="act['date']"/>
+                                            <td>
+                                                <span t-attf-class="dw-status #{act['status_css']}"
+                                                      t-att-data-i18n="act['status'].capitalize()"
+                                                      t-esc="act['status'].capitalize()"/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                </div>
+                            </t>
+                            <t t-if="not recent_activity">
+                                <div style="color:var(--muted);font-size:14px;text-align:center;padding:14px 0;">
+                                    <span data-i18n="No activity yet.">No activity yet.</span>
+                                    <t t-if="not has_accepted_applicant">
+                                        <a href="/jobs" style="font-weight:700;color:var(--g600);display:inline-block;margin-inline-start:6px;" data-i18n="Browse open positions →">Browse open positions →</a>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Edit Profile modal ── -->
+                <div class="dw-modal-backdrop" id="dwEditProfileModal" style="display:none;">
+                    <div class="dw-modal" style="text-align:left;max-width:520px;">
+                        <h3 style="text-align:center;" data-i18n="✏️ Edit Profile">✏️ Edit Profile</h3>
+                        <form method="post" action="/account/edit-profile" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="dw_lang" class="dw_lang_input"/>
+                            <t t-if="nid_error">
+                                <div class="dw-alert dw-alert-error" style="margin-bottom:16px;">
+                                    <t t-esc="nid_error"/>
+                                </div>
+                            </t>
+                            <div class="dw-field">
+                                <label data-i18n="Name">Name</label>
+                                <input type="text" name="name" t-att-value="account_name" required="required"/>
+                            </div>
+                            <div class="dw-field" t-if="not is_admin_user">
+                                <label data-i18n="National ID">National ID</label>
+                                <input type="text" name="national_id" t-att-value="account_national_id"
+                                       placeholder="Digits only (5–20)"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Address">Address</label>
+                                <input type="text" name="street" t-att-value="account_street" placeholder="Street address"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="City">City</label>
+                                <input type="text" name="city" t-att-value="account_city" placeholder="City"/>
+                            </div>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">
+                                <button type="submit" class="dw-btn dw-btn-primary" style="flex:1;padding:12px 20px;" data-i18n="Save Changes">Save Changes</button>
+                                <button type="button" class="dw-btn dw-btn-secondary"
+                                        onclick="dwCloseEditProfile()" data-i18n="Cancel">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- ── Set Password modal (Dawrha design) ── -->
+                <div class="dw-modal-backdrop" id="dwPwdModal" style="display:none;">
+                    <div class="dw-modal" style="text-align:left;max-width:460px;">
+                        <h3 style="text-align:center;" data-i18n="🔐 Set Password">🔐 Set Password</h3>
+                        <p style="text-align:center;" data-i18n="Enter your current password, then choose a new one.">
+                            Enter your current password, then choose a new one.
+                        </p>
+
+                        <t t-if="pwd_error">
+                            <div class="dw-alert dw-alert-error" t-esc="pwd_error"/>
+                        </t>
+
+                        <form method="post" action="/account/change-password">
+                            <input type="hidden" name="csrf_token"
+                                   t-att-value="request.csrf_token()"/>
+
+                            <div class="dw-field">
+                                <label data-i18n="Current Password">Current Password</label>
+                                <input type="password" name="old_password"
+                                       placeholder="Your current password"
+                                       required="required"
+                                       autocomplete="current-password"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="New Password">New Password</label>
+                                <input type="password" name="new_password"
+                                       placeholder="Minimum 6 characters"
+                                       required="required"
+                                       autocomplete="new-password"/>
+                            </div>
+                            <div class="dw-field">
+                                <label data-i18n="Confirm New Password">Confirm New Password</label>
+                                <input type="password" name="confirm_password"
+                                       placeholder="Repeat the new password"
+                                       required="required"
+                                       autocomplete="new-password"/>
+                            </div>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+                                <button type="submit" class="dw-btn dw-btn-primary"
+                                        style="flex:1;" data-i18n="Update Password">Update Password</button>
+                                <button type="button" class="dw-btn dw-btn-secondary"
+                                        onclick="dwClosePwd()" data-i18n="Cancel">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <script>
+                    function dwOpenPwd() {
+                        document.getElementById('dwPwdModal').style.display = 'flex';
+                    }
+                    function dwClosePwd() {
+                        document.getElementById('dwPwdModal').style.display = 'none';
+                    }
+                    function dwOpenEditProfile() {
+                        document.getElementById('dwEditProfileModal').style.display = 'flex';
+                    }
+                    function dwCloseEditProfile() {
+                        document.getElementById('dwEditProfileModal').style.display = 'none';
+                    }
+                    // Auto-open the modal when the server returned a password error.
+                    <t t-if="pwd_error">dwOpenPwd();</t>
+                    // Auto-open the modal when the server returned a profile edit error.
+                    <t t-if="nid_error">dwOpenEditProfile();</t>
+                    // Set language for hidden inputs (from JS language toggle)
+                    <![CDATA[
+                    var dwLangInputs = document.querySelectorAll('.dw_lang_input');
+                    for (var d = 0; d < dwLangInputs.length; d++) {
+                        dwLangInputs[d].value = (typeof dwGetLang === 'function') ? dwGetLang() : 'en';
+                    }
+                    ]]>
+                </script>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Contact page                                                       -->
+<!-- ================================================================ -->
+<template id="contact_page" name="Contact">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">Contact us</t>
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="Contact us">Contact us</h2>
+                <div class="dw-apply-grid">
+                    <div class="dw-detail-card">
+                        <h1 style="font-size:28px;margin-bottom:16px;" data-i18n="Get in touch with" class="dw-i18n-wrap">
+                            Get in touch with <span style="background:linear-gradient(135deg,var(--g700),var(--g400));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Dawrha</span>
+                        </h1>
+                        <div class="dw-richtext" data-i18n="Questions about our eco-friendly warehouses, sorting facilities, or open positions? We'd love to hear from you.">
+                            Questions about our eco-friendly warehouses, sorting facilities, or open positions? We'd love to hear from you.
+                        </div>
+                        <div class="dw-meta" style="font-size:15px;margin-bottom:14px;gap:10px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g600)" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            <span t-esc="company.email or 'careers@dawrha.com'"/>
+                        </div>
+                        <div class="dw-meta" style="font-size:15px;margin-bottom:32px;gap:10px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g600)" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.38 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                            <span t-esc="company.phone or '+963 000 000 000'"/>
+                        </div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <a t-attf-href="mailto:#{company.email or 'careers@dawrha.com'}" class="dw-btn dw-btn-primary" data-i18n="📧 Send Email">📧 Send Email</a>
+                        </div>
+                    </div>
+                    <div class="dw-apply-img">
+                        <img src="/recycle_warehouse/static/img/hero4.jpg"
+                             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&amp;fit=crop&amp;w=1200&amp;q=80';"
+                             alt="Dawrha recycling facility"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- My Applications                                                    -->
+<!-- ================================================================ -->
+<template id="my_applications_page" name="My Applications">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">My Applications</t>
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="My Applications">My Applications</h2>
+                <t t-if="just_applied">
+                    <div class="dw-alert dw-alert-success" data-i18n="✅ Your application has been submitted successfully!">
+                        ✅ Your application has been submitted successfully!
+                    </div>
+                </t>
+                <t t-if="not applications">
+                    <div class="dw-alert dw-alert-info">
+                        <div style="font-size:32px;margin-bottom:10px;">📋</div>
+                        <span data-i18n="You have not applied for any job yet.">You have not applied for any job yet.</span><br/>
+                        <a href="/jobs" style="font-weight:700;display:inline-block;margin-top:10px;" data-i18n="Browse open positions →">Browse open positions →</a>
+                    </div>
+                </t>
+                <t t-if="applications">
+                    <div class="dw-table-card">
+                        <table class="dw-table">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="Job">Job</th>
+                                    <th data-i18n="National ID">National ID</th>
+                                    <th data-i18n="Current Stage">Current Stage</th>
+                                    <th data-i18n="Stage Status">Stage Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="applications" t-as="app">
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="Job">Job</span>
+                                        <span style="font-weight:700;" t-esc="app.job_id.name"/>
+                                    </td>
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="National ID">National ID</span>
+                                        <span t-esc="app.recycle_national_id"/>
+                                    </td>
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="Current Stage">Current Stage</span>
+                                        <span t-esc="app.stage_id.name or '—'"/>
+                                    </td>
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="Stage Status">Stage Status</span>
+                                        <t t-set="ss" t-value="app.recycle_stage_status or 'pending'"/>
+                                        <t t-set="ss_class" t-value="{'approved':'st-accepted','rejected':'st-rejected','pending':'st-applied'}.get(ss,'st-applied')"/>
+                                        <span t-attf-class="dw-status #{ss_class}"
+                                              t-esc="stage_status_labels.get(ss, ss)"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Admin: My Jobs                                                     -->
+<!-- ================================================================ -->
+<template id="admin_jobs_page" name="My Jobs">
+    <t t-call="recycle_warehouse.dawrha_layout">
+        <t t-set="page_title">My Jobs</t>
+        <section class="dw-section" style="padding-top:48px;">
+            <div class="container">
+                <h2 class="dw-section-title" data-i18n="My Jobs">My Jobs</h2>
+                <p class="dw-section-sub" data-i18n="Job postings you created, with their publish status and number of applicants.">
+                    Job postings you created, with their publish status and number of applicants.
+                </p>
+
+                <t t-if="not rows">
+                    <div class="dw-alert dw-alert-info" data-i18n="You haven't created any job postings yet.">
+                        <div style="font-size:32px;margin-bottom:10px;">💼</div>
+                        You haven't created any job postings yet.
+                    </div>
+                </t>
+
+                <t t-if="rows">
+                    <div class="dw-table-card">
+                        <table class="dw-table">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="Job">Job</th>
+                                    <th data-i18n="Type">Type</th>
+                                    <th data-i18n="Status">Status</th>
+                                    <th style="text-align:center;" data-i18n="Applicants">Applicants</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="rows" t-as="row">
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="Job">Job</span>
+                                        <span style="font-weight:700;" t-esc="row['job'].name"/>
+                                    </td>
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="Type">Type</span>
+                                        <t t-if="row['job'].recycle_job_type == 'manager'"><span data-i18n="🏭 Manager">🏭 Manager</span></t>
+                                        <t t-elif="row['job'].recycle_job_type == 'input'"><span data-i18n="📥 Input Employee">📥 Input Employee</span></t>
+                                        <t t-elif="row['job'].recycle_job_type == 'sorting'"><span data-i18n="♻️ Sorting Employee">♻️ Sorting Employee</span></t>
+                                        <t t-elif="row['job'].recycle_job_type == 'output'"><span data-i18n="📤 Output Employee">📤 Output Employee</span></t>
+                                        <t t-else=""><span data-i18n="♻️ Employee">♻️ Employee</span></t>
+                                    </td>
+                                    <td>
+                                        <span class="dw-td-lbl" data-i18n="Status">Status</span>
+                                        <t t-if="row['job'].recycle_publish">
+                                            <span class="dw-status st-accepted" data-i18n="Published">Published</span>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="dw-status st-applied" data-i18n="Unpublished">Unpublished</span>
+                                        </t>
+                                    </td>
+                                    <td style="text-align:center;">
+                                        <span class="dw-td-lbl" data-i18n="Applicants">Applicants</span>
+                                        <span style="font-weight:800;" t-esc="row['applicants']"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </div>
+        </section>
+    </t>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Floating Dark/Light + Language controls (standalone auth pages)  -->
+<!-- ================================================================ -->
+<template id="dw_floating_controls" name="Dawrha Floating Controls">
+    <style>
+        .dw-float-controls {
+            position:fixed; top:16px; inset-inline-end:16px; z-index:60;
+            display:flex; gap:8px;
+        }
+        .dw-float-ctl {
+            min-width:42px; height:42px; padding:0 10px;
+            border-radius:12px; border:1px solid rgba(255,255,255,.25);
+            background:rgba(11,18,32,.45); color:#fff;
+            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+            font-size:15px; font-weight:700; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            transition:all .15s;
+        }
+        .dw-float-ctl:hover { border-color:var(--g500); transform:scale(1.06); }
+    </style>
+    <div class="dw-float-controls">
+        <button type="button" class="dw-float-ctl" id="dw-float-theme"
+                title="Dark / Light" onclick="dwFloatToggleTheme()">🌙</button>
+        <button type="button" class="dw-float-ctl" id="dw-float-lang"
+                title="EN / العربية" onclick="dwFloatToggleLang()">AR</button>
+    </div>
+    <script>
+        function dwFloatSync() {
+            var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            var tb = document.getElementById('dw-float-theme');
+            if (tb) tb.textContent = dark ? '☀️' : '🌙';
+            var isAr = (localStorage.getItem('recycle_wms_lang') === 'ar');
+            var lb = document.getElementById('dw-float-lang');
+            if (lb) lb.textContent = isAr ? 'EN' : 'AR';
+        }
+        function dwFloatToggleTheme() {
+            var next = document.documentElement.getAttribute('data-theme') === 'dark'
+                ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('dw-theme', next);
+            dwFloatSync();
+        }
+        function dwFloatToggleLang() {
+            var next = (localStorage.getItem('recycle_wms_lang') === 'ar') ? 'en' : 'ar';
+            if (typeof dwSetLang === 'function') {
+                dwSetLang(next);
+            } else {
+                localStorage.setItem('recycle_wms_lang', next);
+                document.documentElement.setAttribute('dir', next === 'ar' ? 'rtl' : 'ltr');
+                document.documentElement.setAttribute('lang', next);
+            }
+            dwFloatSync();
+        }
+        dwFloatSync();
+    </script>
+</template>
+
+<!-- ================================================================ -->
+<!-- Register Page                                                      -->
+<!-- ================================================================ -->
+<template id="register_page" name="Register">
+    <t t-set="page_title">Create Account</t>
+    <html>
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1"/>
+            <title>Create Account | Dawrha</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+            <script src="/recycle_warehouse/static/src/js/website_i18n.js"></script>
+            <script>
+                (function(){
+                    var t = localStorage.getItem('dw-theme') || 'light';
+                    document.documentElement.setAttribute('data-theme', t);
+                    var l = localStorage.getItem('recycle_wms_lang');
+                    if (l === 'ar') {
+                        document.documentElement.setAttribute('dir', 'rtl');
+                        document.documentElement.setAttribute('lang', 'ar');
+                    }
+                })();
+            </script>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&amp;display=swap');
+                :root {
+                    --g900:#064e3b; --g700:#047857; --g600:#059669;
+                    --g500:#1fb876; --g400:#34d399; --g100:#d1fae5;
+                    --bg:          #ffffff;
+                    --surface:     #ffffff;
+                    --border:      rgba(15,23,42,.10);
+                    --text:        #0f172a;
+                    --muted:       #64748b;
+                }
+                html[data-theme="dark"] {
+                    --bg:          #0b1220;
+                    --surface:     #121c30;
+                    --border:      rgba(148,163,184,.16);
+                    --text:        #f1f5f9;
+                    --muted:       #94a3b8;
+                }
+                * { box-sizing:border-box; margin:0; padding:0; }
+                body {
+                    font-family:'Inter',system-ui,-apple-system,sans-serif;
+                    background:
+                        linear-gradient(rgba(6,78,59,.72), rgba(15,23,42,.80)),
+                        url('/recycle_warehouse/static/img/hero4.jpg') center / cover no-repeat fixed !important;
+                    min-height:100vh;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    padding:20px;
+                }
+                html[data-theme="dark"] body {
+                    background:
+                        linear-gradient(rgba(6,78,59,.70), rgba(11,18,32,.88)),
+                        url('/recycle_warehouse/static/img/hero4.jpg') center / cover no-repeat fixed !important;
+                }
+                html[lang="ar"] body, html[dir="rtl"] body {
+                    font-family:'Cairo','Inter',system-ui,-apple-system,sans-serif !important;
+                }
+                .auth-card {
+                    background:var(--surface);
+                    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+                    border-radius:24px;
+                    padding:40px 36px;
+                    box-shadow:0 32px 80px rgba(0,0,0,.35);
+                    width:100%; max-width:440px;
+                    transition:background .25s;
+                    border:1px solid var(--border);
+                }
+                html[data-theme="dark"] .auth-card {
+                    box-shadow:0 32px 80px rgba(0,0,0,.55);
+                }
+                @media (max-width: 480px) {
+                    body { padding:12px; }
+                    .auth-card { padding:28px 18px; border-radius:18px; }
+                    .brand { font-size:26px; }
+                    .auth-title { font-size:20px; }
+                }
+                .brand {
+                    display:block; text-align:center;
+                    font-size:32px; font-weight:900; letter-spacing:-.6px;
+                    margin-bottom:6px;
+                    background:linear-gradient(135deg,var(--g700),var(--g400));
+                    -webkit-background-clip:text; background-clip:text;
+                    -webkit-text-fill-color:transparent;
+                }
+                .auth-title {
+                    text-align:center; font-size:24px; font-weight:800;
+                    color:#fff; margin-bottom:8px; letter-spacing:-0.3px;
+                }
+                .auth-sub {
+                    text-align:center; font-size:14px; color:#cbd5e1; margin-bottom:28px;
+                }
+                .auth-sub a { color:#34d399; font-weight:700; text-decoration:none; }
+                .auth-sub a:hover { text-decoration:underline; }
+                .field { margin-bottom:20px; }
+                .field label {
+                    display:block; font-size:14px; font-weight:600;
+                    color:var(--text); margin-bottom:6px;
+                }
+                .field input {
+                    width:100%; padding:14px 16px; font-size:15px;
+                    border:2px solid var(--border); border-radius:14px;
+                    background:var(--bg); color:var(--text);
+                    font-family:inherit; transition:border .2s, box-shadow .2s;
+                    outline:none;
+                }
+                .field input:focus {
+                    border-color:var(--g500);
+                    box-shadow:0 0 0 4px rgba(16,185,129,.15);
+                }
+                .field input::placeholder { color:#94a3b8; }
+                .pw-wrap { position:relative; }
+                .pw-wrap input { padding-left:48px; }
+                .pw-toggle {
+                    position:absolute; left:12px; top:50%;
+                    transform:translateY(-50%); border:none;
+                    background:none; cursor:pointer;
+                    font-size:18px; color:var(--muted); padding:4px;
+                }
+                .btn-submit {
+                    width:100%; padding:14px; margin-top:8px;
+                    background:linear-gradient(135deg,var(--g700),var(--g500));
+                    color:#fff; border:none; border-radius:14px;
+                    font-size:16px; font-weight:700; cursor:pointer;
+                    transition:transform .15s, box-shadow .2s;
+                    box-shadow:0 8px 24px rgba(16,185,129,.25);
+                }
+                .btn-submit:hover {
+                    transform:translateY(-2px);
+                    box-shadow:0 12px 32px rgba(16,185,129,.35);
+                }
+                .alert-box {
+                    border-radius:14px; padding:14px 18px;
+                    font-size:14px; line-height:1.6; margin-bottom:20px;
+                }
+                .alert-box.error {
+                    background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;
+                }
+                .alert-box.info {
+                    background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd;
+                }
+                .terms {
+                    text-align:center; font-size:13px; color:#94a3b8; margin-top:20px;
+                }
+                .terms a { color:#34d399; font-weight:600; text-decoration:none; }
+                .terms a:hover { text-decoration:underline; }
+                [dir="rtl"] .field label { text-align:right; }
+                [dir="rtl"] .pw-wrap input { text-align:right; }
+            </style>
+        </head>
+        <body>
+            <t t-call="recycle_warehouse.dw_floating_controls"/>
+            <div class="auth-card">
+
+                <span class="brand">♻ Dawrha</span>
+
+                <p class="auth-title" data-i18n="Create your account">Create your account</p>
+                <p class="auth-sub">
+                    <span data-i18n="Already have an account?">Already have an account?</span>
+                    <a href="/web/login" target="_top" data-i18n="Sign in →">Sign in →</a>
+                </p>
+
+                <!-- Alerts -->
+                <t t-if="request.params.get('expired')">
+                    <div class="alert-box error" data-i18n="⏰ Verification code expired. Please register again.">
+                        ⏰ Verification code expired. Please register again.
+                    </div>
+                </t>
+                <t t-if="request.params.get('locked')">
+                    <div class="alert-box error" data-i18n="🔒 Too many wrong attempts. Please register again.">
+                        🔒 Too many wrong attempts. Please register again.
+                    </div>
+                </t>
+                <t t-if="errors">
+                    <div class="alert-box error">
+                        <ul style="margin:0;padding-left:18px;">
+                            <li t-foreach="errors" t-as="err" t-esc="err"/>
+                        </ul>
+                    </div>
+                </t>
+
+                <form method="post" action="/register">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <div class="field">
+                        <label data-i18n="Full Name">Full Name</label>
+                        <input type="text" name="name"
+                               t-att-value="form_data.get('name','')"
+                               placeholder="e.g. Ahmad Khalil"
+                               required="required" autocomplete="name"/>
+                    </div>
+
+                    <div class="field">
+                        <label data-i18n="Email Address">Email Address</label>
+                        <input type="email" name="email"
+                               t-att-value="form_data.get('email','')"
+                               placeholder="e.g. ahmad@gmail.com"
+                               required="required" autocomplete="email"/>
+                    </div>
+
+                    <div class="field">
+                        <label data-i18n="Password">Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" name="password"
+                                   id="reg-pass"
+                                   placeholder="Minimum 6 characters"
+                                   required="required"
+                                   autocomplete="new-password"/>
+                            <button type="button" class="pw-toggle"
+                                    onclick="dwTogglePass('reg-pass','eye1')" id="eye1">👁</button>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label data-i18n="Confirm Password">Confirm Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" name="confirm_password"
+                                   id="reg-confirm"
+                                   placeholder="Repeat your password"
+                                   required="required"
+                                   autocomplete="new-password"/>
+                            <button type="button" class="pw-toggle"
+                                    onclick="dwTogglePass('reg-confirm','eye2')" id="eye2">👁</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" data-i18n="Send Verification Code →">
+                        Send Verification Code →
+                    </button>
+                </form>
+
+                <p class="terms">
+                    <span data-i18n="By registering you agree to our">By registering you agree to our</span>
+                    <a href="/about" data-i18n="Terms of Service">Terms of Service</a>.
+                </p>
+            </div>
+        </body>
+    </html>
+    <script>
+        function dwTogglePass(id, eyeId) {
+            var inp = document.getElementById(id);
+            var eye = document.getElementById(eyeId);
+            if (inp.type === 'password') {
+                inp.type = 'text'; eye.textContent = '🙈';
+            } else {
+                inp.type = 'password'; eye.textContent = '👁';
+            }
+        }
+    </script>
+</template>
+
+
+<!-- ================================================================ -->
+<!-- Verify Email Page (6-digit OTP)                                   -->
+<!-- ================================================================ -->
+<template id="verify_email_page" name="Verify Email">
+    <t t-set="page_title">Verify Email</t>
+    <html>
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1"/>
+            <title>Verify Email | Dawrha</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+            <script src="/recycle_warehouse/static/src/js/website_i18n.js"></script>
+            <script>
+                (function(){
+                    var t = localStorage.getItem('dw-theme') || 'light';
+                    document.documentElement.setAttribute('data-theme', t);
+                    var l = localStorage.getItem('recycle_wms_lang');
+                    if (l === 'ar') {
+                        document.documentElement.setAttribute('dir', 'rtl');
+                        document.documentElement.setAttribute('lang', 'ar');
+                    }
+                })();
+            </script>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&amp;display=swap');
+                :root {
+                    --g900:#064e3b; --g700:#047857; --g600:#059669;
+                    --g500:#1fb876; --g400:#34d399; --g100:#d1fae5;
+                    --bg:          #ffffff;
+                    --surface:     #ffffff;
+                    --border:      rgba(15,23,42,.10);
+                    --text:        #0f172a;
+                    --muted:       #64748b;
+                }
+                html[data-theme="dark"] {
+                    --bg:          #0b1220;
+                    --surface:     #121c30;
+                    --border:      rgba(148,163,184,.16);
+                    --text:        #f1f5f9;
+                    --muted:       #94a3b8;
+                }
+                * { box-sizing:border-box; margin:0; padding:0; }
+                body {
+                    font-family:'Inter',system-ui,-apple-system,sans-serif;
+                    background:
+                        linear-gradient(rgba(6,78,59,.72), rgba(15,23,42,.80)),
+                        url('/recycle_warehouse/static/img/hero4.jpg') center / cover no-repeat fixed !important;
+                    min-height:100vh;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    padding:20px;
+                }
+                html[data-theme="dark"] body {
+                    background:
+                        linear-gradient(rgba(6,78,59,.70), rgba(11,18,32,.88)),
+                        url('/recycle_warehouse/static/img/hero4.jpg') center / cover no-repeat fixed !important;
+                }
+                html[lang="ar"] body, html[dir="rtl"] body {
+                    font-family:'Cairo','Inter',system-ui,-apple-system,sans-serif !important;
+                }
+                .auth-card {
+                    background:var(--surface);
+                    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+                    border-radius:24px;
+                    padding:40px 36px;
+                    box-shadow:0 32px 80px rgba(0,0,0,.35);
+                    width:100%; max-width:480px;
+                    transition:background .25s;
+                    border:1px solid var(--border);
+                    text-align:center;
+                }
+                html[data-theme="dark"] .auth-card {
+                    box-shadow:0 32px 80px rgba(0,0,0,.55);
+                }
+                @media (max-width: 480px) {
+                    body { padding:12px; }
+                    .auth-card { padding:28px 18px; border-radius:18px; }
+                    .brand { font-size:26px; }
+                    .auth-title { font-size:20px; }
+                }
+                .brand {
+                    display:block; text-align:center;
+                    font-size:32px; font-weight:900; letter-spacing:-.6px;
+                    margin-bottom:20px;
+                    background:linear-gradient(135deg,var(--g700),var(--g400));
+                    -webkit-background-clip:text; background-clip:text;
+                    -webkit-text-fill-color:transparent;
+                }
+                .icon-box {
+                    width:72px; height:72px; margin:0 auto 18px;
+                    border-radius:9999px;
+                    background:linear-gradient(135deg,var(--g700),var(--g400));
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:32px;
+                    box-shadow:0 12px 32px rgba(16,185,129,.3);
+                }
+                .auth-title {
+                    font-size:24px; font-weight:800; color:#fff;
+                    margin-bottom:6px; letter-spacing:-0.3px;
+                }
+                .auth-sub {
+                    font-size:14px; color:#cbd5e1; margin-bottom:24px; line-height:1.6;
+                }
+                .auth-sub strong { color:#f1f5f9; }
+                .alert-box {
+                    border-radius:14px; padding:14px 18px;
+                    font-size:14px; line-height:1.6; margin-bottom:18px;
+                    text-align:center;
+                }
+                .alert-box.success {
+                    background:var(--g100); color:var(--g700);
+                    border:1px solid rgba(16,185,129,.2);
+                }
+                .alert-box.error {
+                    background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;
+                }
+                .otp-label {
+                    font-size:14px; color:var(--muted); margin-bottom:20px;
+                }
+                .otp-boxes {
+                    display:flex; gap:10px; justify-content:center; margin-bottom:24px;
+                    width:100%;
+                }
+                .otp-box {
+                    width:52px; height:64px; text-align:center;
+                    font-size:28px; font-weight:900;
+                    border:2px solid var(--border); border-radius:14px;
+                    background:var(--bg); color:var(--text);
+                    font-family:monospace; outline:none;
+                    transition:border .15s, box-shadow .15s;
+                    flex:0 1 52px; min-width:0;
+                }
+                .otp-box:focus {
+                    border-color:var(--g500) !important;
+                    box-shadow:0 0 0 4px rgba(16,185,129,.15) !important;
+                }
+                @media (max-width:420px) {
+                    .otp-boxes { gap:6px; }
+                    .otp-box { flex-basis:38px; height:50px; font-size:20px; border-radius:10px; }
+                }
+                @media (max-width:340px) {
+                    .otp-boxes { gap:4px; }
+                    .otp-box { flex-basis:32px; height:44px; font-size:17px; border-radius:8px; }
+                }
+                .btn-submit {
+                    width:100%; padding:14px; margin-bottom:16px;
+                    background:linear-gradient(135deg,var(--g700),var(--g500));
+                    color:#fff; border:none; border-radius:14px;
+                    font-size:16px; font-weight:700; cursor:pointer;
+                    transition:transform .15s, box-shadow .2s;
+                    box-shadow:0 8px 24px rgba(16,185,129,.25);
+                }
+                .btn-submit:hover {
+                    transform:translateY(-2px);
+                    box-shadow:0 12px 32px rgba(16,185,129,.35);
+                }
+                .btn-secondary {
+                    padding:10px 20px; font-size:14px;
+                    background:transparent; color:var(--muted);
+                    border:1.5px solid var(--border); border-radius:12px;
+                    cursor:pointer; font-weight:600; text-decoration:none;
+                    display:inline-block; transition:all .15s;
+                }
+                .btn-secondary:hover {
+                    border-color:var(--g500); color:var(--g500);
+                }
+                .otp-footer {
+                    padding-top:16px; border-top:1px solid var(--border);
+                }
+                .otp-footer p {
+                    font-size:14px; color:var(--muted); margin-bottom:12px;
+                }
+                .otp-timer {
+                    font-size:13px; color:var(--muted); margin-top:16px;
+                }
+                .otp-timer span { font-weight:700; color:var(--g500); }
+                [dir="rtl"] .otp-boxes { direction:ltr; }
+            </style>
+        </head>
+        <body>
+            <t t-call="recycle_warehouse.dw_floating_controls"/>
+            <div class="auth-card">
+
+                <span class="brand">♻ Dawrha</span>
+
+                <div class="icon-box">📧</div>
+                <p class="auth-title" data-i18n="Check your email">Check your email</p>
+                <p class="auth-sub">
+                    <span data-i18n="We sent a 6-digit code to">We sent a 6-digit code to</span><br/>
+                    <strong t-esc="email"/>
+                </p>
+
+                <!-- Resent banner -->
+                <t t-if="resent">
+                    <div class="alert-box success" data-i18n="✅ A new verification code has been sent!">
+                        ✅ A new verification code has been sent!
+                    </div>
+                </t>
+
+                <!-- Error -->
+                <t t-if="error">
+                    <div class="alert-box error">❌ <t t-esc="error"/></div>
+                </t>
+
+                <!-- OTP Form -->
+                <form method="post" t-attf-action="/verify-email?e=#{safe_email}" id="otp-form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="_email" t-att-value="email"/>
+
+                    <p class="otp-label" data-i18n="Enter the 6-digit verification code">
+                        Enter the 6-digit verification code
+                    </p>
+
+                    <div class="otp-boxes">
+                        <t t-foreach="[1,2,3,4,5,6]" t-as="i">
+                            <input type="text" class="otp-box"
+                                   t-attf-name="d#{i}"
+                                   t-attf-id="otp-#{i}"
+                                   maxlength="1" inputmode="numeric"
+                                   pattern="[0-9]" autocomplete="one-time-code"/>
+                        </t>
+                    </div>
+
+                    <button type="submit" class="btn-submit" data-i18n="✅ Verify &amp; Create Account">
+                        ✅ Verify &amp; Create Account
+                    </button>
+                </form>
+
+                <div class="otp-footer">
+                    <p data-i18n="Didn't receive the code?">Didn't receive the code?</p>
+                    <form method="post" action="/verify-email/resend" style="display:inline;">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="_email" t-att-value="email"/>
+                        <button type="submit" class="btn-secondary" data-i18n="🔄 Resend Code">
+                            🔄 Resend Code
+                        </button>
+                    </form>
+                    <a href="/register" class="btn-secondary" style="margin-left:6px;" data-i18n="← Change Email">
+                        ← Change Email
+                    </a>
+                </div>
+
+                <p class="otp-timer">
+                    <span data-i18n="Code expires in">Code expires in</span>
+                    <span id="otp-countdown">10:00</span>
+                </p>
+            </div>
+        </body>
+    </html>
+
+    <script>
+    (function() {
+        var inputs = [1,2,3,4,5,6].map(function(i){
+            return document.getElementById('otp-' + i);
+        });
+        inputs.forEach(function(inp, idx) {
+            inp.addEventListener('keydown', function(e) {
+                if (!/[0-9]/.test(e.key) &amp;&amp;
+                    !['Backspace','Delete','Tab','ArrowLeft','ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
+            inp.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value.length === 1 &amp;&amp; idx &lt; 5) {
+                    inputs[idx + 1].focus();
+                }
+                var code = inputs.map(function(x){ return x.value; }).join('');
+                if (code.length === 6) {
+                    setTimeout(function(){
+                        document.getElementById('otp-form').submit();
+                    }, 120);
+                }
+            });
+            inp.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' &amp;&amp; !this.value &amp;&amp; idx > 0) {
+                    inputs[idx - 1].focus();
+                }
+            });
+        });
+        inputs[0].addEventListener('paste', function(e) {
+            e.preventDefault();
+            var text = (e.clipboardData || window.clipboardData)
+                        .getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+            text.split('').forEach(function(ch, i) {
+                if (inputs[i]) inputs[i].value = ch;
+            });
+            if (text.length === 6) {
+                setTimeout(function(){
+                    document.getElementById('otp-form').submit();
+                }, 120);
+            } else if (inputs[text.length]) {
+                inputs[text.length].focus();
+            }
+        });
+        inputs[0].focus();
+        var secs = 600;
+        var el = document.getElementById('otp-countdown');
+        var timer = setInterval(function() {
+            secs--;
+            if (secs &lt;= 0) {
+                clearInterval(timer);
+                if (el) el.textContent = 'Expired';
+                return;
+            }
+            var m = Math.floor(secs / 60);
+            var s = secs % 60;
+            if (el) el.textContent =
+                (m &lt; 10 ? '0' : '') + m + ':' + (s &lt; 10 ? '0' : '') + s;
+        }, 1000);
+    })();
+    </script>
+</template>
+
+</odoo>

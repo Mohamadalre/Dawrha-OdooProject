@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_shipment_detail" model="ir.actions.report">
+        <field name="name">Shipment Detail</field>
+        <field name="model">recycle.shipment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_shipment_detail</field>
+        <field name="report_file">recycle_warehouse.report_shipment_detail</field>
+        <field name="binding_model_id" ref="model_recycle_shipment"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_shipment_detail">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- App logo at the top of the file (Dawrha brand). -->
+                        <div class="text-center mb-3">
+                            <img src="/recycle_warehouse/static/src/img/Logo.png"
+                                 alt="Dawrha" style="height: 70px;"/>
+                        </div>
+                        <h2>Shipment <span t-field="doc.name"/></h2>
+
+                        <!-- Header. t-field is wrapped in a span inside every cell:
+                             QWeb widgets are not allowed directly on td/th. -->
+                        <table class="table table-sm o_main_table">
+                            <tr><th>Warehouse</th><td><span t-field="doc.warehouse_id"/></td>
+                                <th>State</th><td><span t-field="doc.state"/></td></tr>
+                            <tr><th>Driver</th><td><span t-field="doc.driver_name"/></td>
+                                <th>Priority</th><td><span t-field="doc.priority"/></td></tr>
+                            <tr><th>Expected Weight (kg)</th><td><span t-field="doc.expected_weight"/></td>
+                                <th>Actual Weight (kg)</th><td><span t-field="doc.actual_weight"/></td></tr>
+                            <tr><th>Weight Diff %</th><td><span t-field="doc.weight_diff_pct"/></td>
+                                <th>Backend Shipment ID</th><td><span t-field="doc.backend_shipment_id"/></td></tr>
+                        </table>
+
+                        <!-- The trail: received → sorted → stored, each with WHO -->
+                        <h4 class="mt-3">Processing Trail</h4>
+                        <table class="table table-sm">
+                            <thead><tr><th>Step</th><th>When</th><th>By</th></tr></thead>
+                            <tbody>
+                                <tr><td>Received</td><td><span t-field="doc.received_at"/></td><td><span t-field="doc.receiver_user_id"/></td></tr>
+                                <tr><td>Sorted</td><td><span t-field="doc.sorted_at"/></td><td><span t-field="doc.sorter_user_id"/></td></tr>
+                                <tr><td>Stored</td><td><span t-field="doc.stored_at"/></td><td><span t-field="doc.stored_by"/></td></tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Per-material: expected vs sorted, and what was LOST -->
+                        <h4 class="mt-3">Materials — Expected, Sorted &amp; Lost</h4>
+                        <table class="table table-sm">
+                            <thead><tr>
+                                <th>Material</th><th class="text-end">Expected</th>
+                                <th class="text-end">Sorted</th>
+                                <th class="text-end">Lost</th><th class="text-end">Lost %</th>
+                            </tr></thead>
+                            <tbody>
+                                <t t-set="rows" t-value="doc.report_material_rows()"/>
+                                <tr t-foreach="rows" t-as="m" t-key="m['product_id']">
+                                    <td t-esc="m['product_name']"/>
+                                    <td class="text-end" t-esc="m['expected']"/>
+                                    <td class="text-end" t-esc="m['entered']"/>
+                                    <td class="text-end" t-esc="m['lost_qty']"/>
+                                    <td class="text-end" t-esc="m['lost_pct'] if m['lost_pct'] is not None else '-'"/>
+                                </tr>
+                                <tr t-if="not rows"><td colspan="5" class="text-center text-muted">No material breakdown available.</td></tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Damage recorded on this shipment -->
+                        <h4 class="mt-3">Damage</h4>
+                        <table class="table table-sm">
+                            <tr><th>Good Qty</th><td><span t-field="doc.total_good_qty"/></td>
+                                <th>Damaged Qty</th><td><span t-field="doc.total_damaged_qty"/></td>
+                                <th>Damaged %</th><td><span t-field="doc.damage_pct"/></td></tr>
+                        </table>
+                        <table class="table table-sm" t-if="doc.damage_entry_ids">
+                            <thead><tr><th>Material</th><th class="text-end">Damaged Qty</th><th>Grade</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="doc.damage_entry_ids" t-as="d" t-key="d.id">
+                                    <td><span t-field="d.product_id"/></td>
+                                    <td class="text-end"><span t-field="d.quantity"/></td>
+                                    <td><span t-field="d.condition"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

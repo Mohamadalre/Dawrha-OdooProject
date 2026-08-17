@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  Client actions — employee dashboards                       -->
+    <!-- ============================================================ -->
+    <record id="action_recycle_home" model="ir.actions.client">
+        <field name="name">Recycle Warehouse Home</field>
+        <field name="tag">recycle_home_action</field>
+    </record>
+    <record id="action_recycle_sorting_home" model="ir.actions.client">
+        <field name="name">Sorting Dashboard</field>
+        <field name="tag">recycle_sorting_dashboard</field>
+    </record>
+    <!-- Delivery driver: the same shell as the other roles, minus the shift
+         screen they do not have and plus the truck they are answerable for. -->
+    <record id="action_recycle_delivery_driver_home" model="ir.actions.client">
+        <field name="name">Delivery Driver Dashboard</field>
+        <field name="tag">recycle_delivery_driver_dashboard</field>
+    </record>
+    <record id="action_recycle_output_home" model="ir.actions.client">
+        <field name="name">Output Dashboard</field>
+        <field name="tag">recycle_output_dashboard</field>
+    </record>
+    <record id="action_recycle_manager_home" model="ir.actions.client">
+        <field name="name">Manager Dashboard</field>
+        <field name="tag">recycle_manager_dashboard</field>
+    </record>
+    <record id="action_recycle_admin_home" model="ir.actions.client">
+        <field name="name">Admin Dashboard</field>
+        <field name="tag">recycle_admin_dashboard</field>
+    </record>
+    <record id="action_recycle_applications_board" model="ir.actions.client">
+        <field name="name">Job Applications</field>
+        <field name="tag">recycle_applications_board</field>
+    </record>
+    <record id="action_recycle_employees_board" model="ir.actions.client">
+        <field name="name">Employees</field>
+        <field name="tag">recycle_employees_board</field>
+    </record>
+
+
+    <!-- ============================================================ -->
+    <!--  Admin themed nav actions (open dashboard at specific view)  -->
+    <!-- ============================================================ -->
+    <record id="action_admin_nav_shipments" model="ir.actions.client">
+        <field name="name">Shipments</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'shipments_list'}</field>
+    </record>
+    <record id="action_admin_nav_orders" model="ir.actions.client">
+        <field name="name">Orders</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'orders_list'}</field>
+    </record>
+    <record id="action_admin_nav_warehouses" model="ir.actions.client">
+        <field name="name">Warehouses</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'warehouse_hub'}</field>
+    </record>
+
+    <record id="action_admin_nav_trucks" model="ir.actions.client">
+        <field name="name">Trucks</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'trucks_list'}</field>
+    </record>
+
+    <record id="action_admin_nav_jobs_hr" model="ir.actions.client">
+        <field name="name">Jobs &amp; HR</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'jobs_hr'}</field>
+    </record>
+    <record id="action_admin_nav_employees" model="ir.actions.client">
+        <field name="name">Employees</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'employees_list'}</field>
+    </record>
+    <record id="action_admin_nav_shifts_hub" model="ir.actions.client">
+        <field name="name">Shift Management</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'shifts_hub'}</field>
+    </record>
+    <record id="action_admin_nav_shifts_list" model="ir.actions.client">
+        <field name="name">All Shifts</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'shifts_list'}</field>
+    </record>
+    <record id="action_admin_nav_applicants_list" model="ir.actions.client">
+        <field name="name">Job Applicants</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'applicants_list'}</field>
+    </record>
+    <record id="action_admin_nav_accepted_applicants" model="ir.actions.client">
+        <field name="name">Accepted Applicants</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'accepted_applicants'}</field>
+    </record>
+    <record id="action_admin_nav_zones" model="ir.actions.client">
+        <field name="name">Zones</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'zones_list'}</field>
+    </record>
+    <record id="action_admin_nav_attendance" model="ir.actions.client">
+        <field name="name">Attendance</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'attendance_list'}</field>
+    </record>
+    <record id="action_admin_nav_stock" model="ir.actions.client">
+        <field name="name">Stock</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'stock_list'}</field>
+    </record>
+    <record id="action_admin_nav_products" model="ir.actions.client">
+        <field name="name">Products</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'products_list'}</field>
+    </record>
+    <record id="action_admin_nav_product_categories" model="ir.actions.client">
+        <field name="name">Product Categories</field>
+        <field name="tag">recycle_admin_dashboard</field>
+        <field name="context">{'initial_view': 'product_categories_list'}</field>
+    </record>
+
+    <!-- Root -->
+    <menuitem id="menu_recycle_root" name="Recycle Warehouse" sequence="10"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_input,recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_output,recycle_warehouse.group_recycle_delivery_driver"/>
+
+    <!-- Input Employee Home (sequence=1 → opens first when they enter the app) -->
+    <menuitem id="menu_recycle_home" name="Home" parent="menu_recycle_root"
+              action="action_recycle_home" sequence="1"
+              groups="recycle_warehouse.group_recycle_input"/>
+    <record id="menu_recycle_home" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_input')])]"/>
+    </record>
+
+    <!-- Sorting Employee Home (sequence=2 → opens first for sorting employees) -->
+    <menuitem id="menu_recycle_sorting_home" name="Home" parent="menu_recycle_root"
+              action="action_recycle_sorting_home" sequence="2"
+              groups="recycle_warehouse.group_recycle_sorting"/>
+    <record id="menu_recycle_sorting_home" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_sorting')])]"/>
+    </record>
+
+    <!-- Delivery Driver Home. Their ONLY entry point: they work no shift and
+         touch no stock, so none of the warehouse screens apply to them. -->
+    <menuitem id="menu_recycle_delivery_driver_home" name="Home" parent="menu_recycle_root"
+              action="action_recycle_delivery_driver_home" sequence="4"
+              groups="recycle_warehouse.group_recycle_delivery_driver"/>
+    <record id="menu_recycle_delivery_driver_home" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_delivery_driver')])]"/>
+    </record>
+
+    <!-- Output Employee Home (sequence=3 → opens first for output employees) -->
+    <menuitem id="menu_recycle_output_home" name="Home" parent="menu_recycle_root"
+              action="action_recycle_output_home" sequence="3"
+              groups="recycle_warehouse.group_recycle_output"/>
+    <record id="menu_recycle_output_home" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_output')])]"/>
+    </record>
+
+    <!-- Admin Home Dashboard (sequence=1 → opens first for admin) -->
+    <menuitem id="menu_recycle_admin_home" name="Home" parent="menu_recycle_root"
+              action="recycle_warehouse.action_recycle_admin_home" sequence="1"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <record id="menu_recycle_admin_home" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin')])]"/>
+    </record>
+
+    <!-- Admin: Warehouses direct top-level menu (sequence=8) -->
+    <menuitem id="menu_recycle_admin_warehouses_nav" name="Warehouses" parent="menu_recycle_root"
+              action="recycle_warehouse.action_admin_nav_warehouses" sequence="8"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <record id="menu_recycle_admin_warehouses_nav" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin')])]"/>
+    </record>
+
+    <!-- Admin: Trucks (sequence=9, right after Warehouses).
+         Now a PARENT rather than a direct action, because the fleet grew a
+         second thing to manage: the people who drive the delivery half of it.
+         The fleet board keeps its own entry underneath, so nothing that used to
+         be one click away became two by accident. -->
+    <menuitem id="menu_recycle_admin_trucks_nav" name="Trucks" parent="menu_recycle_root"
+              sequence="9"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <record id="menu_recycle_admin_trucks_nav" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin')])]"/>
+    </record>
+
+    <menuitem id="menu_recycle_admin_trucks_fleet" name="Fleet"
+              parent="menu_recycle_admin_trucks_nav"
+              action="recycle_warehouse.action_admin_nav_trucks" sequence="10"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Delivery-stages screen: the order admin sees every trip, every station,
+         its status and pickup time, and a map pin for each. -->
+    <menuitem id="menu_recycle_admin_delivery_trips" name="Delivery Trips"
+              parent="menu_recycle_root"
+              action="recycle_warehouse.action_recycle_delivery_trip" sequence="26"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager"/>
+
+    <!-- Delivery drivers: recruited here, unlike collectors — who apply through
+         the mobile app and arrive as driver requests from the backend. -->
+    <menuitem id="menu_recycle_admin_delivery_drivers" name="Delivery Drivers"
+              parent="menu_recycle_admin_trucks_nav" sequence="20"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <menuitem id="menu_recycle_admin_delivery_drivers_new" name="Add"
+              parent="menu_recycle_admin_delivery_drivers"
+              action="recycle_warehouse.action_recycle_delivery_driver_new"
+              sequence="10"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <menuitem id="menu_recycle_admin_delivery_drivers_list" name="View"
+              parent="menu_recycle_admin_delivery_drivers"
+              action="recycle_warehouse.action_recycle_delivery_driver"
+              sequence="20"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Manager Home Dashboard (sequence=1 → opens first) -->
+    <menuitem id="menu_recycle_manager_home" name="Home" parent="menu_recycle_root"
+              action="recycle_warehouse.action_recycle_manager_home" sequence="1"
+              groups="recycle_warehouse.group_recycle_manager"/>
+    <record id="menu_recycle_manager_home" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_manager')])]"/>
+    </record>
+
+    <!-- My Warehouse: the manager sees his own warehouse (name, zones, employees, stock) -->
+    <menuitem id="menu_recycle_my_warehouse" name="My Warehouse" parent="menu_recycle_root"
+              action="action_recycle_manager_warehouse" sequence="5"
+              groups="recycle_warehouse.group_recycle_manager"/>
+
+    <!-- Operations -->
+    <menuitem id="menu_recycle_operations" name="Operations" parent="menu_recycle_root" sequence="10"/>
+
+    <!-- Process Shipments: INPUT employees ONLY -->
+    <menuitem id="menu_recycle_receive" name="Process Shipments" parent="menu_recycle_operations"
+              action="action_recycle_receive_wizard" sequence="5"
+              groups="recycle_warehouse.group_recycle_input"/>
+    <!-- Force-replace at upgrade time so admin/manager NEVER see it -->
+    <record id="menu_recycle_receive" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_input')])]"/>
+    </record>
+
+    <!-- Sort Shipments: SORTING employees ONLY — available (accepted) shipments -->
+    <menuitem id="menu_recycle_sort_shipments" name="Sort Shipments" parent="menu_recycle_operations"
+              action="action_available_for_sorting" sequence="7"
+              groups="recycle_warehouse.group_recycle_sorting"/>
+    <record id="menu_recycle_sort_shipments" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_sorting')])]"/>
+    </record>
+
+    <!-- My Sorted Shipments: SORTING employees ONLY -->
+    <menuitem id="menu_recycle_my_sorted" name="My Sorted Shipments" parent="menu_recycle_operations"
+              action="action_my_sorted_shipments" sequence="8"
+              groups="recycle_warehouse.group_recycle_sorting"/>
+    <record id="menu_recycle_my_sorted" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_sorting')])]"/>
+    </record>
+
+    <!-- Full Shipments list: admin / manager / output ONLY (NOT input, NOT sorting) -->
+    <!-- Admin sees themed shipments; manager+output keep standard view -->
+    <menuitem id="menu_recycle_shipments_admin" name="Shipments" parent="menu_recycle_operations"
+              action="recycle_warehouse.action_admin_nav_shipments" sequence="10"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <record id="menu_recycle_shipments_admin" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin')])]"/>
+    </record>
+    <menuitem id="menu_recycle_shipments" name="Shipments" parent="menu_recycle_operations"
+              action="action_recycle_shipment" sequence="10"
+              groups="recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_output"/>
+    <record id="menu_recycle_shipments" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_manager'), ref('group_recycle_output')])]"/>
+    </record>
+
+    <!-- My Processed Shipments: INPUT employees ONLY -->
+    <menuitem id="menu_recycle_my_processed" name="My Processed Shipments" parent="menu_recycle_operations"
+              action="action_my_processed_shipments" sequence="12"
+              groups="recycle_warehouse.group_recycle_input"/>
+    <!-- Force-replace at upgrade time -->
+    <record id="menu_recycle_my_processed" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_input')])]"/>
+    </record>
+
+    <!-- Process Order: OUTPUT employees ONLY (available/pending orders) -->
+    <menuitem id="menu_recycle_process_order" name="Process Order" parent="menu_recycle_operations"
+              action="action_available_orders" sequence="20"
+              groups="recycle_warehouse.group_recycle_output"/>
+    <record id="menu_recycle_process_order" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_output')])]"/>
+    </record>
+
+    <!-- My Orders: OUTPUT employees ONLY -->
+    <menuitem id="menu_recycle_my_orders" name="My Orders" parent="menu_recycle_operations"
+              action="action_my_processed_orders" sequence="22"
+              groups="recycle_warehouse.group_recycle_output"/>
+    <record id="menu_recycle_my_orders" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_output')])]"/>
+    </record>
+
+    <!-- My Invoices: OUTPUT employees ONLY -->
+    <menuitem id="menu_recycle_my_invoices" name="My Invoices" parent="menu_recycle_operations"
+              action="action_my_invoices" sequence="24"
+              groups="recycle_warehouse.group_recycle_output"/>
+    <record id="menu_recycle_my_invoices" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_output')])]"/>
+    </record>
+
+    <!-- Orders full list: admin / manager ONLY (NOT output employees — they use the menus above) -->
+    <!-- Admin sees themed orders; manager keeps standard view -->
+    <menuitem id="menu_recycle_orders_admin" name="Orders" parent="menu_recycle_operations"
+              action="recycle_warehouse.action_admin_nav_orders" sequence="25"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <record id="menu_recycle_orders_admin" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin')])]"/>
+    </record>
+    <menuitem id="menu_recycle_orders" name="Orders" parent="menu_recycle_operations"
+              action="action_recycle_order" sequence="25"
+              groups="recycle_warehouse.group_recycle_manager"/>
+    <record id="menu_recycle_orders" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_manager')])]"/>
+    </record>
+
+    <!-- Inventory: admin / manager / sorting / output ONLY (NOT input — they only need shipment processing) -->
+    <menuitem id="menu_recycle_inventory" name="Inventory" parent="menu_recycle_root" sequence="20"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager,recycle_warehouse.group_recycle_sorting,recycle_warehouse.group_recycle_output"/>
+    <record id="menu_recycle_inventory" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin'), ref('group_recycle_manager'), ref('group_recycle_sorting'), ref('group_recycle_output')])]"/>
+    </record>
+    <menuitem id="menu_recycle_stock" name="Stock" parent="menu_recycle_inventory"
+              action="recycle_warehouse.action_admin_nav_stock" sequence="10"/>
+    <menuitem id="menu_recycle_products" name="Products" parent="menu_recycle_inventory"
+              action="recycle_warehouse.action_admin_nav_products" sequence="20"/>
+    <menuitem id="menu_recycle_product_categories" name="Product Categories" parent="menu_recycle_inventory"
+              action="recycle_warehouse.action_admin_nav_product_categories" sequence="30"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <!-- Losses, per warehouse and per date. Visible to the administrator and to
+         warehouse managers — record rules narrow a manager to their own
+         warehouse, so the same menu answers "what did WE lose" for them and
+         "what did each warehouse lose" for the admin. -->
+    <menuitem id="menu_recycle_damage_log" name="Damage Log"
+              parent="menu_recycle_inventory"
+              action="recycle_warehouse.action_recycle_damage_entry" sequence="35"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager"/>
+    <!-- The way in now that materials are no longer created here. -->
+    <menuitem id="menu_recycle_product_suggestions" name="Suggest a Material"
+              parent="menu_recycle_inventory"
+              action="recycle_warehouse.action_recycle_product_suggestion" sequence="40"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Recruitment (managers create employee accounts) -->
+    <menuitem id="menu_recycle_recruitment" name="Recruitment" parent="menu_recycle_root" sequence="30"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager"/>
+    <menuitem id="menu_recycle_admin_jobs_hr" name="Jobs &amp; HR"
+              parent="menu_recycle_recruitment"
+              action="recycle_warehouse.action_admin_nav_jobs_hr" sequence="3"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <menuitem id="menu_recycle_all_applications" name="Job Applications"
+              parent="menu_recycle_recruitment"
+              action="recycle_warehouse.action_admin_nav_applicants_list" sequence="5"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <menuitem id="menu_recycle_accepted_applicants" name="Accepted Applicants"
+              parent="menu_recycle_recruitment"
+              action="recycle_warehouse.action_admin_nav_accepted_applicants" sequence="10"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <record id="menu_recycle_accepted_applicants" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin')])]"/>
+    </record>
+    <menuitem id="menu_recycle_employees_board" name="Employees"
+              parent="menu_recycle_recruitment" action="action_admin_nav_employees" sequence="15"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Unassigned Employees: real act_window list; the "Assign" row button
+         hands off to the admin dashboard's Assignment screen via context. -->
+    <record id="view_recycle_unassigned_employees_list" model="ir.ui.view">
+        <field name="name">res.users.recycle.unassigned.list</field>
+        <field name="model">res.users</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0" default_order="create_date desc">
+                <field name="name"/>
+                <field name="login" string="Email / Login"/>
+                <field name="phone"/>
+                <field name="recycle_national_id" string="National ID"/>
+                <field name="create_date" string="Applied On"/>
+                <button name="action_recycle_open_assignment" type="object"
+                        string="Assign" class="btn-primary" icon="fa-user-plus"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_recycle_unassigned_employees" model="ir.actions.act_window">
+        <field name="name">Unassigned Employees</field>
+        <field name="res_model">res.users</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_recycle_unassigned_employees_list"/>
+        <field name="domain">[('recycle_role', '=', False), ('recycle_deleted', '=', False),
+                               ('share', '=', False), ('active', '=', True)]</field>
+    </record>
+
+    <menuitem id="menu_recycle_unassigned_employees" name="Unassigned Employees"
+              parent="menu_recycle_recruitment" action="action_recycle_unassigned_employees"
+              sequence="14"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Shifts (admin only) -->
+    <menuitem id="menu_recycle_shifts_root" name="Shifts" parent="menu_recycle_root" sequence="35"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <menuitem id="menu_recycle_shifts_create" name="Manage Shifts"
+              parent="menu_recycle_shifts_root"
+              action="recycle_warehouse.action_admin_nav_shifts_hub" sequence="10"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <menuitem id="menu_recycle_shifts_list" name="All Shifts"
+              parent="menu_recycle_shifts_root"
+              action="recycle_warehouse.action_admin_nav_shifts_list" sequence="20"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <menuitem id="menu_recycle_attendance_admin" name="Attendance"
+              parent="menu_recycle_shifts_root"
+              action="recycle_warehouse.action_admin_nav_attendance" sequence="30"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Attendance (manager) -->
+    <menuitem id="menu_recycle_attendance_manager" name="Attendance"
+              parent="menu_recycle_root" sequence="36"
+              action="recycle_warehouse.action_attendance_manager"
+              groups="recycle_warehouse.group_recycle_manager"/>
+    <record id="menu_recycle_attendance_manager" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_manager')])]"/>
+    </record>
+
+    <!-- Archive: one "Archive" entry in Operations (admin + manager)
+         grouping archived shipments & archived orders -->
+    <menuitem id="menu_recycle_archive" name="Archive" parent="menu_recycle_operations"
+              sequence="35"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager"/>
+    <record id="menu_recycle_archive" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin'), ref('group_recycle_manager')])]"/>
+    </record>
+    <menuitem id="menu_recycle_shipments_archive" name="Archived Shipments" parent="menu_recycle_archive"
+              action="recycle_warehouse.action_recycle_shipment_archive" sequence="1"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager"/>
+    <record id="menu_recycle_shipments_archive" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin'), ref('group_recycle_manager')])]"/>
+    </record>
+    <menuitem id="menu_recycle_orders_archive" name="Archived Orders" parent="menu_recycle_archive"
+              action="recycle_warehouse.action_recycle_order_archive" sequence="2"
+              groups="recycle_warehouse.group_recycle_admin,recycle_warehouse.group_recycle_manager"/>
+    <record id="menu_recycle_orders_archive" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_recycle_admin'), ref('group_recycle_manager')])]"/>
+    </record>
+
+    <!-- Configuration (admin) -->
+    <menuitem id="menu_recycle_config" name="Configuration" parent="menu_recycle_root" sequence="40"
+              groups="recycle_warehouse.group_recycle_admin"/>
+    <!-- Warehouses removed from Config — accessible via top navbar -->
+    <menuitem id="menu_recycle_zones" name="Zones" parent="menu_recycle_config"
+              action="recycle_warehouse.action_admin_nav_zones" sequence="20"/>
+    <!-- Moved here from uom_views.xml / warehouse_views.xml: their action
+         records load before this file, but menu_recycle_config only exists
+         once this file runs, so the menuitem itself must live here. -->
+    <!-- Units now come from the backend mirror (recycle.measurement.unit), not
+         Odoo's generic uom.uom: a product may only be measured in a unit the
+         backend actually defines. -->
+    <menuitem id="menu_recycle_uom" name="Units of Measure" parent="menu_recycle_config"
+              action="recycle_warehouse.action_recycle_measurement_unit" sequence="15"/>
+    <menuitem id="menu_recycle_material_condition" name="Material Conditions"
+              parent="menu_recycle_config"
+              action="recycle_warehouse.action_recycle_material_condition" sequence="16"/>
+    <menuitem id="menu_recycle_province" name="Governorates" parent="menu_recycle_config"
+              action="recycle_warehouse.action_recycle_province" sequence="17"/>
+    <menuitem id="menu_recycle_delivery_tariff" name="Delivery Tariffs"
+              parent="menu_recycle_config"
+              action="recycle_warehouse.action_recycle_delivery_tariff" sequence="18"/>
+    <menuitem id="menu_recycle_add_admin"
+              name="Add Administrator"
+              parent="menu_recycle_config"
+              action="recycle_warehouse.action_recycle_add_admin_wizard"
+              sequence="5"
+              groups="recycle_warehouse.group_recycle_admin"/>
+
+    <!-- Hide the Employees app from warehouse staff: only HR officers and the
+         Recycle administrator can see employee accounts. -->
+    <record id="hr.menu_hr_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('hr.group_hr_user'), ref('group_recycle_admin')])]"/>
+    </record>
+
+    <!-- Apps and Settings: visible to the system administrator ONLY -->
+    <record id="base.menu_management" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('base.group_system')])]"/>
+    </record>
+    <record id="base.menu_administration" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('base.group_system')])]"/>
+    </record>
+</odoo>

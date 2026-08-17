@@ -1,0 +1,110 @@
+/* Storage step of the sorting screen — one-zone vs per-material.
+   Everything is stacked (flex column) so it stays readable and aligned on a
+   phone, never spilling sideways. */
+
+.o_ra_storage_modes {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+.o_ra_storage_mode_btn {
+    flex: 1 1 220px;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--ra-border, #d1d5db);
+    border-radius: 0.7rem;
+    background: var(--ra-card, #ffffff);
+    color: inherit;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+}
+.o_ra_storage_mode_active {
+    background: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+}
+
+.o_ra_store_list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+.o_ra_store_row,
+.o_ra_store_assign_card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--ra-border, #e5e7eb);
+    border-radius: 0.7rem;
+    background: var(--ra-card, #ffffff);
+}
+.o_ra_store_row_main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.o_ra_store_row_name {
+    font-weight: 600;
+    word-break: break-word;
+}
+.o_ra_store_row_qty {
+    color: var(--ra-muted, #6b7280);
+    white-space: nowrap;
+}
+/* The per-material zone select fills the card width on every screen. */
+.o_ra_store_assign_card .o_ra_form_input {
+    width: 100%;
+}
+
+@media (max-width: 480px) {
+    .o_ra_storage_mode_btn { flex-basis: 100%; }
+}
+
+/* Mobile: turn the sorting-screen data tables into STACKED cards — each row a
+   card, each cell a "Label: value" line, all under each other and aligned.
+   Wide multi-column tables were the source of the cramped, sideways-scrolling
+   look on a phone. */
+@media (max-width: 640px) {
+    /* min-width:0 wins over the desktop table's fixed min-width (~500px) — that
+       was what kept the stacked cards wider than the phone and scrolling. */
+    .o_ra_stack_sm,
+    .o_ra_stack_sm tbody,
+    .o_ra_stack_sm tr {
+        display: block;
+        width: 100%;
+        min-width: 0 !important;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    .o_ra_stack_sm thead { display: none; }
+    .o_ra_stack_sm tr {
+        border: 1px solid var(--ra-border, #e5e7eb);
+        border-radius: 0.6rem;
+        margin-bottom: 0.55rem;
+        padding: 0.5rem 0.75rem;
+        background: var(--ra-surface, #ffffff);
+    }
+    .o_ra_stack_sm td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        border: none !important;
+        padding: 0.3rem 0;
+        white-space: normal;
+        text-align: start;
+    }
+    .o_ra_stack_sm td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--ra-muted, #6b7280);
+        flex: 0 0 auto;
+    }
+    .o_ra_stack_sm td.o_ra_stack_action { justify-content: flex-end; }
+    .o_ra_stack_sm td.o_ra_stack_action::before { content: ''; }
+}

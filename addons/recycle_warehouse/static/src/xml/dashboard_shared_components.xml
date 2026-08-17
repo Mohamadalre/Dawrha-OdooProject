@@ -1,0 +1,709 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="recycle_warehouse.RecycleApplicationsBoard">
+        <div class="o_recycle_home_dashboard o_recycle_admin_theme" t-ref="scrollRoot"
+             style="overflow-y: auto; min-height: 100%;">
+
+            <div class="o_ra_page_hero" style="margin:1.25rem 1.25rem 0;">
+                <span class="o_ra_page_hero_icon">&#x1F4DD;</span>
+                <div class="o_ra_page_hero_body">
+                    <div class="o_ra_page_hero_title" t-esc="tr('Job Applications')"/>
+                    <div class="o_ra_page_hero_desc"><t t-esc="state.applications.length"/> <t t-esc="tr('application(s)')"/> <t t-esc="tr('to review — click any card to open and process it through the hiring stages.')"/></div>
+                </div>
+            </div>
+
+            <div class="o_recycle_apps_scroll" style="padding: 8px 24px 24px;">
+                <div style="display: grid; gap: 16px; max-width: 1100px; margin: 0 auto;
+                            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+
+                    <t t-if="state.loaded &amp;&amp; state.applications.length === 0">
+                        <div class="o_recycle_home_card" style="grid-column: 1 / -1;">
+                            <div class="o_recycle_card_icon">&#x1F4ED;</div>
+                            <div class="o_recycle_card_body">
+                                <h2 t-esc="tr('No applications')"/>
+                                <p t-esc="tr('There are no applications to process right now.')"/>
+                            </div>
+                        </div>
+                    </t>
+
+                    <t t-foreach="state.applications" t-as="app" t-key="app.id">
+                        <div class="o_recycle_home_card" style="margin: 0;"
+                             t-on-click="() => this.openApplication(app.id)"
+                             tabindex="0" role="button">
+                            <div class="o_recycle_card_icon">&#x1F464;</div>
+                            <div class="o_recycle_card_body">
+                                <h2 t-esc="app.recycle_name or app.partner_name or tr('Applicant')"/>
+                                <p>
+                                    <t t-if="app.job_id"><t t-esc="app.job_id[1]"/></t>
+                                    <t t-else=""><t t-esc="tr('No position')"/></t>
+                                    <t t-if="app.stage_id">
+                                        &#8226; <t t-esc="tr('Stage:')"/> <t t-esc="app.stage_id[1]"/>
+                                    </t>
+                                </p>
+                                <span t-attf-class="o_recycle_status_badge {{ statusClass(app.recycle_stage_status) }}"
+                                      t-esc="statusLabel(app.recycle_stage_status)"/>
+                            </div>
+                            <span class="o_recycle_card_arrow">&#8594;</span>
+                        </div>
+                    </t>
+
+                </div>
+            </div>
+
+            <div t-if="state.loadingMore" class="o_ra_loading" t-esc="tr('Loading more…')"/>
+            <div t-if="state.loaded &amp;&amp; !state.loadingMore &amp;&amp; !state.hasMore &amp;&amp; state.applications.length" class="o_ra_list_end_note" t-esc="tr('End of list.')"/>
+
+            <div style="text-align: center; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.15);">
+                <button class="btn btn-light" t-on-click="goBack">
+                    &#8592; <t t-esc="tr('Back to Dashboard')"/></button>
+            </div>
+
+        </div>
+    </t>
+
+
+    <!-- ============================================================ -->
+    <!--  Admin Employees board (themed) — delete employees           -->
+    <!-- ============================================================ -->
+    <t t-name="recycle_warehouse.RecycleEmployeesBoard">
+        <div class="o_recycle_home_dashboard o_recycle_admin_theme"
+             style="overflow-y: auto; min-height: 100%;">
+
+        <!-- In-page message/confirm dialog (replaces window.confirm). -->
+        <t t-call="recycle_warehouse.MessageDialog"/>
+
+            <div class="o_recycle_home_hero">
+                <span class="o_recycle_home_logo">&#x1F465;</span>
+                <h1 class="o_recycle_home_title" t-esc="tr('Employees')"/>
+                <p class="o_recycle_home_subtitle">
+                    <t t-esc="state.employees.length"/> <t t-esc="tr('employee(s)')"/>. <t t-esc="tr('Deleting removes the account, job applications and warehouse role — shipment records are kept.')"/>
+                </p>
+            </div>
+
+            <div style="padding: 8px 24px 24px;">
+                <div style="display: grid; gap: 16px; max-width: 1100px; margin: 0 auto;
+                            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+
+                    <t t-if="state.loaded &amp;&amp; state.employees.length === 0">
+                        <div class="o_recycle_home_card" style="grid-column: 1 / -1;">
+                            <div class="o_recycle_card_icon">&#x1F4ED;</div>
+                            <div class="o_recycle_card_body">
+                                <h2 t-esc="tr('No employees')"/>
+                                <p t-esc="tr('There are no employees to manage yet.')"/>
+                            </div>
+                        </div>
+                    </t>
+
+                    <t t-foreach="state.employees" t-as="emp" t-key="emp.id">
+                        <div class="o_recycle_home_card" style="margin: 0; cursor: default;">
+                            <div class="o_recycle_card_icon">&#x1F464;</div>
+                            <div class="o_recycle_card_body">
+                                <h2 t-esc="emp.name"/>
+                                <p>
+                                    <t t-esc="emp.login"/>
+                                    <t t-if="emp.recycle_warehouse_id">
+                                        &#8226; <t t-esc="emp.recycle_warehouse_id[1]"/>
+                                    </t>
+                                </p>
+                                <span class="o_recycle_status_badge o_recycle_badge_pending"
+                                      t-esc="roleLabel(emp.recycle_role)"/>
+                                <div style="margin-top: 14px;">
+                                    <button class="btn btn-danger btn-sm"
+                                            t-on-click="() => this.deleteEmployee(emp)">&#x1F5D1; <t t-esc="tr('Delete Employee')"/></button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+
+                </div>
+            </div>
+
+            <div style="text-align: center; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.15);">
+                <button class="btn btn-light" t-on-click="goBack">
+                    &#8592; <t t-esc="tr('Back to Dashboard')"/>
+                </button>
+            </div>
+
+        </div>
+    </t>
+
+
+    <!-- ============================================================ -->
+    <!--  Shift Manager Sub-Page (admin)                              -->
+    <!-- ============================================================ -->
+    <t t-name="recycle_warehouse.RecycleShiftManager">
+        <div class="o_recycle_home_dashboard o_recycle_shift_theme"
+             style="overflow-y: auto; height: 100%; min-height: 100%;">
+
+            <!-- Hero -->
+            <div class="o_recycle_home_hero">
+                <span class="o_recycle_home_logo">&#x1F55B;</span>
+                <h1 class="o_recycle_home_title" t-esc="tr('Work Shifts')"/>
+                <p class="o_recycle_home_subtitle" t-esc="tr('Manage work shifts and assign them to employees.')"/>
+            </div>
+
+            <!-- Menu view: 2 cards -->
+            <t t-if="state.view === 'menu'">
+                <div class="o_recycle_home_cards">
+
+                    <div class="o_recycle_home_card"
+                         t-on-click="showCreateForm" tabindex="0" role="button">
+                        <div class="o_recycle_card_icon">&#x2795;</div>
+                        <div class="o_recycle_card_body">
+                            <h2 t-esc="tr('Create Shift')"/>
+                            <p t-esc="tr('Define a new work shift with start time, end time, and tolerance period.')"/>
+                        </div>
+                        <span class="o_recycle_card_arrow">&#8594;</span>
+                    </div>
+
+                    <div class="o_recycle_home_card"
+                         t-on-click="viewShifts" tabindex="0" role="button">
+                        <div class="o_recycle_card_icon">&#x1F4CB;</div>
+                        <div class="o_recycle_card_body">
+                            <h2 t-esc="tr('View All Shifts')"/>
+                            <p t-esc="tr('Browse, edit, or deactivate existing work shifts. See how many employees use each shift.')"/>
+                        </div>
+                        <span class="o_recycle_card_arrow">&#8594;</span>
+                    </div>
+
+                    <div style="padding-top: 2rem; padding-bottom: 0.5rem;">
+                <button class="o_recycle_back_btn" t-on-click="goBack">&#8592; <t t-esc="tr('Back')"/></button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Create form -->
+            <t t-if="state.view === 'create'">
+                <div class="o_recycle_shift_form_card">
+
+                    <div class="o_shift_form_header">
+                        <span class="o_shift_form_icon">&#x1F552;</span>
+                        <h2 t-esc="tr('New Work Shift')"/>
+                    </div>
+
+                    <t t-if="state.error">
+                        <div class="o_shift_form_error">
+                            &#x26A0; <span t-esc="state.error"/>
+                        </div>
+                    </t>
+
+                    <div class="o_shift_form_field">
+                        <label t-esc="tr('Shift Name')"/>
+                        <input type="text"
+                               class="o_shift_input"
+                               t-att-placeholder="tr('e.g. Morning Shift')"
+                               t-att-value="state.form.name"
+                               t-on-input="onNameInput"/>
+                    </div>
+
+                    <div class="o_shift_form_row">
+                        <div class="o_shift_form_field">
+                            <label t-esc="tr('Start Time')"/>
+                            <input type="time"
+                                   class="o_shift_input"
+                                   t-att-value="state.form.startTime"
+                                   t-on-input="onStartInput"/>
+                        </div>
+                        <div class="o_shift_form_field">
+                            <label t-esc="tr('End Time')"/>
+                            <input type="time"
+                                   class="o_shift_input"
+                                   t-att-value="state.form.endTime"
+                                   t-on-input="onEndInput"/>
+                        </div>
+                    </div>
+
+                    <div class="o_shift_form_field">
+                        <label t-esc="tr('Tolerance (minutes)')"/>
+                        <input type="number"
+                               class="o_shift_input"
+                               min="0" max="120"
+                               t-att-value="state.form.tolerance"
+                               t-on-input="onToleranceInput"/>
+                        <small class="o_shift_hint" t-esc="tr('Grace period allowed before marking an employee as late.')"/>
+                    </div>
+
+                    <div class="o_shift_form_actions">
+                        <button class="o_shift_btn_secondary"
+                                t-on-click="goBack"
+                                t-att-disabled="state.saving">
+                            &#8592; <t t-esc="tr('Back')"/>
+                        </button>
+                        <button class="o_shift_btn_primary"
+                                t-on-click="createShift"
+                                t-att-disabled="state.saving">
+                            <t t-if="state.saving"><t t-esc="tr('Saving…')"/></t>
+                            <t t-else="">&#x2713; <t t-esc="tr('Create Shift')"/></t>
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Success screen -->
+            <t t-if="state.view === 'success'">
+                <div class="o_recycle_shift_form_card o_shift_success_card">
+                    <div class="o_shift_success_icon">&#x2705;</div>
+                    <h2 t-esc="tr('Shift Created!')"/>
+                    <p>
+                        <strong t-esc="state.savedName"/> <t t-esc="tr('has been saved successfully.')"/>
+                    </p>
+                    <div class="o_shift_form_actions">
+                        <button class="o_shift_btn_secondary"
+                                t-on-click="goBack">
+                            &#8592; <t t-esc="tr('Back to Menu')"/>
+                        </button>
+                        <button class="o_shift_btn_primary"
+                                t-on-click="createAnother" >&#x2795; <t t-esc="tr('Create Another')"/></button>
+                        <button class="o_shift_btn_outline"
+                                t-on-click="viewShifts" >&#x1F4CB; <t t-esc="tr('View All Shifts')"/></button>
+                    </div>
+                </div>
+            </t>
+
+        </div>
+    </t>
+
+
+    <!-- ============================================================ -->
+    <!--  Manager Attendance Dashboard                                 -->
+    <!-- ============================================================ -->
+    <t t-name="recycle_warehouse.RecycleManagerAttendance">
+        <div class="o_recycle_home_dashboard o_recycle_manager_theme"
+             style="overflow-y: auto; height: 100%; min-height: 100%; justify-content: flex-start; padding-top: 2rem;">
+
+            <div class="o_recycle_home_hero">
+                <span class="o_recycle_home_logo">&#x1F465;</span>
+                <h1 class="o_recycle_home_title" t-esc="tr('Today\'s Attendance')"/>
+                <p class="o_recycle_home_subtitle">
+                    <strong t-esc="state.today"/> &#160;&#8212;&#160; <strong t-esc="userName"/>
+                </p>
+            </div>
+
+            <div class="o_recycle_manager_content">
+
+                <!-- Summary stats row -->
+                <t t-if="!state.loading">
+                    <div class="o_att_summary_row">
+                        <div class="o_att_stat o_att_stat_present">
+                            <span class="o_att_stat_num" t-esc="state.totalPresent"/>
+                            <span class="o_att_stat_lbl" t-esc="tr('Present')"/>
+                        </div>
+                        <div class="o_att_stat o_att_stat_late">
+                            <span class="o_att_stat_num" t-esc="state.totalLate"/>
+                            <span class="o_att_stat_lbl" t-esc="tr('Late')"/>
+                        </div>
+                        <div class="o_att_stat o_att_stat_early">
+                            <span class="o_att_stat_num" t-esc="state.totalEarly"/>
+                            <span class="o_att_stat_lbl" t-esc="tr('Left Early')"/>
+                        </div>
+                        <div class="o_att_stat o_att_stat_total">
+                            <span class="o_att_stat_num" t-esc="state.records.length"/>
+                            <span class="o_att_stat_lbl" t-esc="tr('Total')"/>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Loading state -->
+                <t t-if="state.loading">
+                    <div class="o_att_loading"><t t-esc="tr('Loading attendance data')"/>&#8230;</div>
+                </t>
+
+                <!-- Table -->
+                <t t-if="!state.loading">
+                    <t t-if="state.records.length === 0">
+                        <div class="o_att_empty" t-esc="tr('No attendance records found for today.')"/>
+                    </t>
+                    <t t-else="">
+                        <div class="o_att_table_wrap">
+                            <table class="o_att_table">
+                                <thead>
+                                    <tr>
+                                        <th t-esc="tr('Employee')"/>
+                                        <th t-esc="tr('Shift')"/>
+                                        <th t-esc="tr('Check In')"/>
+                                        <th t-esc="tr('Check Out')"/>
+                                        <th t-esc="tr('Hours')"/>
+                                        <th t-esc="tr('Late')"/>
+                                        <th t-esc="tr('Status')"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.records" t-as="r" t-key="r.id">
+                                        <tr>
+                                            <td t-esc="r._empName"/>
+                                            <td t-esc="r._shiftName"/>
+                                            <td t-esc="r._checkInFmt"/>
+                                            <td t-esc="r._checkOutFmt"/>
+                                            <td t-esc="r._workDisplay"/>
+                                            <td>
+                                                <t t-if="r.late_minutes > 0">
+                                                    <span style="color:#dc2626;font-weight:600;">+<t t-esc="r.late_minutes"/><t t-esc="tr('min')"/></span>
+                                                </t>
+                                                <t t-else="">—</t>
+                                            </td>
+                                            <td>
+                                                <span t-att-class="r._statusClass" t-esc="r._statusLabel"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </t>
+
+                <!-- Full List button -->
+                <div style="margin-top:1.5rem;text-align:center;">
+                    <button class="o_recycle_primary_btn" t-on-click="openFullList" t-esc="tr('Full List View')"/>
+                </div>
+
+            </div>
+        </div>
+    </t>
+
+    <!-- ═══════════ Shift: assignable-employee picker (shared) ═══════════ -->
+    <t t-name="recycle_warehouse.ShiftEmployeePicker">
+        <div class="o_ra_form_group">
+            <label class="o_ra_form_label" t-esc="tr('Available Employees')"/>
+            <div t-if="state.shiftEmpLoading" class="o_ra_loading" t-esc="tr('Loading employees…')"/>
+            <div t-elif="!state.shiftEmployees.length" class="o_ra_form_hint" t-esc="tr('No employees found for this warehouse.')"/>
+            <div t-else="" class="o_ra_emp_picker">
+                <t t-foreach="state.shiftEmployees" t-as="emp" t-key="emp.id">
+                    <label class="o_ra_emp_row">
+                        <input type="checkbox"
+                               t-att-checked="isShiftEmployeeSelected(emp.id)"
+                               t-on-change="() => this.toggleShiftEmployee(emp.id)"/>
+                        <span class="o_ra_emp_name" t-esc="emp.name"/>
+                        <span class="o_ra_badge o_ra_badge_info" t-esc="stateLabel(emp.role,'role')"/>
+                        <span t-if="emp.assigned_other" class="o_ra_emp_note"
+                              t-esc="tr('currently on:') + ' ' + emp.other_shift"/>
+                    </label>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <!-- ═══════════ Shift: "unusual times" confirm modal (shared) ═══════════ -->
+    <t t-name="recycle_warehouse.ShiftUnusualModal">
+        <div t-if="state.shiftWarnType" class="o_ra_modal_overlay">
+            <div class="o_ra_modal_box">
+                <div class="o_ra_modal_icon">&#x26A0;&#xFE0F;</div>
+                <div class="o_ra_modal_title" t-esc="state.shiftWarnType === 'long' ? tr('Long Shift') : tr('Unusual Shift Times')"/>
+                <div class="o_ra_modal_text" t-esc="shiftWarnMessage"/>
+                <div class="o_ra_modal_actions">
+                    <button class="o_ra_action_btn o_ra_mini_restore" t-on-click="confirmUnusualTimes" t-esc="tr('Yes, continue')"/>
+                    <button class="o_ra_action_btn o_ra_mini_danger" t-on-click="cancelUnusualTimes" t-esc="tr('No')"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ═══════════ Shift: delete-blocked warning modal (shared) ═══════════ -->
+    <t t-name="recycle_warehouse.ShiftDeleteModal">
+        <div t-if="state.shiftDeleteWarn" class="o_ra_modal_overlay">
+            <div class="o_ra_modal_box">
+                <div class="o_ra_modal_icon">&#x1F6AB;</div>
+                <div class="o_ra_modal_title" t-esc="tr('Cannot Delete Shift')"/>
+                <div class="o_ra_modal_text">
+                    <t t-esc="tr('Cannot delete this shift as it is assigned to employees:')"/>
+                    <strong t-esc="state.shiftDeleteWarn.employees"/>.
+                    <br/>
+                    <t t-esc="tr('Unassign them from the shift first, then delete it.')"/>
+                </div>
+                <div class="o_ra_modal_actions">
+                    <button class="o_ra_action_btn o_ra_mini_view" t-on-click="dismissShiftDeleteWarn" t-esc="tr('OK')"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ═══════════ Error Modal (shared) ═══════════ -->
+    <t t-name="recycle_warehouse.ErrorModal">
+        <div t-if="state.errorModal" class="o_ra_modal_overlay">
+            <div class="o_ra_modal_box">
+                <div class="o_ra_modal_icon" t-esc="state.errorModal.type === 'danger' ? '&#x274C;' : (state.errorModal.type === 'success' ? '&#x2705;' : '&#x26A0;&#xFE0F;')"/>
+                <div class="o_ra_modal_title" t-esc="state.errorModal.title"/>
+                <div class="o_ra_modal_text" t-esc="state.errorModal.message"/>
+                <div class="o_ra_modal_actions">
+                    <button class="o_ra_action_btn o_ra_mini_view" t-on-click="closeErrorModal" t-esc="tr('OK')"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Driver decision modals (accept / reject / reject one document).
+         Shared so BOTH the driver-requests list and the full detail view
+         can trigger a decision without duplicating the markup.
+         ══════════════════════════════════════════════════════════════════ -->
+    <t t-name="recycle_warehouse.DriverDecisionModals">
+        <!-- Accept modal: warehouse is mandatory -->
+        <div t-if="state.driverAcceptModal" class="o_ra_modal_overlay" t-on-click.self="closeDriverModals">
+            <div class="o_ra_modal_box">
+                <h3 t-esc="tr('Accept driver')"/>
+                <p><t t-esc="tr('Assign')"/> <strong t-esc="state.selectedDriverRequest and state.selectedDriverRequest.name"/> <t t-esc="tr('to a warehouse:')"/></p>
+                <div t-if="state.driverActionError" class="o_ra_form_error" t-esc="state.driverActionError"/>
+                <select class="o_ra_form_select" t-model="state.driverAcceptWH">
+                    <option value="" t-esc="tr('— Select Warehouse —')"/>
+                    <t t-foreach="state.warehouses" t-as="wh" t-key="wh.id">
+                        <option t-att-value="'' + wh.id" t-esc="wh.name"/>
+                    </t>
+                </select>
+                <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
+                    <button class="o_recycle_back_btn" t-on-click="closeDriverModals" t-esc="tr('Cancel')"/>
+                    <button class="o_ra_action_btn" t-att-disabled="state.driverActionSaving"
+                            t-on-click="confirmDriverAccept">
+                        <t t-if="state.driverActionSaving" t-esc="tr('Saving…')"/>
+                        <t t-else="" t-esc="tr('Accept and notify driver')"/>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject modal: reason mandatory -->
+        <div t-if="state.driverRejectModal" class="o_ra_modal_overlay" t-on-click.self="closeDriverModals">
+            <div class="o_ra_modal_box">
+                <h3 t-esc="tr('Reject request')"/>
+                <div t-if="state.driverActionError" class="o_ra_form_error" t-esc="state.driverActionError"/>
+                <textarea class="o_ra_form_input" rows="3" t-model="state.driverRejectReason"
+                          t-att-placeholder="tr('Why is this request rejected?')"/>
+                <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
+                    <button class="o_recycle_back_btn" t-on-click="closeDriverModals" t-esc="tr('Cancel')"/>
+                    <button class="o_ra_action_btn o_ra_mini_danger" t-att-disabled="state.driverActionSaving"
+                            t-on-click="confirmDriverReject">
+                        <t t-if="state.driverActionSaving" t-esc="tr('Saving…')"/>
+                        <t t-else="" t-esc="tr('Reject and notify driver')"/>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject ONE image modal — SILENT -->
+        <div t-if="state.driverImgReject" class="o_ra_modal_overlay" t-on-click.self="closeDriverModals">
+            <div class="o_ra_modal_box">
+                <h3 t-esc="tr('Reject document image')"/>
+                <p class="o_ra_form_hint" t-esc="tr('The driver is NOT told. This records your judgement so you can finish reading the rest — ask him for it when you are ready.')"/>
+                <div t-if="state.driverActionError" class="o_ra_form_error" t-esc="state.driverActionError"/>
+                <textarea class="o_ra_form_input" rows="2" t-model="state.driverImgRejectReason"
+                          t-att-placeholder="tr('Optional note for the driver (e.g. photo is blurry)…')"/>
+                <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
+                    <button class="o_recycle_back_btn" t-on-click="closeDriverModals" t-esc="tr('Cancel')"/>
+                    <button class="o_ra_action_btn o_ra_mini_danger" t-att-disabled="state.driverActionSaving"
+                            t-on-click="confirmDriverImgReject">
+                        <t t-if="state.driverActionSaving" t-esc="tr('Saving…')"/>
+                        <t t-else="" t-esc="tr('Reject image')"/>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ask the driver for ONE image — the act that reaches him -->
+        <div t-if="state.driverImgRequest" class="o_ra_modal_overlay" t-on-click.self="closeDriverModals">
+            <div class="o_ra_modal_box">
+                <h3 t-esc="tr('Ask driver to re-upload')"/>
+                <p class="o_ra_form_hint" t-esc="tr('The request moves to Needs Changes and the driver is told to replace this exact document. He comes back into the queue once he has replaced everything you asked for.')"/>
+                <div t-if="state.driverActionError" class="o_ra_form_error" t-esc="state.driverActionError"/>
+                <textarea class="o_ra_form_input" rows="2" t-model="state.driverImgRequestReason"
+                          t-att-placeholder="tr('What is wrong with it — this is the whole message he receives…')"/>
+                <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
+                    <button class="o_recycle_back_btn" t-on-click="closeDriverModals" t-esc="tr('Cancel')"/>
+                    <button class="o_ra_action_btn" t-att-disabled="state.driverActionSaving"
+                            t-on-click="confirmDriverImgRequest">
+                        <t t-if="state.driverActionSaving" t-esc="tr('Saving…')"/>
+                        <t t-else="" t-esc="tr('Ask driver to re-upload')"/>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!--
+        Delivery-driver dialogs, shared by the LIST and the driver's own page.
+
+        Both screens offer the same two actions, so both need the same two
+        dialogs. Kept in one place rather than copied into each branch: a block
+        that requires a reason on one screen and not the other is the kind of
+        difference nobody notices until a driver is blocked with no explanation
+        to show them.
+    -->
+    <!--
+        The manager's version. Same decision, fewer powers: a manager hands out
+        a vehicle, the administrator owns the record. Shared by their list and
+        their driver page so the two cannot drift apart.
+    -->
+    <!--
+        Full-size image, over the page.
+
+        Licence scans used to be `<a target="_blank">`. A tab holding a bare
+        image has no context — nothing says whose licence it is or which side —
+        and on a phone it is a viewer with no obvious way back to the driver
+        being read. This keeps the page underneath and closes on a tap outside,
+        which is what "open the picture" means on a phone.
+    -->
+    <!--
+        Branded loading screen, shown over the dashboard while a slow page
+        builds.
+
+        Deliberately NOT tied straight to `state.loading`: a fast load would
+        flash the logo for 80ms, which reads as a glitch rather than as
+        progress. `useSlowLoad` flips this on only once loading has lasted long
+        enough to be worth explaining (see the delay there), so a quick screen
+        stays silent and a slow one stops looking broken.
+
+        `alt` is empty and the text carries the meaning: a screen reader
+        announcing "Logo" before "Loading" helps nobody.
+    -->
+    <t t-name="recycle_warehouse.LoadingSplash">
+        <div t-if="state.slowLoading" class="o_ra_splash" role="status" aria-live="polite">
+            <div class="o_ra_splash_inner">
+                <img class="o_ra_splash_logo" alt=""
+                     src="/recycle_warehouse/static/src/img/Logo.png"/>
+                <div class="o_ra_splash_bar"><span/></div>
+                <div class="o_ra_splash_text" t-esc="tr('Loading…')"/>
+            </div>
+        </div>
+    </t>
+
+    <!--
+        The message dialog every dashboard uses instead of `alert()`.
+
+        `alert()` was doing this job in nineteen places. It is the browser's own
+        box: it cannot be translated, cannot be styled, cannot say whether what
+        it reports is a failure or a success, and on a phone it renders as a
+        cramped system prompt with the page frozen behind it. Worse, it BLOCKS
+        the JavaScript thread — so an OWL component that alerts mid-update
+        leaves the screen half-drawn until somebody presses OK.
+
+        This is a normal element in the page: it inherits the dashboard's fonts
+        and direction (so Arabic reads right-to-left), it scales down to a phone
+        instead of being scaled down BY one, and it names its own kind — an
+        error is red and a confirmation is not, which `alert()` could never do.
+    -->
+    <t t-name="recycle_warehouse.MessageDialog">
+        <div t-if="state.dialog" class="o_ra_msg_overlay" t-on-click.self="closeDialog">
+            <div t-att-class="'o_ra_msg_box o_ra_msg_' + (state.dialog.kind || 'info')"
+                 role="alertdialog" aria-modal="true">
+                <div class="o_ra_msg_head">
+                    <span class="o_ra_msg_icon">
+                        <t t-if="state.dialog.kind === 'error'">&#x26A0;</t>
+                        <t t-elif="state.dialog.kind === 'success'">&#x2714;</t>
+                        <t t-else="">&#x2139;</t>
+                    </span>
+                    <span class="o_ra_msg_title" t-esc="state.dialog.title"/>
+                    <button class="o_ra_msg_close" t-on-click="closeDialog"
+                            t-att-aria-label="tr('Close')">&#x2715;</button>
+                </div>
+                <div class="o_ra_msg_body" t-esc="state.dialog.message"/>
+                <div class="o_ra_msg_actions">
+                    <!-- A confirm dialog grows a second button; a plain message
+                         keeps one. Same component either way, so no screen has
+                         to reimplement the layout to ask a question. -->
+                    <button t-if="state.dialog.onConfirm" class="o_recycle_back_btn"
+                            t-on-click="closeDialog" t-esc="tr('Cancel')"/>
+                    <button class="o_ra_action_btn" t-on-click="confirmDialog"
+                            t-esc="state.dialog.confirmLabel || tr('OK')"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="recycle_warehouse.ImageViewer">
+        <div t-if="state.imageViewer" class="o_ra_img_viewer"
+             t-on-click.self="closeImageViewer">
+            <button class="o_ra_img_viewer_close" t-on-click="closeImageViewer"
+                    t-att-aria-label="tr('Close')">&#x2715;</button>
+            <img class="o_ra_img_viewer_img" t-att-src="state.imageViewer.url"
+                 t-att-alt="state.imageViewer.caption"/>
+            <div t-if="state.imageViewer.caption" class="o_ra_img_viewer_cap"
+                 t-esc="state.imageViewer.caption"/>
+        </div>
+    </t>
+
+    <t t-name="recycle_warehouse.ManagerAssignTruckDialog">
+        <!-- The free-truck list is fetched when the panel is opened rather than
+             cached with the page: a truck free when the screen was drawn may be
+             taken by now. -->
+        <div t-if="state.ddAssigning" class="o_ra_modal_overlay"
+             t-on-click.self="cancelAssignDeliveryTruck">
+            <div class="o_ra_modal_box" style="text-align:start;">
+                <div class="o_ra_form_group">
+                    <label class="o_ra_form_label">
+                        <t t-esc="tr('Assign a delivery truck to')"/>: <strong t-esc="state.ddAssigning.name"/>
+                    </label>
+                    <select class="o_ra_form_input" t-model="state.ddSelectedTruck">
+                        <option value="" t-esc="tr('Select a delivery truck…')"/>
+                        <t t-foreach="state.ddFreeTrucks" t-as="tk" t-key="tk.id">
+                            <option t-att-value="tk.id"
+                                    t-esc="tk.name + ' — ' + tk.plate_number"/>
+                        </t>
+                    </select>
+                    <div t-if="!state.ddFreeTrucks.length" class="o_ra_form_hint"
+                         t-esc="tr('No free delivery truck in your warehouse right now.')"/>
+                </div>
+                <div class="o_ra_modal_actions">
+                    <button class="o_ra_action_btn" t-on-click="confirmAssignDeliveryTruck"
+                            t-esc="tr('Assign')"/>
+                    <button class="o_recycle_back_btn" t-on-click="cancelAssignDeliveryTruck"
+                            t-esc="tr('Cancel')"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="recycle_warehouse.DeliveryDriverDialogs">
+        <!-- A block REQUIRES a reason: it is what the driver is told and
+             what the next reviewer reads. -->
+        <div t-if="state.ddBlocking" class="o_ra_modal_overlay"
+             t-on-click.self="cancelBlockDeliveryDriver">
+            <div class="o_ra_modal_box">
+                <div class="o_ra_modal_icon">&#x1F6AB;</div>
+                <div class="o_ra_modal_title" t-esc="tr('Block this driver')"/>
+                <div class="o_ra_modal_text">
+                    <strong t-esc="state.ddBlocking.name"/> —
+                    <t t-esc="tr('their truck is taken back and their login is disabled.')"/>
+                </div>
+                <textarea class="o_ra_form_input" rows="2" t-model="state.ddBlockReason"
+                          t-att-placeholder="tr('Block reason (required)…')"/>
+                <div class="o_ra_modal_actions">
+                    <button class="o_ra_action_btn o_ra_mini_danger"
+                            t-att-disabled="!(state.ddBlockReason || '').trim()"
+                            t-on-click="confirmBlockDeliveryDriver" t-esc="tr('Block')"/>
+                    <button class="o_ra_action_btn" t-on-click="cancelBlockDeliveryDriver" t-esc="tr('Cancel')"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assign panel. The free-truck list is fetched when the panel is
+             opened rather than cached with the page: a truck free when the
+             list was drawn may have been taken since. -->
+        <div t-if="state.ddAssigning" class="o_ra_modal_overlay"
+             t-on-click.self="cancelAssignDeliveryTruck">
+            <div class="o_ra_modal_box" style="text-align:start;">
+                <div class="o_ra_form_group">
+                    <label class="o_ra_form_label">
+                        <t t-esc="tr('Assign a delivery truck to')"/>:
+                        <strong t-esc="state.ddAssigning.name"/>
+                    </label>
+                    <select class="o_ra_form_select" t-model="state.ddSelectedTruck">
+                        <option value="" t-esc="tr('Select a delivery truck…')"/>
+                        <t t-foreach="state.ddFreeTrucks" t-as="tk" t-key="tk.id">
+                            <option t-att-value="'' + tk.id"
+                                    t-esc="tk.name + ' — ' + tk.plate_number"/>
+                        </t>
+                    </select>
+                    <div t-if="!state.ddFreeTrucks.length" class="o_ra_form_hint"
+                         t-esc="tr('No free delivery truck in that warehouse right now.')"/>
+                </div>
+                <div class="o_ra_modal_actions">
+                    <button class="o_ra_action_btn" t-on-click="confirmAssignDeliveryTruck"
+                            t-esc="tr('Assign')"/>
+                    <button class="o_recycle_back_btn" t-on-click="cancelAssignDeliveryTruck"
+                            t-esc="tr('Cancel')"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+
+</templates>

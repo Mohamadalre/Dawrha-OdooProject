@@ -1,0 +1,63 @@
+services:
+
+  db:
+    image: postgres:16
+    container_name: odoo19-db
+    restart: always
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    volumes:
+      - odoo-db:/var/lib/postgresql/data
+ 
+
+  odoo:
+    image: odoo:19.0
+    container_name: odoo19
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: odoo
+    # Pin the server to the "odoo19" database so it is auto-selected even
+    # when the database manager is disabled and several PG databases exist.
+    # ($$ becomes a single $ after Compose variable-substitution.)
+    command: "odoo --db-filter=^odoo19$$"
+    volumes:
+      - odoo-web:/var/lib/odoo
+      - ./addons:/mnt/extra-addons
+      # Arabic in printed PDFs.
+      #
+      # wkhtmltopdf renders through Qt WebKit, which resolves fonts through
+      # FONTCONFIG and largely ignores @font-face over HTTP. The base image
+      # ships only DejaVu for Arabic, and DejaVu carries the code points
+      # WITHOUT the tables that join them — so every Arabic name printed as
+      # disconnected letters in the wrong order.
+      #
+      # Mounted from the addon rather than apt-installed into the container:
+      # a package installed into a running container disappears the next time
+      # it is rebuilt, and the reports would quietly go back to garbling names
+      # with nothing in the logs to explain it. fontconfig scans
+      # /usr/share/fonts recursively at startup, so this is all it takes.
+      - ./addons/recycle_warehouse/static/src/fonts:/usr/share/fonts/truetype/dawrha:ro
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: odoo19-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  odoo-db:
+  odoo-web:

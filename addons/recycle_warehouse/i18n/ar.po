@@ -1,0 +1,1327 @@
+# Translation of Recycle Warehouse Management into Arabic.
+#
+# WHY THIS FILE EXISTS
+#
+# Every user-facing message in the Python code is already wrapped in `_()` —
+# 293 of them, correctly, from the first commit. But `_()` only translates
+# against a CATALOGUE, and this module had no `i18n/` directory at all. So the
+# wrapping did nothing: an Arabic-speaking warehouse employee hit "Only accepted
+# drivers can be blocked." in English, and no amount of `_()` was going to
+# change that.
+#
+# `recycle_warehouse.pot` beside this file is the exported template — the
+# authoritative msgid list, regenerated from the module rather than typed by
+# hand, so a msgid here can never drift from the string the code actually
+# raises.
+#
+# HOW TO CONTINUE
+#
+#   1. Regenerate the template after adding messages (Odoo shell):
+#        from odoo.tools.translate import trans_export
+#        import io; buf = io.BytesIO()
+#        trans_export(None, ['recycle_warehouse'], buf, 'po', env)
+#   2. Merge new msgids into this file and fill their msgstr.
+#   3. Upgrade the module — Odoo loads i18n/<lang>.po on install/upgrade.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "\"%s\" is not a valid shipment ID."
+msgstr "\"%s\" ليس معرّف شحنة صالحاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "%s already has a role assigned."
+msgstr "%s له دور معيّن بالفعل."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid "%s is already blocked."
+msgstr "%s محظور مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid "%s is not blocked."
+msgstr "%s غير محظور."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"A document was rejected — wait until the driver re-uploads it before "
+"accepting this request."
+msgstr "رُفضت إحدى الوثائق — انتظر حتى يعيد السائق رفعها قبل قبول هذا الطلب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid ""
+"A governorate is required. Order allocation matches buyers to warehouses by "
+"it, so a warehouse without one holds stock that no order can ever be routed "
+"to."
+msgstr ""
+"المحافظة مطلوبة. توزيع الطلبات يطابق المشترين بالمستودعات حسب المحافظة، "
+"فالمستودع بلا محافظة يحمل مخزوناً لا يمكن توجيه أي طلب إليه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid ""
+"An address is required. Coordinates put a pin on a map; they do not tell a "
+"driver which gate, and a collection order with no address is one the buyer "
+"cannot act on."
+msgstr ""
+"العنوان مطلوب. الإحداثيات تضع دبوساً على الخريطة لكنها لا تدل السائق على "
+"البوابة، وطلب الجمع بلا عنوان لا يستطيع المشتري التعامل معه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck_handover.py:0
+#: code:addons/recycle_warehouse/models/truck_problem.py:0
+msgid "A driver"
+msgstr "سائق"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "A global shift cannot be tied to specific warehouses."
+msgstr "لا يمكن ربط وردية عامة بمستودعات محددة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "A global shift cannot be turned into a warehouse-specific one."
+msgstr "لا يمكن تحويل وردية عامة إلى وردية خاصة بمستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "A global shift has no warehouses — it applies to all of them."
+msgstr "الوردية العامة بلا مستودعات — تنطبق عليها جميعاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_tariff.py:0
+msgid ""
+"A global tariff must not target a specific warehouse or governorate — narrow"
+" the scope instead."
+msgstr "التعرفة العامة يجب ألا تستهدف مستودعاً أو محافظة بعينها — ضيّق النطاق بدل ذلك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "A reason is required to take a truck out of service."
+msgstr "يلزم سبب لإخراج الشاحنة من الخدمة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+#: code:addons/recycle_warehouse/models/shift_change_request.py:0
+msgid "A rejection reason is required."
+msgstr "سبب الرفض مطلوب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "A shift cannot exceed %d hours."
+msgstr "لا يمكن أن تتجاوز الوردية %d ساعة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "A shift must last at least %d hours."
+msgstr "يجب ألا تقل الوردية عن %d ساعة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid ""
+"A sorted quantity cannot be negative. Enter zero if none of this grade "
+"arrived."
+msgstr "لا يمكن أن تكون الكمية المفروزة سالبة. أدخل صفراً إن لم تصل أي كمية من هذه الدرجة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock.py:0
+msgid ""
+"A stock line for this product/zone/condition already exists in this "
+"warehouse."
+msgstr "يوجد سطر مخزون لهذا المنتج/المنطقة/الحالة في هذا المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_tariff.py:0
+msgid ""
+"A tariff for this scope already exists — edit it instead of adding a second "
+"one."
+msgstr "توجد تعرفة لهذا النطاق — عدّلها بدل إضافة أخرى."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "A user account has already been created for this applicant."
+msgstr "أُنشئ حساب لهذا المتقدّم مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "A user has already been created for this applicant."
+msgstr "أُنشئ مستخدم لهذا المتقدّم مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "A user with this email already exists."
+msgstr "يوجد مستخدم بهذا البريد الإلكتروني."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid ""
+"A warehouse address cannot be changed. Close this one and create the new "
+"site instead."
+msgstr "لا يمكن تغيير عنوان المستودع. أغلق هذا وأنشئ الموقع الجديد بدلاً منه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid ""
+"A warehouse cannot be moved to another governorate. Close this one and "
+"create the new site instead."
+msgstr "لا يمكن نقل مستودع إلى محافظة أخرى. أغلق هذا وأنشئ الموقع الجديد بدلاً منه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "A zone with this name already exists in this warehouse."
+msgstr "توجد منطقة بهذا الاسم في هذا المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Accept the application first."
+msgstr "اقبل الطلب أولاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Add at least one product line before finishing."
+msgstr "أضف سطر منتج واحداً على الأقل قبل الإنهاء."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/controllers/website.py:0
+msgid "An account with this email already exists. Please sign in instead."
+msgstr "يوجد حساب بهذا البريد الإلكتروني. سجّل الدخول بدلاً من ذلك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "An application with this email already exists for this job."
+msgstr "يوجد طلب بهذا البريد الإلكتروني لهذه الوظيفة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "An application with this national ID already exists for this job."
+msgstr "يوجد طلب بهذا الرقم الوطني لهذه الوظيفة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid ""
+"An email address is required to create a login — it is what the driver signs"
+" in with."
+msgstr "البريد الإلكتروني مطلوب لإنشاء حساب — به يسجّل السائق دخوله."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "An order part cannot be empty."
+msgstr "لا يمكن أن يكون جزء الطلب فارغاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Approve the current stage before moving to the next one."
+msgstr "اعتمد المرحلة الحالية قبل الانتقال للتالية."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Barcode Library Missing"
+msgstr "مكتبة الباركود مفقودة"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid "Both sides of the driving licence are required."
+msgstr "وجها رخصة القيادة مطلوبان."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Cannot Process This Shipment"
+msgstr "تعذّرت معالجة هذه الشحنة"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Cannot cancel: this warehouse is not currently closing."
+msgstr "تعذّر الإلغاء: هذا المستودع ليس في طور الإغلاق."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Cannot delete an application linked to a deleted account."
+msgstr "لا يمكن حذف طلب مرتبط بحساب محذوف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Cannot modify an application linked to a deleted account."
+msgstr "لا يمكن تعديل طلب مرتبط بحساب محذوف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid ""
+"Cannot open the file as an image. Upload a valid PNG/JPG barcode photo."
+msgstr "تعذّر فتح الملف كصورة. ارفع صورة باركود صالحة بصيغة PNG أو JPG."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product.py:0
+msgid "Category name must be unique."
+msgstr "اسم التصنيف يجب أن يكون فريداً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "Choose a driver shift first."
+msgstr "اختر وردية سائق أولاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Choose a valid output zone of this warehouse."
+msgstr "اختر منطقة إخراج صالحة في هذا المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Choose a valid zone type."
+msgstr "اختر نوع منطقة صالحاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "Choose at least one warehouse, or make the shift global."
+msgstr "اختر مستودعاً واحداً على الأقل، أو اجعل الوردية عامة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_tariff.py:0
+msgid "Choose the governorate this tariff applies to."
+msgstr "اختر المحافظة التي تنطبق عليها هذه التعرفة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Choose the new manager."
+msgstr "اختر المدير الجديد."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "Choose the new warehouse."
+msgstr "اختر المستودع الجديد."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "Choose the warehouse this driver will serve."
+msgstr "اختر المستودع الذي سيخدمه هذا السائق."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_tariff.py:0
+msgid "Choose the warehouse this tariff applies to."
+msgstr "اختر المستودع الذي تنطبق عليه هذه التعرفة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Completed orders cannot be cancelled."
+msgstr "لا يمكن إلغاء الطلبات المكتملة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck_handover.py:0
+msgid "Driver has not handed his truck back"
+msgstr "لم يُسلّم السائق شاحنته بعد"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck_handover.py:0
+msgid "Driver has not picked up his truck"
+msgstr "لم يستلم السائق شاحنته بعد"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "End time must be between 00:00 and 23:59."
+msgstr "وقت الانتهاء يجب أن يكون بين 00:00 و23:59."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Expected quantity must be positive."
+msgstr "الكمية المتوقعة يجب أن تكون موجبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Invalid Image"
+msgstr "صورة غير صالحة"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Invalid Shipment ID"
+msgstr "معرّف شحنة غير صالح"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "Invalid time value."
+msgstr "قيمة وقت غير صالحة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Latitude must be between -90 and 90."
+msgstr "خط العرض يجب أن يكون بين -90 و90."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Line quantities cannot be negative."
+msgstr "كميات الأسطر لا يمكن أن تكون سالبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Load a shipment first — enter or scan its ID above."
+msgstr "حمّل شحنة أولاً — أدخل معرّفها أو امسحه أعلاه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Longitude must be between -180 and 180."
+msgstr "خط الطول يجب أن يكون بين -180 و180."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "Max payload cannot be negative."
+msgstr "الحمولة القصوى لا يمكن أن تكون سالبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Move the shipment to a sorting zone first."
+msgstr "انقل الشحنة إلى منطقة فرز أولاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Name and code cannot be empty."
+msgstr "الاسم والرمز لا يمكن أن يكونا فارغين."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid ""
+"Name the category you are proposing, or choose an existing one instead."
+msgstr "سمِّ التصنيف الذي تقترحه، أو اختر تصنيفاً موجوداً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "National ID must contain only digits (5 to 20 characters)."
+msgstr "الرقم الوطني يجب أن يحتوي أرقاماً فقط (من 5 إلى 20 خانة)."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "New driver request"
+msgstr "طلب سائق جديد"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/controllers/website.py:0
+msgid "New password must be at least 6 characters."
+msgstr "كلمة المرور الجديدة يجب ألا تقل عن 6 محارف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/controllers/website.py:0
+msgid "New password must be different from the current one."
+msgstr "كلمة المرور الجديدة يجب أن تختلف عن الحالية."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "Only a rejected request can be re-opened."
+msgstr "لا يمكن إعادة فتح إلا طلب مرفوض."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Only a warehouse that is already closing can be stopped."
+msgstr "لا يمكن إيقاف إلا مستودع في طور الإغلاق."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "Only accepted drivers can be blocked."
+msgstr "لا يمكن حظر إلا السائقين المقبولين."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "Only accepted drivers can be relocated."
+msgstr "لا يمكن نقل إلا السائقين المقبولين."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only accepted shipments can be sorted."
+msgstr "لا يمكن فرز إلا الشحنات المقبولة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Only administrators can add admin users."
+msgstr "لا يمكن إضافة مستخدمي إدارة إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Only administrators can assign employees."
+msgstr "لا يمكن إسناد الموظفين إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Only administrators can create employee accounts."
+msgstr "لا يمكن إنشاء حسابات الموظفين إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Only administrators can create manager accounts."
+msgstr "لا يمكن إنشاء حسابات المدراء إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Only administrators can delete employees."
+msgstr "لا يمكن حذف الموظفين إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/notification.py:0
+msgid "Only administrators can handle requests."
+msgstr "لا يمكن معالجة الطلبات إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "Only administrators can manage applications."
+msgstr "لا يمكن إدارة الطلبات إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Only administrators can manage employee accounts."
+msgstr "لا يمكن إدارة حسابات الموظفين إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Only administrators can schedule interviews."
+msgstr "لا يمكن جدولة المقابلات إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Only an active warehouse can start closing."
+msgstr "لا يبدأ الإغلاق إلا لمستودع نشط."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only orders that have completed stock deduction can be finished."
+msgstr "لا يمكن إنهاء إلا الطلبات التي اكتمل خصم مخزونها."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only pending escalations can be resolved."
+msgstr "لا يمكن حل إلا التصعيدات المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only pending orders can be processed."
+msgstr "لا يمكن معالجة إلا الطلبات المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock_damage_report.py:0
+msgid "Only pending reports can be approved."
+msgstr "لا يمكن اعتماد إلا التقارير المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock_damage_report.py:0
+msgid "Only pending reports can be rejected."
+msgstr "لا يمكن رفض إلا التقارير المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only pending requests can be approved."
+msgstr "لا يمكن اعتماد إلا الطلبات المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only pending requests can be rejected."
+msgstr "لا يمكن رفض إلا الطلبات المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift_change_request.py:0
+msgid "Only pending requests can start processing."
+msgstr "لا تبدأ المعالجة إلا للطلبات المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only pending shipments can be received."
+msgstr "لا يمكن استلام إلا الشحنات المعلّقة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only processing orders can be completed."
+msgstr "لا يمكن إكمال إلا الطلبات قيد المعالجة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only processing orders can be released."
+msgstr "لا يمكن تحرير إلا الطلبات قيد المعالجة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only shipments currently being sorted can be released."
+msgstr "لا يمكن تحرير إلا الشحنات قيد الفرز."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only shipments in reception can be released."
+msgstr "لا يمكن تحرير إلا الشحنات في الاستقبال."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only shipments in reception can be transferred."
+msgstr "لا يمكن تحويل إلا الشحنات في الاستقبال."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only shipments pending sorting approval can be approved here."
+msgstr "لا يُعتمد هنا إلا الشحنات المنتظرة اعتماد الفرز."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "Only the administrator can change a driver's warehouse."
+msgstr "لا يمكن تغيير مستودع السائق إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Only the administrator can manage warehouses."
+msgstr "لا يمكن إدارة المستودعات إلا للمدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid ""
+"Only the administrator or a warehouse manager can assign drivers to trucks."
+msgstr "لا يُسند السائقون للشاحنات إلا بواسطة المدير العام أو مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid ""
+"Only the administrator or a warehouse manager can manage delivery drivers."
+msgstr "لا يُدير سائقي التوصيل إلا المدير العام أو مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift_change_request.py:0
+msgid "Only the manager of this request's warehouse can process it."
+msgstr "لا يعالج هذا الطلب إلا مدير مستودعه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager can approve damaged sorting requests."
+msgstr "لا يعتمد طلبات الفرز التالفة إلا مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager can approve sorting reconciliation issues."
+msgstr "لا يعتمد فروقات تسوية الفرز إلا مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager can process transferred shipments."
+msgstr "لا يعالج الشحنات المحوّلة إلا مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager can reject damaged sorting requests."
+msgstr "لا يرفض طلبات الفرز التالفة إلا مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager can resolve sorting escalations."
+msgstr "لا يحلّ تصعيدات الفرز إلا مدير المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock_damage_report.py:0
+msgid ""
+"Only the warehouse manager or the administrator can approve damage reports."
+msgstr "لا يعتمد تقارير التلف إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only the warehouse manager or the administrator can archive orders."
+msgstr "لا يؤرشف الطلبات إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager or the administrator can archive shipments."
+msgstr "لا يؤرشف الشحنات إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid ""
+"Only the warehouse manager or the administrator can change shipment "
+"priority."
+msgstr "لا يغيّر أولوية الشحنة إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid ""
+"Only the warehouse manager or the administrator can confirm that an order "
+"was handed over."
+msgstr "لا يؤكّد تسليم الطلب إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only the warehouse manager or the administrator can decide orders."
+msgstr "لا يبتّ في الطلبات إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock_damage_report.py:0
+msgid ""
+"Only the warehouse manager or the administrator can reject damage reports."
+msgstr "لا يرفض تقارير التلف إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Only the warehouse manager or the administrator can restore orders."
+msgstr "لا يستعيد الطلبات إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only the warehouse manager or the administrator can restore shipments."
+msgstr "لا يستعيد الشحنات إلا مدير المستودع أو المدير العام."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Only transferred shipments can be processed here."
+msgstr "لا يُعالج هنا إلا الشحنات المحوّلة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Order %s is already approved."
+msgstr "الطلب %s معتمد مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Order %s is already rejected."
+msgstr "الطلب %s مرفوض مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Order %s was already handed over."
+msgstr "الطلب %s سُلّم مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Order has no lines."
+msgstr "الطلب بلا أسطر."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Order line quantity must be positive."
+msgstr "كمية سطر الطلب يجب أن تكون موجبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/controllers/website.py:0
+msgid "Password must be at least 6 characters."
+msgstr "كلمة المرور يجب ألا تقل عن 6 محارف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Performance rating must be between 0 and 5 stars."
+msgstr "تقييم الأداء يجب أن يكون بين 0 و5 نجوم."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Please upload a barcode image before scanning."
+msgstr "ارفع صورة باركود قبل المسح."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/controllers/website.py:0
+msgid "Please upload at least one file (CV is required)."
+msgstr "ارفع ملفاً واحداً على الأقل (السيرة الذاتية مطلوبة)."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product.py:0
+msgid "Price cannot be negative."
+msgstr "السعر لا يمكن أن يكون سالباً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Priority cannot be negative."
+msgstr "الأولوية لا يمكن أن تكون سالبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock_damage_report.py:0
+msgid "Quantity must be positive."
+msgstr "الكمية يجب أن تكون موجبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid ""
+"Select a receiving zone of your warehouse before accepting the shipment."
+msgstr "اختر منطقة استقبال في مستودعك قبل قبول الشحنة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid ""
+"Select a receiving zone of your warehouse before approving the transferred "
+"shipment."
+msgstr "اختر منطقة استقبال في مستودعك قبل اعتماد الشحنة المحوّلة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Select a storage zone before finishing."
+msgstr "اختر منطقة تخزين قبل الإنهاء."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Shipment ID Required"
+msgstr "معرّف الشحنة مطلوب"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Shipment Not Found"
+msgstr "الشحنة غير موجودة"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Shipment is not in sorting state."
+msgstr "الشحنة ليست في حالة فرز."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"Some documents have not been reviewed. Accept or reject each of them before "
+"rejecting the request."
+msgstr "بعض الوثائق لم تُراجَع. اقبل أو ارفض كلاً منها قبل رفض الطلب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "Start and end time cannot be the same."
+msgstr "وقتا البداية والنهاية لا يمكن أن يتطابقا."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift_change_request.py:0
+msgid "Start processing the request before approving it."
+msgstr "ابدأ معالجة الطلب قبل اعتماده."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift_change_request.py:0
+msgid "Start processing the request before rejecting it."
+msgstr "ابدأ معالجة الطلب قبل رفضه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Start receiving the shipment first."
+msgstr "ابدأ استلام الشحنة أولاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid "Start sorting the shipment first."
+msgstr "ابدأ فرز الشحنة أولاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "Start time must be between 00:00 and 23:59."
+msgstr "وقت البداية يجب أن يكون بين 00:00 و23:59."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock.py:0
+msgid "Stock quantity cannot be negative."
+msgstr "كمية المخزون لا يمكن أن تكون سالبة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "The applicant has no email address."
+msgstr "المتقدّم بلا بريد إلكتروني."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "The application must be Accepted first."
+msgstr "يجب قبول الطلب أولاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "The driver is already in this warehouse."
+msgstr "السائق موجود في هذا المستودع أصلاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "The interview date/time must be in the future."
+msgstr "موعد المقابلة يجب أن يكون في المستقبل."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "The order part id is required."
+msgstr "معرّف جزء الطلب مطلوب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product.py:0
+msgid ""
+"The price list for this material was deleted. It is suspended and cannot be "
+"ordered until a new price list is added."
+msgstr "حُذفت قائمة أسعار هذه المادة. هي موقوفة ولا يمكن طلبها حتى تُضاف قائمة جديدة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "This applicant has no email address on file."
+msgstr "لا يوجد بريد إلكتروني مسجّل لهذا المتقدّم."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid ""
+"This application has already been accepted at the final stage — the hiring "
+"pipeline is closed."
+msgstr "قُبل هذا الطلب في المرحلة النهائية — مسار التوظيف مغلق."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "This application is not for a Manager position."
+msgstr "هذا الطلب ليس لوظيفة مدير."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "This application is not for a manager position."
+msgstr "هذا الطلب ليس لوظيفة مدير."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "This application is not for an Employee position."
+msgstr "هذا الطلب ليس لوظيفة موظف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "This application is not for an employee position."
+msgstr "هذا الطلب ليس لوظيفة موظف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid "This delivery driver does not exist."
+msgstr "سائق التوصيل هذا غير موجود."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "This document does not belong to the request."
+msgstr "هذه الوثيقة لا تخصّ هذا الطلب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"This document has already been requested — the driver has not replaced it "
+"yet."
+msgstr "طُلبت هذه الوثيقة مسبقاً — لم يستبدلها السائق بعد."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+msgid "This driver already has a login."
+msgstr "هذا السائق لديه حساب دخول."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"This driver has not been asked for any document, so there is nothing to "
+"cancel."
+msgstr "لم يُطلب من هذا السائق أي وثيقة، فلا شيء لإلغائه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "This driver is already blocked."
+msgstr "هذا السائق محظور مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "This driver is not an accepted driver."
+msgstr "هذا السائق غير مقبول."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "This driver is not blocked."
+msgstr "هذا السائق غير محظور."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"This driver was asked to re-upload a document and has not done so yet — wait"
+" for his answer before deciding."
+msgstr "طُلب من هذا السائق إعادة رفع وثيقة ولم يفعل بعد — انتظر جوابه قبل البتّ."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "This employee does not belong to your warehouse."
+msgstr "هذا الموظف لا ينتمي لمستودعك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "This is a driver shift — warehouse employees cannot be assigned to it."
+msgstr "هذه وردية سائقين — لا يُسند إليها موظفو المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid "This is already the final stage."
+msgstr "هذه هي المرحلة النهائية أصلاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid ""
+"This is an interview stage. Schedule the interview before advancing to the "
+"next stage."
+msgstr "هذه مرحلة مقابلة. جدول المقابلة قبل الانتقال للمرحلة التالية."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"This request is already accepted — an acceptance cannot be withdrawn. Block "
+"the driver instead."
+msgstr "هذا الطلب مقبول — لا يمكن سحب القبول. احظر السائق بدلاً من ذلك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid ""
+"This request is already accepted — its documents can no longer be re-judged."
+msgstr "هذا الطلب مقبول — لم يعد بالإمكان إعادة الحكم على وثائقه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "This request is already accepted — there is nothing to ask for."
+msgstr "هذا الطلب مقبول — لا شيء لطلبه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/driver_request.py:0
+msgid "This request is already accepted."
+msgstr "هذا الطلب مقبول مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shipment.py:0
+msgid ""
+"This shipment was already moved to a sorting zone and can no longer be "
+"released."
+msgstr "نُقلت هذه الشحنة إلى منطقة فرز ولم يعد بالإمكان تحريرها."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid ""
+"This suggestion is already with the backend. Reset it to draft first if you "
+"need to change it."
+msgstr "هذا الاقتراح لدى النظام الخلفي. أعده إلى مسودة أولاً إن أردت تغييره."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid "This suggestion was already sent for review."
+msgstr "أُرسل هذا الاقتراح للمراجعة مسبقاً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+#: code:addons/recycle_warehouse/models/shift_change_request.py:0
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "This truck is not available."
+msgstr "هذه الشاحنة غير متاحة."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "This user already manages another warehouse."
+msgstr "هذا المستخدم يدير مستودعاً آخر بالفعل."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "This user already manages this warehouse."
+msgstr "هذا المستخدم يدير هذا المستودع بالفعل."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "This warehouse is not stopped, so it cannot be reopened."
+msgstr "هذا المستودع غير متوقف، فلا يمكن إعادة فتحه."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "This zone does not belong to this warehouse."
+msgstr "هذه المنطقة لا تنتمي لهذا المستودع."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/shift.py:0
+msgid "Times must be between 00:00 and 23:59."
+msgstr "الأوقات يجب أن تكون بين 00:00 و23:59."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/wizard.py:0
+msgid "Transfer Not Required"
+msgstr "التحويل غير مطلوب"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck_assignment_history.py:0
+msgid ""
+"Truck history cannot be deleted — it is what the driver and vehicle reports "
+"are built from."
+msgstr "لا يمكن حذف سجل الشاحنة — عليه تُبنى تقارير السائقين والمركبات."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid "Unknown error"
+msgstr "خطأ غير معروف"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Unknown material %s in this order part."
+msgstr "مادة غير معروفة %s في جزء الطلب هذا."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/order.py:0
+msgid "Unknown warehouse for this order part."
+msgstr "مستودع غير معروف لجزء الطلب هذا."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/stock.py:0
+msgid "Unknown warehouse."
+msgstr "مستودع غير معروف."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Warehouse code is required."
+msgstr "رمز المستودع مطلوب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Warehouse name must be unique."
+msgstr "اسم المستودع يجب أن يكون فريداً."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "Year must be between %(mn)s and %(mx)s."
+msgstr "السنة يجب أن تكون بين %(mn)s و%(mx)s."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid ""
+"You can only advance to the next stage in order — skipping stages is not "
+"allowed."
+msgstr "لا يمكن التقدّم إلا للمرحلة التالية بالترتيب — تخطي المراحل غير مسموح."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "You can only assign drivers of your own warehouse."
+msgstr "لا يمكنك إسناد إلا سائقي مستودعك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "You can only assign trucks of your own warehouse."
+msgstr "لا يمكنك إسناد إلا شاحنات مستودعك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/delivery_driver.py:0
+#: code:addons/recycle_warehouse/models/truck.py:0
+msgid "You can only manage drivers of your own warehouse."
+msgstr "لا يمكنك إدارة إلا سائقي مستودعك."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/recruitment.py:0
+msgid ""
+"You cannot move back to a previous stage. The pipeline only moves forward."
+msgstr "لا يمكن العودة لمرحلة سابقة. المسار يتقدّم للأمام فقط."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/warehouse.py:0
+msgid "Zone name is required."
+msgstr "اسم المنطقة مطلوب."
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/identity_registry.py:0
+msgid "another record"
+msgstr "سجل آخر"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid "backend base URL is not configured"
+msgstr "عنوان النظام الخلفي غير مضبوط"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid "backend webhook secret is not configured"
+msgstr "سر الويبهوك للنظام الخلفي غير مضبوط"
+
+#. module: recycle_warehouse
+#. odoo-python
+#: code:addons/recycle_warehouse/models/product_suggestion.py:0
+msgid "unknown error"
+msgstr "خطأ غير معروف"

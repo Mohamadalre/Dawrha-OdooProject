@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══════════════════════════════════════════════════════════════════
+         Delivery drivers — recruited here, unlike collectors.
+
+         A collector applies through the mobile app and lives in the NestJS
+         backend; this person is hired by the administrator, has no backend
+         account, works no shift, and drives sold goods from a warehouse to the
+         buyer. The two screens are separate because the two records are:
+         neither one could fill the other's fields.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_recycle_delivery_driver_list" model="ir.ui.view">
+        <field name="name">recycle.delivery.driver.list</field>
+        <field name="model">recycle.delivery.driver</field>
+        <field name="arch" type="xml">
+            <list string="Delivery Drivers">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="national_id" optional="show"/>
+                <field name="warehouse_id"/>
+                <field name="truck_id" string="Delivery Truck"/>
+                <field name="truck_plate" optional="show"/>
+                <field name="license_expiry" optional="show"/>
+                <field name="is_active" widget="boolean_toggle"/>
+                <field name="has_truck" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_delivery_driver_form" model="ir.ui.view">
+        <field name="name">recycle.delivery.driver.form</field>
+        <field name="model">recycle.delivery.driver</field>
+        <field name="arch" type="xml">
+            <form string="Delivery Driver">
+                <header>
+                    <button name="action_create_login" type="object"
+                            string="Create Login" class="btn-primary"
+                            invisible="user_id"
+                            help="Gives this driver an Odoo login so they can open their dashboard."/>
+                    <!-- Printed from the driver's OWN record: whoever wants the
+                         file already has the person open, and a separate
+                         reporting screen would make them search for someone
+                         they were already looking at. -->
+                    <button name="%(recycle_warehouse.action_report_delivery_driver_file)d"
+                            type="action" string="Print Driver File (PDF)"
+                            class="btn-secondary"
+                            help="Personal details plus every truck this driver has held, with the dates."/>
+                    <field name="user_id" invisible="1"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Driver full name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Personal">
+                            <field name="phone"/>
+                            <field name="email"
+                                   placeholder="Used as the login when access is granted"/>
+                            <field name="national_id"/>
+                            <field name="birth_date"/>
+                            <field name="address"/>
+                        </group>
+                        <group string="Work">
+                            <field name="warehouse_id"/>
+                            <!-- Delivery trucks only. A collection truck runs a
+                                 pick-up round on a shift and is driven by a
+                                 backend collector; offering one here would let
+                                 the form propose what the model then refuses. -->
+                            <field name="truck_id"
+                                   domain="[('truck_type', '=', 'delivery'), ('warehouse_id', '=', warehouse_id)]"
+                                   options="{'no_create': True}"/>
+                            <field name="is_active"/>
+                            <field name="user_id" readonly="1" invisible="not user_id"/>
+                        </group>
+                    </group>
+                    <group string="Driving Licence">
+                        <group>
+                            <field name="license_number"/>
+                            <field name="license_expiry"/>
+                        </group>
+                    </group>
+                    <!-- BOTH sides, both required. Half a licence proves
+                         nothing: the expiry date and the class are printed on
+                         the back, and they are what decide whether this person
+                         may drive a company truck at all. -->
+                    <group>
+                        <group string="Licence — Front (required)">
+                            <field name="license_image_front" widget="image"
+                                   nolabel="1" required="1"
+                                   filename="license_image_front_name"/>
+                            <field name="license_image_front_name" invisible="1"/>
+                        </group>
+                        <group string="Licence — Back (required)">
+                            <field name="license_image_back" widget="image"
+                                   nolabel="1" required="1"
+                                   filename="license_image_back_name"/>
+                            <field name="license_image_back_name" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                    <!-- The chronological record of which vehicle this person
+                         was answerable for, and when. Read-only: a period whose
+                         dates can be rewritten afterwards proves nothing. -->
+                    <notebook>
+                        <page string="Trucks Held" name="truck_history">
+                            <field name="truck_history_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="truck_id"/>
+                                    <field name="truck_plate"/>
+                                    <field name="warehouse_id"/>
+                                    <field name="assigned_at"/>
+                                    <field name="released_at"/>
+                                    <field name="duration_days"/>
+                                    <field name="release_reason" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_delivery_driver_search" model="ir.ui.view">
+        <field name="name">recycle.delivery.driver.search</field>
+        <field name="model">recycle.delivery.driver</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="national_id"/>
+                <field name="warehouse_id"/>
+                <separator/>
+                <!-- The one filter a manager actually reaches for: who still
+                     needs a vehicle. -->
+                <filter string="Has a truck" name="filter_with_truck"
+                        domain="[('has_truck', '=', True)]"/>
+                <filter string="No truck yet" name="filter_without_truck"
+                        domain="[('has_truck', '=', False)]"/>
+                <separator/>
+                <filter string="Active" name="filter_active"
+                        domain="[('is_active', '=', True)]"/>
+                <separator/>
+                <filter string="Warehouse" name="group_warehouse"
+                        context="{'group_by': 'warehouse_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Two entries under one menu, because "add one" and "look at them all"
+         are the two things the administrator came here to do, and a single list
+         with a hidden New button makes the first of them a search. -->
+    <record id="action_recycle_delivery_driver" model="ir.actions.act_window">
+        <field name="name">Delivery Drivers</field>
+        <field name="res_model">recycle.delivery.driver</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_recycle_delivery_driver_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No delivery drivers yet</p>
+            <p>
+                Delivery drivers carry sold goods from a warehouse to the buyer.
+                They are recruited here — unlike collectors, who apply through
+                the mobile app and are approved as driver requests.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_recycle_delivery_driver_new" model="ir.actions.act_window">
+        <field name="name">Add Delivery Driver</field>
+        <field name="res_model">recycle.delivery.driver</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

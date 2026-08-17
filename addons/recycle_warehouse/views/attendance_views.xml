@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================ -->
+    <!--  ATTENDANCE — list (manager sees their warehouse)                -->
+    <!-- ================================================================ -->
+    <record id="view_attendance_manager_list" model="ir.ui.view">
+        <field name="name">recycle.attendance.manager.list</field>
+        <field name="model">recycle.attendance</field>
+        <field name="arch" type="xml">
+            <list string="Employee Attendance"
+                  create="0" delete="0"
+                  decoration-danger="status in ('late','late_and_early')"
+                  decoration-warning="status == 'early_leave'"
+                  decoration-success="status == 'present'">
+                <field name="date"/>
+                <field name="employee_user_id" string="Employee"/>
+                <field name="shift_id"/>
+                <field name="check_in_display" string="Check In"/>
+                <field name="check_out_display" string="Check Out"/>
+                <field name="work_hours" string="Hours Worked" widget="float_time"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'present'"
+                       decoration-danger="status in ('late','late_and_early')"
+                       decoration-warning="status == 'early_leave'"/>
+                <field name="late_minutes" string="Late (min)" optional="show"/>
+                <field name="early_leave_minutes" string="Early (min)" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!--  ATTENDANCE — form (manager read-only)                          -->
+    <!-- ================================================================ -->
+    <record id="view_attendance_manager_form" model="ir.ui.view">
+        <field name="name">recycle.attendance.manager.form</field>
+        <field name="model">recycle.attendance</field>
+        <field name="arch" type="xml">
+            <form string="Attendance Record" create="0">
+                <sheet>
+                    <group>
+                        <group string="Employee">
+                            <field name="employee_user_id" readonly="1"/>
+                            <field name="warehouse_id" readonly="1"/>
+                            <field name="shift_id" readonly="1"/>
+                        </group>
+                        <group string="Record">
+                            <field name="date" readonly="1"/>
+                            <field name="status" widget="badge" readonly="1"
+                                   decoration-success="status == 'present'"
+                                   decoration-danger="status in ('late','late_and_early')"
+                                   decoration-warning="status == 'early_leave'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Times">
+                            <field name="check_in_display" string="Check In" readonly="1"/>
+                            <field name="check_out_display" string="Check Out" readonly="1"/>
+                            <field name="work_hours" widget="float_time" readonly="1"/>
+                        </group>
+                        <group string="Deductions">
+                            <field name="late_minutes" readonly="1"/>
+                            <field name="early_leave_minutes" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search view -->
+    <record id="view_attendance_search" model="ir.ui.view">
+        <field name="name">recycle.attendance.search</field>
+        <field name="model">recycle.attendance</field>
+        <field name="arch" type="xml">
+            <search string="Search Attendance">
+                <field name="employee_user_id"/>
+                <field name="date"/>
+                <filter string="Today" name="today"
+                        domain="[('date','=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Late" name="late"
+                        domain="[('status','in',['late','late_and_early'])]"/>
+                <filter string="Present" name="present"
+                        domain="[('status','=','present')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: manager sees today's attendance (default filter) -->
+    <record id="action_attendance_manager" model="ir.actions.act_window">
+        <field name="name">Employee Attendance</field>
+        <field name="res_model">recycle.attendance</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1}</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'list','view_id':ref('view_attendance_manager_list')}),
+            (0,0,{'view_mode':'form','view_id':ref('view_attendance_manager_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No attendance records yet</p>
+            <p>Records are created automatically when employees check in via the API.</p>
+        </field>
+    </record>
+
+    <!-- Admin action: sees all warehouses -->
+    <record id="action_attendance_admin" model="ir.actions.act_window">
+        <field name="name">All Attendance</field>
+        <field name="res_model">recycle.attendance</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1}</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'list','view_id':ref('view_attendance_manager_list')}),
+            (0,0,{'view_mode':'form','view_id':ref('view_attendance_manager_form')})]"/>
+    </record>
+
+    <!-- OWL client action for manager attendance dashboard -->
+    <record id="action_manager_attendance_dashboard" model="ir.actions.client">
+        <field name="name">Attendance Dashboard</field>
+        <field name="tag">recycle_manager_attendance</field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!--  RECORD RULES (placed here so model ir.model.data already exists) -->
+    <!-- ================================================================ -->
+    <record id="rule_attendance_admin" model="ir.rule">
+        <field name="name">Attendance: admin sees all</field>
+        <field name="model_id" ref="model_recycle_attendance"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+        <field name="groups" eval="[(4, ref('recycle_warehouse.group_recycle_admin'))]"/>
+    </record>
+
+    <record id="rule_attendance_manager" model="ir.rule">
+        <field name="name">Attendance: manager sees own warehouse employees only</field>
+        <field name="model_id" ref="model_recycle_attendance"/>
+        <field name="domain_force">[('warehouse_id.manager_user_id','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('recycle_warehouse.group_recycle_manager'))]"/>
+    </record>
+
+</odoo>

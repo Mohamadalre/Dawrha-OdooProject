@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Reference data MIRRORED from the NestJS backend.
+
+         The backend is the single author of these three lists; Odoo receives
+         every add / rename / delete and a reconcile pass re-pushes anything
+         lost while Odoo was down. The views are therefore READ-ONLY: a row
+         created or edited here would be silently reverted on the next sync,
+         so the UI never offers the illusion that it can be. -->
+
+    <!-- ── Governorates (recycle.province) ─────────────────────────────── -->
+    <record id="view_recycle_province_list" model="ir.ui.view">
+        <field name="name">recycle.province.list</field>
+        <field name="model">recycle.province</field>
+        <field name="arch" type="xml">
+            <list string="Governorates" create="false" edit="false" delete="false">
+                <field name="name_ar"/>
+                <field name="name_en"/>
+                <field name="backend_province_id" string="Backend ID" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_province_form" model="ir.ui.view">
+        <field name="name">recycle.province.form</field>
+        <field name="model">recycle.province</field>
+        <field name="arch" type="xml">
+            <form string="Governorate" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="name_ar"/>
+                        <field name="name_en"/>
+                        <field name="backend_province_id"/>
+                        <field name="active"/>
+                    </group>
+                    <div class="text-muted">
+                        Managed in the backend. Changes made there appear here automatically.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recycle_province" model="ir.actions.act_window">
+        <field name="name">Governorates</field>
+        <field name="res_model">recycle.province</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No governorate mirrored yet</p>
+            <p>Governorates are created in the backend and synced here automatically.</p>
+        </field>
+    </record>
+
+    <!-- ── Measurement units (recycle.measurement.unit) ────────────────── -->
+    <record id="view_recycle_measurement_unit_list" model="ir.ui.view">
+        <field name="name">recycle.measurement.unit.list</field>
+        <field name="model">recycle.measurement.unit</field>
+        <field name="arch" type="xml">
+            <list string="Units of Measure" create="false" edit="false" delete="false">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="allows_tolerance"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_measurement_unit_form" model="ir.ui.view">
+        <field name="name">recycle.measurement.unit.form</field>
+        <field name="model">recycle.measurement.unit</field>
+        <field name="arch" type="xml">
+            <form string="Unit of Measure" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="allows_tolerance"/>
+                        <field name="active"/>
+                    </group>
+                    <div class="text-muted">
+                        Managed in the backend. Changes made there appear here automatically.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recycle_measurement_unit" model="ir.actions.act_window">
+        <field name="name">Units of Measure</field>
+        <field name="res_model">recycle.measurement.unit</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No unit mirrored yet</p>
+            <p>Measurement units are created in the backend and synced here automatically.</p>
+        </field>
+    </record>
+
+    <!-- ── Material conditions (recycle.material.condition) ────────────── -->
+    <record id="view_recycle_material_condition_list" model="ir.ui.view">
+        <field name="name">recycle.material.condition.list</field>
+        <field name="model">recycle.material.condition</field>
+        <field name="arch" type="xml">
+            <list string="Material Conditions" create="false" edit="false" delete="false">
+                <field name="product_id"/>
+                <field name="sort_order"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_recycle_material_condition" model="ir.actions.act_window">
+        <field name="name">Material Conditions</field>
+        <field name="res_model">recycle.material.condition</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No condition mirrored yet</p>
+            <p>Material conditions are created in the backend and synced here automatically.</p>
+        </field>
+    </record>
+
+    <!-- ── Price sheet of one material (recycle.product.condition.price) ─ -->
+    <record id="view_recycle_product_condition_price_list" model="ir.ui.view">
+        <field name="name">recycle.product.condition.price.list</field>
+        <field name="model">recycle.product.condition.price</field>
+        <field name="arch" type="xml">
+            <list string="Prices" create="false" edit="false" delete="false"
+                  default_order="tier, condition_code">
+                <field name="tier"/>
+                <field name="condition_name" string="Condition"/>
+                <field name="price" sum="Total"/>
+                <field name="product_id" column_invisible="context.get('default_product_id')"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- menuitems live in menus.xml (menu_recycle_config is defined there). -->
+</odoo>

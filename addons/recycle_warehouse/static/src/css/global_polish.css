@@ -1,0 +1,90 @@
+/* ══════════════════════════════════════════════════════════════════
+   Dawrha — Global clarity & accessibility polish (ADDITIVE, non-destructive)
+   --------------------------------------------------------------------
+   Goal: apply the design-system's clarity requirements (readable typography,
+   visible fields, strong focus states, clear buttons, high contrast, a11y)
+   ACROSS the whole website WITHOUT changing any text, field, markup or the
+   existing page designs.
+
+   Technique: almost everything uses :where() → near-zero specificity, so the
+   existing carefully-designed styles always win; this layer only *fills gaps*
+   (a readability floor, keyboard focus rings, disabled affordances, error
+   clarity). Nothing here restructures pages or overrides content.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Typography: readability floor (only raises line-height, never shrinks) ── */
+:where(body) { line-height: 1.6; text-rendering: optimizeLegibility; }
+:where(p, li, .dw-section-sub) { line-height: 1.7; }
+
+/* ── Form controls: 16px floor (prevents iOS auto-zoom + keeps text legible),
+      inherit the page font, and give placeholders a readable-but-light tone. ── */
+:where(input, textarea, select) {
+    font-family: inherit;
+    font-size: max(1rem, 16px);
+}
+:where(input, textarea, select)::placeholder {
+    opacity: 1;
+    color: #64748b;          /* WCAG-friendly placeholder contrast */
+}
+html[data-theme="dark"] :where(input, textarea, select)::placeholder {
+    color: #94a3b8;
+}
+
+/* ── Universal keyboard focus ring (WCAG 2.4.7) — visible on every control,
+      regardless of the page's own styling. Mouse clicks are unaffected. ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid #10b981 !important;
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* ── Invalid / error fields: make validation unmistakable (works with native
+      :invalid, aria-invalid, and the common error class conventions). ── */
+:where(input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="true"]),
+:where(.is-invalid, .error) :where(input, textarea, select),
+:where(.form-group.error) :where(input, textarea, select) {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+:where(.form-error, .error-message, .field-error) {
+    color: #dc2626;
+    font-size: 14px;
+}
+html[data-theme="dark"] :where(.form-error, .error-message, .field-error) {
+    color: #fca5a5;
+}
+
+/* ── Buttons & links: clear disabled affordance + comfortable touch targets. ── */
+:where(button, .btn, .dw-btn, .o_ra_action_btn, [role="button"]):disabled,
+:where(button, .btn, .dw-btn, .o_ra_action_btn, [role="button"])[disabled],
+:where(button, .btn, .dw-btn, .o_ra_action_btn)[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: saturate(0.85);
+}
+/* Minimum 40px tap height for real buttons/links styled as buttons (touch a11y),
+   applied gently so existing paddings still win the visual look. */
+@media (pointer: coarse) {
+    :where(button, .btn, .dw-btn, a.dw-btn) { min-height: 40px; }
+}
+
+/* ── Text selection + high-contrast checkbox/radio accent everywhere. ── */
+::selection { background: rgba(16, 185, 129, 0.28); }
+:where(input[type="checkbox"], input[type="radio"]) { accent-color: #10b981; }
+
+/* ── Respect reduced-motion (WCAG 2.3.3): only affects users who asked for it,
+      so it never touches the default 60fps experience. ── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_driver" model="ir.actions.report">
+        <field name="name">Driver Report</field>
+        <field name="model">recycle.driver.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">recycle_warehouse.report_driver</field>
+        <field name="report_file">recycle_warehouse.report_driver</field>
+        <field name="print_report_name">'Driver - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_driver">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="assignment" t-value="env['recycle.driver.assignment'].sudo().search([('backend_driver_id', '=', doc.backend_driver_id)], limit=1)"/>
+                <div class="article" style="page-break-inside:avoid;max-width:800px;margin:0 auto;">
+                <style>
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #1f2937; line-height: 1.4; }
+                    .header {
+                        display: flex; align-items: center; justify-content: space-between;
+                        padding: 14px 24px;
+                        background: linear-gradient(135deg, #047857, #10b981);
+                        color: #fff;
+                    }
+                    .header-left { display: flex; align-items: center; gap: 10px; }
+                    .header h1 { font-size: 18px; font-weight: 700; margin: 0; }
+                    .header .subtitle { margin-top: 1px; font-size: 11px; opacity: 0.85; }
+                    .header .badge { background: rgba(255,255,255,0.2); padding: 3px 12px; border-radius: 20px; font-size: 10px; }
+                    .body { padding: 16px 24px; }
+                    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 16px; margin-bottom: 10px; }
+                    .card-title {
+                        font-size: 12px; font-weight: 700; color: #047857;
+                        border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 8px;
+                        text-transform: uppercase; letter-spacing: 0.4px;
+                    }
+                    .grid { display: table; width: 100%; border-collapse: collapse; }
+                    .row { display: table-row; }
+                    .row + .row .label, .row + .row .value { border-top: 1px solid #f3f4f6; }
+                    .label { display: table-cell; width: 160px; font-weight: 600; color: #6b7280; padding: 5px 12px 5px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+                    .value { display: table-cell; padding: 5px 0; color: #111827; font-size: 12px; }
+                    .pill { display: inline-block; background: #d1fae5; color: #047857; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+                    .pill-danger { background: #fee2e2; color: #dc2626; }
+                    .footer {
+                        padding: 10px 24px; text-align: center; color: #9ca3af;
+                        font-size: 9px; border-top: 1px solid #e5e7eb;
+                    }
+                </style>
+
+                <div class="header">
+                    <div class="header-left">
+                        <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha" style="width:36px;height:36px;object-fit:contain;"/>
+                        <div>
+                            <h1>Dawrha — Driver Profile</h1>
+                            <div class="subtitle"><t t-esc="doc.name"/></div>
+                        </div>
+                    </div>
+                    <span class="badge"><t t-esc="dict(doc._fields['state'].selection).get(doc.state)"/></span>
+                </div>
+
+                <div class="body">
+                    <div class="card">
+                        <div class="card-title">Driver Information</div>
+                        <div class="grid">
+                            <div class="row"><div class="label">Full Name</div><div class="value"><t t-esc="doc.name"/></div></div>
+                            <div class="row"><div class="label">Email</div><div class="value"><t t-esc="doc.email or '-'"/></div></div>
+                            <div class="row"><div class="label">Phone</div><div class="value"><t t-esc="doc.phone or '-'"/></div></div>
+                            <div class="row"><div class="label">Account Status</div><div class="value">
+                                <span t-att-class="'pill' + (' pill-danger' if doc.is_blocked else '')"
+                                      t-esc="'Blocked' if doc.is_blocked else dict(doc._fields['state'].selection).get(doc.state)"/>
+                            </div></div>
+                            <div class="row" t-if="doc.is_blocked and doc.blocked_reason">
+                                <div class="label">Block Reason</div><div class="value"><t t-esc="doc.blocked_reason"/></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Fleet Assignment</div>
+                        <div class="grid">
+                            <div class="row"><div class="label">Warehouse</div><div class="value"><t t-esc="doc.warehouse_id.name or '-'"/></div></div>
+                            <div class="row"><div class="label">Shift</div><div class="value"><t t-esc="doc.shift_id.name or '-'"/></div></div>
+                            <div class="row"><div class="label">Truck</div><div class="value">
+                                <t t-if="assignment"><t t-esc="assignment.truck_id.name"/> (<t t-esc="assignment.truck_id.plate_number"/>)</t>
+                                <t t-else="">Not assigned to a truck yet</t>
+                            </div></div>
+                            <div class="row"><div class="label">Accepted At</div><div class="value"><t t-esc="doc.decided_at or '-'"/></div></div>
+                            <div class="row"><div class="label">Documents</div><div class="value"><t t-esc="len(doc.image_ids)"/> uploaded</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Generated by Dawrha Recycling Management System — <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/>
+                </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_recycle_stock_list" model="ir.ui.view">
+        <field name="name">recycle.stock.list</field>
+        <field name="model">recycle.stock</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="warehouse_id"/>
+                <field name="zone_id" optional="show"/>
+                <field name="product_id"/>
+                <field name="condition_label" string="Grade" optional="show"/>
+                <field name="condition" column_invisible="1"/>
+                <field name="quantity"/>
+                <field name="reserved_qty" optional="show"/>
+                <field name="available_qty" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_stock_form" model="ir.ui.view">
+        <field name="name">recycle.stock.form</field>
+        <field name="model">recycle.stock</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="warehouse_id"/>
+                        <field name="zone_id"/>
+                        <field name="product_id"/>
+                        <field name="condition"/>
+                        <field name="quantity"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_stock_search" model="ir.ui.view">
+        <field name="name">recycle.stock.search</field>
+        <field name="model">recycle.stock</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id" string="Product"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <field name="zone_id" string="Storage Zone"/>
+                <separator/>
+                <field name="condition" string="Grade"/>
+                <separator/>
+                <filter string="Available (qty &gt; 0)" name="filter_available"
+                        domain="[('quantity','&gt;',0)]"/>
+                <!-- Grades are per material and authored in the backend, so
+                     there is no fixed set of them to offer as buttons. A
+                     hard-coded "Excellent / Good / Poor / Damaged" row filtered
+                     on words most materials do not use, and silently returned
+                     nothing. Searching the grade field, and grouping by it,
+                     works for whatever the admin actually named them. -->
+                <filter string="Unsorted / ungraded" name="filter_ungraded"
+                        domain="[('condition','=',False)]"/>
+                <separator/>
+                <filter string="Warehouse" name="group_warehouse" context="{'group_by': 'warehouse_id'}"/>
+                <filter string="Storage Zone" name="group_zone" context="{'group_by': 'zone_id'}"/>
+                <filter string="Product" name="group_product" context="{'group_by': 'product_id'}"/>
+                <filter string="Grade" name="group_condition" context="{'group_by': 'condition'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_recycle_stock_graph" model="ir.ui.view">
+        <field name="name">recycle.stock.graph</field>
+        <field name="model">recycle.stock</field>
+        <field name="arch" type="xml">
+            <graph string="Stock" type="bar">
+                <field name="product_id"/>
+                <field name="quantity" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_recycle_stock_pivot" model="ir.ui.view">
+        <field name="name">recycle.stock.pivot</field>
+        <field name="model">recycle.stock</field>
+        <field name="arch" type="xml">
+            <pivot string="Stock">
+                <field name="warehouse_id" type="row"/>
+                <field name="product_id" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_recycle_stock" model="ir.actions.act_window">
+        <field name="name">Stock</field>
+        <field name="res_model">recycle.stock</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+    </record>
+</odoo>

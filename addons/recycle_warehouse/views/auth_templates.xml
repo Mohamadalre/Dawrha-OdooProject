@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ -->
+    <!-- Shared Dawrha auth styling (login / signup / reset password)  -->
+    <!-- ============================================================ -->
+    <template id="auth_dawrha_style" name="Dawrha Auth Style">
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Cairo:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+        <!-- Translation engine — loaded directly so login / signup / reset
+             ALWAYS translate, independently of any asset-bundle behaviour. -->
+        <script src="/recycle_warehouse/static/src/js/website_i18n.js"></script>
+        <script>
+            <![CDATA[
+            (function(){
+                var t = localStorage.getItem('dw-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', t);
+                var l = localStorage.getItem('recycle_wms_lang');
+                if (l === 'ar') {
+                    document.documentElement.setAttribute('dir', 'rtl');
+                    document.documentElement.setAttribute('lang', 'ar');
+                }
+            })();
+            ]]>
+        </script>
+        <script>
+            <![CDATA[
+            // Translate page title on language switch
+            (function(){
+                if (window.dwTr && document.title) {
+                    var tt = dwTr(document.title);
+                    if (tt !== document.title) document.title = tt;
+                }
+            })();
+            ]]>
+        </script>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&amp;display=swap');
+            :root {
+                --g900:#064e3b; --g700:#047857; --g600:#059669;
+                --g500:#1fb876; --g400:#34d399; --g100:#d1fae5;
+                --bg:          #ffffff;
+                --surface:     #ffffff;
+                --border:      rgba(15,23,42,.10);
+                --text:        #0f172a;
+                --muted:       #64748b;
+            }
+            html[data-theme="dark"] {
+                --bg:          #0b1220;
+                --surface:     #121c30;
+                --border:      rgba(148,163,184,.16);
+                --text:        #f1f5f9;
+                --muted:       #94a3b8;
+            }
+            * { box-sizing:border-box; }
+            body {
+                font-family:'Inter',system-ui,-apple-system,sans-serif !important;
+                background:
+                    linear-gradient(rgba(6,78,59,.72), rgba(15,23,42,.80)),
+                    url('/recycle_warehouse/static/img/hero4.jpg') center / cover no-repeat fixed !important;
+                min-height:100vh;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                margin:0;
+                padding:20px;
+            }
+            html[data-theme="dark"] body {
+                background:
+                    linear-gradient(rgba(6,78,59,.70), rgba(11,18,32,.88)),
+                    url('/recycle_warehouse/static/img/hero4.jpg') center / cover no-repeat fixed !important;
+            }
+
+            /* Hide default Odoo chrome */
+            #wrapwrap > header, #wrapwrap > footer, header#top, .o_footer,
+            .o_main_navbar { display:none !important; }
+            #wrapwrap { background:transparent !important; }
+            #wrap { display:flex; align-items:center; justify-content:center;
+                    min-height:100vh; padding:20px; width:100%; }
+
+            /* ---- Override Odoo's tiny 300px card ---- */
+            .o_database_list {
+                max-width:440px !important;
+                background:transparent !important;
+                border:none !important;
+                box-shadow:none !important;
+            }
+            .o_database_list .card-body {
+                padding:0 !important;
+                background:transparent !important;
+            }
+            /* Hide Odoo logo + footer */
+            .o_database_list img[alt="Logo"] { display:none !important; }
+            .o_database_list .text-center.border-bottom { display:none !important; }
+            .o_database_list .text-center.small.mt-4 { display:none !important; }
+
+            /* ---- Auth card (exactly like register page) ---- */
+            .oe_login_form, .oe_signup_form, .oe_reset_password_form {
+                background:var(--surface);
+                backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+                border-radius:24px;
+                padding:40px 36px !important;
+                box-shadow:0 32px 80px rgba(0,0,0,.35);
+                width:100%; max-width:440px;
+                transition:background .25s;
+                border:1px solid var(--border);
+            }
+            html[data-theme="dark"] .oe_login_form,
+            html[data-theme="dark"] .oe_signup_form,
+            html[data-theme="dark"] .oe_reset_password_form {
+                box-shadow:0 32px 80px rgba(0,0,0,.55);
+            }
+
+            /* ---- Brand (logo image) ---- */
+            .dw-auth-logo {
+                display: flex; align-items: center; justify-content: center;
+                gap: 10px; margin-bottom: 6px;
+            }
+            .dw-auth-logo img {
+                height: 42px; object-fit: contain;
+            }
+            .dw-auth-logo-text {
+                font-size: 32px; font-weight: 900; letter-spacing: -.6px;
+                background: linear-gradient(135deg, var(--g700), var(--g400));
+                -webkit-background-clip: text; background-clip: text;
+                -webkit-text-fill-color: transparent; color: transparent;
+            }
+
+            /* ---- Title (like register page .auth-title) ---- */
+            .dw-auth-title {
+                text-align:center; font-size:24px; font-weight:800;
+                color:#fff; margin-bottom:8px; letter-spacing:-0.3px;
+            }
+
+            /* ---- Subtitle (like register page .auth-sub) ---- */
+            .dw-auth-sub {
+                text-align:center; font-size:14px; color:#cbd5e1; margin-bottom:28px;
+            }
+            .dw-auth-sub a { color:#34d399; font-weight:700; text-decoration:none; }
+            .dw-auth-sub a:hover { text-decoration:underline; }
+
+            /* ---- Form fields (like register .field) ---- */
+            .oe_login_form .mb-3,
+            .oe_signup_form .mb-3,
+            .oe_reset_password_form .mb-3 {
+                margin-bottom:20px !important;
+            }
+            .oe_login_form .form-control, .oe_signup_form .form-control,
+            .oe_reset_password_form .form-control {
+                width:100%; padding:14px 16px !important; font-size:15px !important;
+                border:2px solid var(--border) !important; border-radius:14px !important;
+                background:var(--bg) !important; color:var(--text) !important;
+                font-family:inherit !important;
+                transition:border .2s, box-shadow .2s !important;
+                outline:none !important;
+            }
+            .oe_login_form .form-control:focus, .oe_signup_form .form-control:focus,
+            .oe_reset_password_form .form-control:focus {
+                border-color:var(--g500) !important;
+                box-shadow:0 0 0 4px rgba(16,185,129,.15) !important;
+            }
+            .oe_login_form .form-control::placeholder,
+            .oe_signup_form .form-control::placeholder,
+            .oe_reset_password_form .form-control::placeholder {
+                color:#94a3b8 !important;
+            }
+            html[dir="rtl"] .oe_login_form .form-control,
+            html[dir="rtl"] .oe_signup_form .form-control,
+            html[dir="rtl"] .oe_reset_password_form .form-control {
+                text-align:right !important;
+            }
+
+            /* ---- Labels (like register .field label) ---- */
+            .oe_login_form label, .oe_signup_form label,
+            .oe_reset_password_form label {
+                display:block !important; font-size:14px !important;
+                font-weight:600 !important;
+                color:var(--text) !important; margin-bottom:6px !important;
+            }
+            /* Password label is a flex item inside d-flex parent; force it to
+               fill available width so text-align can push text left/right */
+            .oe_login_form label[for="password"] {
+                flex: 1 !important;
+            }
+            html[dir="ltr"] .oe_login_form label[for="password"] {
+                text-align: left !important;
+            }
+
+            /* ---- Button (like register .btn-submit) ---- */
+            .oe_login_form .btn-primary,
+            .oe_signup_form .btn-primary,
+            .oe_reset_password_form .btn-primary {
+                width:100%; padding:14px !important; margin-top:8px;
+                background:linear-gradient(135deg,var(--g700),var(--g500)) !important;
+                color:#fff !important; border:none !important; border-radius:14px !important;
+                font-size:16px !important; font-weight:700 !important; cursor:pointer;
+                transition:transform .15s, box-shadow .2s !important;
+                box-shadow:0 8px 24px rgba(31,184,118,.25) !important;
+            }
+            .oe_login_form .btn-primary:hover,
+            .oe_signup_form .btn-primary:hover,
+            .oe_reset_password_form .btn-primary:hover {
+                transform:translateY(-2px);
+                box-shadow:0 12px 32px rgba(31,184,118,.35) !important;
+            }
+            .oe_login_form .btn-primary:disabled {
+                opacity:.5 !important; cursor:not-allowed !important;
+                transform:none !important; box-shadow:none !important;
+            }
+
+            /* ---- Password show/hide button ---- */
+            .input-group {
+                flex-wrap:nowrap !important;
+            }
+            .o_show_password {
+                order:-1 !important;
+                border-radius:14px 0 0 14px !important;
+                border:2px solid var(--border) !important;
+                border-right:none !important;
+                background:var(--bg) !important;
+                color:var(--muted) !important;
+                transition:border .2s !important;
+                padding:14px 16px !important;
+                font-size:15px !important;
+                line-height:1.5 !important;
+                display:flex !important;
+                align-items:center !important;
+            }
+            .o_show_password:hover {
+                background:var(--bg) !important;
+                color:var(--g500) !important;
+            }
+            .input-group:focus-within .o_show_password {
+                border-color:var(--g500) !important;
+            }
+            .input-group .form-control {
+                border-radius:0 14px 14px 0 !important;
+            }
+
+            /* ---- Error / success alerts ---- */
+            .oe_login_form .alert.alert-danger,
+            .oe_signup_form .alert.alert-danger,
+            .oe_reset_password_form .alert.alert-danger {
+                border-radius:14px; padding:14px 18px;
+                font-size:14px; line-height:1.6; margin-bottom:20px;
+                background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;
+            }
+            .oe_login_form .alert.alert-success,
+            .oe_signup_form .alert.alert-success {
+                background:var(--g100) !important;
+                color:var(--g700) !important;
+                border:1px solid rgba(16,185,129,.2) !important;
+                border-radius:14px !important;
+                padding:16px 18px !important;
+                font-size:14px !important;
+                line-height:1.6;
+                margin-bottom:20px;
+            }
+            html[data-theme="dark"] .oe_login_form .alert.alert-success {
+                background:rgba(16,185,129,.1) !important;
+                border-color:rgba(16,185,129,.2) !important;
+            }
+
+            /* ---- Forgot password row ---- */
+            .dw-forgot-row {
+                margin-top:-8px; margin-bottom:20px !important;
+                text-align:right;
+            }
+            html[dir="rtl"] .dw-forgot-row { text-align:left; }
+
+            /* ---- Links ---- */
+            a, .oe_link {
+                color:var(--g500) !important;
+                font-weight:600;
+                transition:color .15s;
+            }
+            a:hover { color:var(--g700) !important; }
+
+            /* ---- Saved-sessions list (spec §12): never show Odoo's
+               "previous users / Use another user" switcher — the login form
+               itself is always displayed directly. The companion script
+               below strips the d-none class the UserSwitch widget adds. ---- */
+            .o_user_switch { display:none !important; }
+            form.oe_login_form { display:block !important; }
+
+            /* Hide Odoo's Passkey login block + its "- or -" divider —
+               the Dawrha design is a clean email/password form only. */
+            .o_login_auth, .passkey_login_link { display:none !important; }
+            .oe_login_form .o_divider,
+            .oe_login_form hr { display:none !important; }
+
+            /* Hide default Odoo signup + reset links (we have our own) */
+            a[href*="/web/signup"] { display:none !important; }
+            .oe_login_form .oe_login_buttons a[href*="/web/signup"],
+            .oe_login_form .oe_login_buttons a[href*="/web/reset_password"],
+            .oe_login_form label[for="password"] + a { display:none !important; }
+
+            /* ---- CTA under form (like register .auth-sub) ---- */
+            .dw-auth-cta {
+                text-align:center; padding-top:16px;
+                border-top:1px solid var(--border);
+                font-size:14px; color:var(--muted);
+                margin-top:24px;
+            }
+            .dw-auth-cta a { font-weight:700; }
+
+            /* ---- Arabic font switch ---- */
+            html[lang="ar"] body,
+            html[dir="rtl"] body {
+                font-family:'Cairo','Inter',system-ui,-apple-system,sans-serif !important;
+            }
+            html[lang="ar"] .oe_login_form,
+            html[lang="ar"] .oe_signup_form,
+            html[lang="ar"] .oe_reset_password_form,
+            html[dir="rtl"] .oe_login_form,
+            html[dir="rtl"] .oe_signup_form,
+            html[dir="rtl"] .oe_reset_password_form {
+                font-family:'Cairo','Inter',system-ui,-apple-system,sans-serif !important;
+            }
+
+            /* ---- RTL ---- */
+            html[dir="rtl"] #wrap { direction:rtl !important; }
+            html[dir="rtl"] .oe_login_form label,
+            html[dir="rtl"] .oe_signup_form label,
+            html[dir="rtl"] .oe_reset_password_form label {
+                text-align:right !important;
+            }
+            html[dir="rtl"] .oe_login_form label[for="password"] {
+                text-align:right !important;
+                flex:1 !important;
+            }
+            html[dir="rtl"] .o_show_password {
+                border-radius:14px 0 0 14px !important;
+                border:2px solid var(--border) !important;
+                border-right:none !important;
+            }
+            html[dir="rtl"] .oe_login_form .input-group,
+            html[dir="rtl"] .oe_signup_form .input-group,
+            html[dir="rtl"] .oe_reset_password_form .input-group {
+                direction:ltr !important;
+            }
+            html[dir="rtl"] .oe_login_form .input-group .form-control,
+            html[dir="rtl"] .oe_signup_form .input-group .form-control,
+            html[dir="rtl"] .oe_reset_password_form .input-group .form-control {
+                text-align:right !important;
+            }
+            html[dir="rtl"] .o_caps_lock_warning .d-flex {
+                flex-direction:row !important;
+            }
+
+            /* ---- Responsive: small phones (no hidden/clipped element) ---- */
+            @media (max-width: 480px) {
+                body, #wrap { padding: 12px !important; }
+                .oe_login_form, .oe_signup_form, .oe_reset_password_form {
+                    padding: 28px 18px !important;
+                    border-radius: 18px;
+                }
+                .dw-auth-logo img { height: 36px; }
+                .dw-auth-logo-text { font-size: 26px; }
+                .dw-auth-title { font-size: 20px; }
+                .oe_login_form .form-control, .oe_signup_form .form-control,
+                .oe_reset_password_form .form-control {
+                    padding: 12px 14px !important; font-size: 14px !important;
+                }
+                .dw-auth-controls { top: 10px; inset-inline-end: 10px; }
+                .dw-auth-ctl { min-width: 38px; height: 38px; font-size: 14px; }
+            }
+
+            /* ---- Floating theme / language controls (all auth pages) ---- */
+            .dw-auth-controls {
+                position:fixed; top:16px; inset-inline-end:16px; z-index:60;
+                display:flex; gap:8px;
+            }
+            .dw-auth-ctl {
+                min-width:42px; height:42px; padding:0 10px;
+                border-radius:12px; border:1px solid rgba(255,255,255,.25);
+                background:rgba(11,18,32,.45); color:#fff;
+                backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+                font-size:15px; font-weight:700; cursor:pointer;
+                display:flex; align-items:center; justify-content:center;
+                transition:all .15s;
+            }
+            .dw-auth-ctl:hover { border-color:var(--g500); transform:scale(1.06); }
+        </style>
+        <div class="dw-auth-controls">
+            <button type="button" class="dw-auth-ctl" id="dw-auth-theme"
+                    title="Dark / Light" onclick="dwAuthToggleTheme()">🌙</button>
+            <button type="button" class="dw-auth-ctl" id="dw-auth-lang"
+                    title="EN / العربية" onclick="dwAuthToggleLang()">AR</button>
+        </div>
+        <script>
+            <![CDATA[
+            // Self-contained controls: theme persists via localStorage and the
+            // language button reuses the shared engine when it is loaded.
+            function dwAuthSyncBtns() {
+                var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                var tb = document.getElementById('dw-auth-theme');
+                if (tb) tb.textContent = dark ? '☀️' : '🌙';
+                var isAr = (localStorage.getItem('recycle_wms_lang') === 'ar');
+                var lb = document.getElementById('dw-auth-lang');
+                if (lb) lb.textContent = isAr ? 'EN' : 'AR';
+            }
+            function dwAuthToggleTheme() {
+                var next = document.documentElement.getAttribute('data-theme') === 'dark'
+                    ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('dw-theme', next);
+                dwAuthSyncBtns();
+            }
+            function dwAuthToggleLang() {
+                var next = (localStorage.getItem('recycle_wms_lang') === 'ar') ? 'en' : 'ar';
+                if (typeof dwSetLang === 'function') {
+                    dwSetLang(next);
+                } else {
+                    localStorage.setItem('recycle_wms_lang', next);
+                    document.documentElement.setAttribute('dir', next === 'ar' ? 'rtl' : 'ltr');
+                    document.documentElement.setAttribute('lang', next);
+                }
+                dwAuthSyncBtns();
+            }
+            if (document.readyState !== 'loading') { dwAuthSyncBtns(); }
+            else { document.addEventListener('DOMContentLoaded', dwAuthSyncBtns); }
+
+            // Spec §12 — always show the login form directly: Odoo's
+            // UserSwitch widget hides the form (d-none) when previous
+            // sessions exist on this device. Strip that class whenever it
+            // appears and drop the switcher list entirely.
+            (function () {
+                function dwForceLoginForm() {
+                    document.querySelectorAll('.o_user_switch').forEach(function (el) {
+                        el.remove();
+                    });
+                    document.querySelectorAll('form.oe_login_form.d-none').forEach(function (f) {
+                        f.classList.remove('d-none');
+                    });
+                }
+                if (document.readyState !== 'loading') { dwForceLoginForm(); }
+                document.addEventListener('DOMContentLoaded', dwForceLoginForm);
+                // The widget mounts asynchronously — watch briefly for it.
+                var obs = new MutationObserver(dwForceLoginForm);
+                obs.observe(document.documentElement, { childList: true, subtree: true });
+                setTimeout(function () { obs.disconnect(); }, 4000);
+            })();
+            ]]>
+        </script>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Login page                                                    -->
+    <!-- ============================================================ -->
+    <template id="login_dawrha" inherit_id="web.login" name="Dawrha Login Style">
+        <xpath expr="//form" position="before">
+            <t t-call="recycle_warehouse.auth_dawrha_style"/>
+            <div class="dw-auth-logo">
+                <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha"/>
+            </div>
+        </xpath>
+        <xpath expr="//form" position="attributes">
+            <attribute name="class">oe_login_form</attribute>
+        </xpath>
+        <xpath expr="//label[@for='login']" position="attributes">
+            <attribute name="data-i18n">Email</attribute>
+        </xpath>
+        <xpath expr="//label[@for='password']" position="attributes">
+            <attribute name="data-i18n">Password</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('btn-primary')]" position="attributes">
+            <attribute name="data-i18n">Log in</attribute>
+            <attribute name="t-att-disabled">'disabled' if recycle_login_locked else None</attribute>
+        </xpath>
+        <xpath expr="//form" position="before">
+            <div class="dw-auth-title" data-i18n="Welcome back">Welcome back</div>
+            <div class="dw-auth-sub">
+                <span data-i18n="Sign in to your account">Sign in to your account</span>
+            </div>
+        </xpath>
+        <xpath expr="//form" position="inside">
+            <t t-if="request.params.get('password_changed')">
+                <div class="alert alert-success" role="status" data-i18n="✅ Your password was changed. Please sign in with your new password.">
+                    ✅ Your password was changed. Please sign in with your new password.
+                </div>
+            </t>
+            <t t-if="request.params.get('created')">
+                <div class="alert alert-success" role="status" style="text-align:center;" data-i18n="Account created successfully!">
+                    ✅ <strong>Account created successfully!</strong><br/>
+                    <span data-i18n="Your account has been created. Please sign in with your email and password.">Your account has been created. Please sign in with your email and password.</span>
+                </div>
+            </t>
+            <div class="mb-3 dw-forgot-row">
+                <a href="/web/reset_password" data-i18n="Forgot password?">Forgot password?</a>
+            </div>
+            <div class="dw-auth-cta">
+                <span data-i18n="Don't have an account?">Don't have an account?</span>
+                <a href="/register" data-i18n="Create one →">Create one →</a>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Signup page (injected via auth_signup)                        -->
+    <!-- ============================================================ -->
+    <template id="signup_dawrha" inherit_id="auth_signup.signup" name="Dawrha Signup Style">
+        <xpath expr="//form" position="before">
+            <t t-call="recycle_warehouse.auth_dawrha_style"/>
+            <div class="dw-auth-logo">
+                <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha"/>
+            </div>
+        </xpath>
+        <xpath expr="//label[@for='name']" position="attributes">
+            <attribute name="data-i18n">Name</attribute>
+        </xpath>
+        <xpath expr="//label[@for='login']" position="attributes">
+            <attribute name="data-i18n">Email</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('btn-primary')]" position="attributes">
+            <attribute name="data-i18n">Sign up</attribute>
+        </xpath>
+        <xpath expr="//form" position="before">
+            <div class="dw-auth-title" data-i18n="Create your account">Create your account</div>
+            <div class="dw-auth-sub">
+                <span data-i18n="Already have an account?">Already have an account?</span>
+                <a href="/web/login" data-i18n="Sign in →">Sign in →</a>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Forgot / reset password page                                  -->
+    <!-- ============================================================ -->
+    <template id="reset_password_dawrha" inherit_id="auth_signup.reset_password"
+              name="Dawrha Reset Password Style">
+        <xpath expr="//form" position="before">
+            <t t-call="recycle_warehouse.auth_dawrha_style"/>
+            <div class="dw-auth-logo">
+                <img src="/recycle_warehouse/static/src/img/icon_logo.png" alt="Dawrha"/>
+            </div>
+        </xpath>
+        <xpath expr="//label[@for='login']" position="attributes">
+            <attribute name="data-i18n">Email</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('btn-primary')]" position="attributes">
+            <attribute name="data-i18n">Reset Password</attribute>
+        </xpath>
+        <!-- Add data-i18n to all original "Back to Login" links -->
+        <xpath expr="//div[contains(@class,'oe_login_form')]//a[@href='/web/login']" position="attributes">
+            <attribute name="data-i18n">Back to Login</attribute>
+        </xpath>
+        <!-- Title + subtitle before the form (visible when form shows) -->
+        <xpath expr="//form" position="before">
+            <div class="dw-auth-title" data-i18n="Reset your password">Reset your password</div>
+            <div class="dw-auth-sub">
+                <span data-i18n="Enter your email to receive a reset link">Enter your email to receive a reset link</span>
+            </div>
+        </xpath>
+        <!-- CTA inside form (when form shows) -->
+        <xpath expr="//form" position="inside">
+            <div class="dw-auth-cta">
+                <a href="/web/login" data-i18n="← Back to sign in">← Back to sign in</a>
+                <span style="margin:0 8px;color:var(--border);">·</span>
+                <a href="/register" data-i18n="Create an account">Create an account</a>
+            </div>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_recycle_warehouse_list" model="ir.ui.view">
+        <field name="name">recycle.warehouse.list</field>
+        <field name="model">recycle.warehouse</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="province_id" optional="show"/>
+                <field name="manager_user_id"/>
+                <field name="employee_count"/>
+                <field name="shipment_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_warehouse_form" model="ir.ui.view">
+        <field name="name">recycle.warehouse.form</field>
+        <field name="model">recycle.warehouse</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Warehouse Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <!-- Manager is assigned during job-application
+                                 acceptance, not here. Shown read-only only once
+                                 a manager exists. -->
+                            <field name="manager_user_id" readonly="1"
+                                   invisible="not manager_user_id"/>
+                        </group>
+                        <group>
+                            <field name="shipment_count" readonly="1"/>
+                            <field name="employee_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Location">
+                        <group>
+                            <!-- Governorate is chosen ONCE, at creation, and then
+                                 HIDDEN on edit. A warehouse cannot move between
+                                 governorates — order allocation, cached distances
+                                 and open orders all assume where it is (see
+                                 `_assert_location_unchanged`). `id` is set only on
+                                 a persisted record, so the control shows on the
+                                 create form and disappears on edit rather than
+                                 sitting there as a field the user may not touch. -->
+                            <field name="province_id" invisible="id"
+                                   required="not id"/>
+                        </group>
+                        <group>
+                            <field name="latitude"/>
+                            <field name="longitude"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Zones">
+                            <field name="zone_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="zone_type"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Employees">
+                            <field name="employee_user_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="login"/>
+                                    <field name="recycle_role"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Stock">
+                            <field name="stock_ids" readonly="1">
+                                <list>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recycle_warehouse" model="ir.actions.act_window">
+        <field name="name">Warehouses</field>
+        <field name="res_model">recycle.warehouse</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Read-only warehouse form for warehouse managers (view only) -->
+    <record id="view_recycle_warehouse_form_manager" model="ir.ui.view">
+        <field name="name">recycle.warehouse.form.manager</field>
+        <field name="model">recycle.warehouse</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form edit="0" create="0" delete="0">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" readonly="1"/>
+                            <field name="manager_user_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="shipment_count" readonly="1"/>
+                            <field name="employee_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Location">
+                        <group>
+                            <field name="province_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="latitude" readonly="1"/>
+                            <field name="longitude" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Zones">
+                            <field name="zone_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="zone_type"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Employees">
+                            <field name="employee_user_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="login"/>
+                                    <field name="recycle_role"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Stock">
+                            <field name="stock_ids" readonly="1">
+                                <list>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_warehouse_list_manager" model="ir.ui.view">
+        <field name="name">recycle.warehouse.list.manager</field>
+        <field name="model">recycle.warehouse</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="employee_count"/>
+                <field name="shipment_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_recycle_manager_warehouse" model="ir.actions.act_window">
+        <field name="name">My Warehouse</field>
+        <field name="res_model">recycle.warehouse</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_recycle_warehouse_list_manager')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_recycle_warehouse_form_manager')})]"/>
+    </record>
+
+    <record id="view_recycle_zone_list" model="ir.ui.view">
+        <field name="name">recycle.zone.list</field>
+        <field name="model">recycle.zone</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="zone_type"/>
+                <field name="warehouse_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Zones — search: by name, per warehouse, per zone type -->
+    <record id="view_recycle_zone_search" model="ir.ui.view">
+        <field name="name">recycle.zone.search</field>
+        <field name="model">recycle.zone</field>
+        <field name="arch" type="xml">
+            <search string="Search Zones">
+                <field name="name" string="Zone Name"/>
+                <field name="warehouse_id" string="Warehouse"/>
+                <separator/>
+                <filter string="Receiving" name="filter_receiving"
+                        domain="[('zone_type','=','receiving')]"/>
+                <filter string="Sorting" name="filter_sorting"
+                        domain="[('zone_type','=','sorting')]"/>
+                <filter string="Storage" name="filter_storage"
+                        domain="[('zone_type','=','storage')]"/>
+                <filter string="Output" name="filter_output"
+                        domain="[('zone_type','=','output')]"/>
+                <separator/>
+                <filter string="Warehouse" name="group_wh"
+                        context="{'group_by': 'warehouse_id'}"/>
+                <filter string="Zone Type" name="group_type"
+                        context="{'group_by': 'zone_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_recycle_zone" model="ir.actions.act_window">
+        <field name="name">Zones</field>
+        <field name="res_model">recycle.zone</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_recycle_zone_search"/>
+    </record>
+
+    <!-- ============================================================ -->
+    <!--  Configuration → Users → Add Administrator (wizard)          -->
+    <!-- ============================================================ -->
+    <record id="view_recycle_add_admin_wizard_form" model="ir.ui.view">
+        <field name="name">recycle.add.admin.wizard.form</field>
+        <field name="model">recycle.add.admin.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Administrator">
+                <group>
+                    <field name="name" placeholder="Full name"/>
+                    <field name="email" placeholder="name@example.com"/>
+                </group>
+                <footer>
+                    <button string="Create Administrator" type="object"
+                            name="action_create_admin" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recycle_add_admin_wizard" model="ir.actions.act_window">
+        <field name="name">Add Administrator</field>
+        <field name="res_model">recycle.add.admin.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    <!-- menuitem for this action lives in menus.xml — it needs
+         menu_recycle_config as a parent, which is only defined there, and
+         menus.xml loads after this file (see __manifest__.py data order). -->
+</odoo>

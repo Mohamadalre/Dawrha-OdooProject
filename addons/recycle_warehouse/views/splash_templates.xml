@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        The splash that stands in for Odoo's blank page.
+
+        Loading the web client means downloading a large JS/CSS bundle, and for
+        those seconds the browser has a parsed <body> with nothing in it — a
+        white rectangle that gives no sign the system is working. On a slow
+        connection people press reload, which throws the download away and
+        starts the same wait again.
+
+        Two things about HOW this is done matter more than what it looks like:
+
+        1. EVERY style here is INLINE, in the document itself. The obvious
+           implementation puts the CSS in `web.assets_backend` — but that is one
+           of the bundles being waited for, so the splash would appear only once
+           the wait was over. A splash that needs the page to finish loading is
+           not a splash.
+
+        2. It is removed by the client script (`recycle_splash.js`) when the web
+           client actually mounts, and by a hard timeout if that never happens.
+           An overlay with no removal path of its own turns a slow page into a
+           permanently unusable one — strictly worse than the blank screen.
+
+        `aria-hidden` because it carries no information a screen reader needs:
+        the busy state is announced by `role="progressbar"` on the bar alone.
+    -->
+    <template id="recycle_webclient_splash"
+              inherit_id="web.layout"
+              name="Dawrha loading splash">
+        <xpath expr="//body" position="inside">
+            <!--
+                `web.layout`, not `web.webclient_bootstrap`.
+
+                The obvious parent has no <body> to attach to: it is entirely
+                `t-set` calls that hand values to `web.layout`, which owns the
+                actual element. Inheriting it directly fails to load the module
+                outright — "Element '<xpath expr="//body">' cannot be located in
+                parent view".
+
+                But `web.layout` also renders the PUBLIC website, which is
+                server-rendered and never sits blank waiting for a bundle. So
+                the splash is fenced to the back office by the one marker the
+                bootstrap sets for exactly this purpose: `body_classname`.
+            -->
+            <div t-if="'o_web_client' in (body_classname or '')"
+                 id="recycle_splash" aria-hidden="true"
+                 style="position:fixed;inset:0;z-index:2147483000;
+                        display:flex;flex-direction:column;align-items:center;
+                        justify-content:center;gap:1.4rem;
+                        background:radial-gradient(120% 120% at 50% 0%,#0f766e 0%,#064e3b 45%,#022c22 100%);
+                        transition:opacity .45s ease, visibility .45s ease;">
+
+                <!-- The glow. A separate element behind the mark rather than a
+                     box-shadow on it, so the pulse can scale without dragging
+                     the logo's own size around with it. -->
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+                    <span style="position:absolute;width:190px;height:190px;border-radius:50%;
+                                 background:radial-gradient(circle,rgba(52,211,153,.55) 0%,rgba(16,185,129,.22) 45%,transparent 70%);
+                                 filter:blur(6px);animation:recycle_splash_glow 2.4s ease-in-out infinite;"/>
+
+                    <!-- Two counter-rotating rings: one sweep of colour each
+                         way. A single spinner reads as "generic web thing";
+                         opposed motion reads as something assembling. -->
+                    <span style="position:absolute;width:150px;height:150px;border-radius:50%;
+                                 border:3px solid transparent;
+                                 border-top-color:#34d399;border-right-color:#22d3ee;
+                                 animation:recycle_splash_spin 1.5s linear infinite;"/>
+                    <span style="position:absolute;width:124px;height:124px;border-radius:50%;
+                                 border:3px solid transparent;
+                                 border-bottom-color:#a3e635;border-left-color:#facc15;
+                                 animation:recycle_splash_spin_rev 2.1s linear infinite;"/>
+
+                    <img src="/recycle_warehouse/static/src/img/icon_logo.png"
+                         alt=""
+                         style="position:relative;width:84px;height:84px;object-fit:contain;
+                                border-radius:20px;background:rgba(255,255,255,.96);
+                                padding:10px;box-shadow:0 12px 32px rgba(0,0,0,.35);
+                                animation:recycle_splash_breathe 2.4s ease-in-out infinite;"/>
+                </div>
+
+                <div style="font:600 1.05rem/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+                            color:#d1fae5;letter-spacing:.04em;
+                            animation:recycle_splash_fade 2.4s ease-in-out infinite;">Dawrha</div>
+
+                <!-- Indeterminate on purpose: the client cannot know how much
+                     of the bundle has arrived, and a bar that pretends to would
+                     be lying at a moment when trust is the whole job. -->
+                <div role="progressbar" aria-label="Loading"
+                     style="width:160px;height:4px;border-radius:99px;overflow:hidden;
+                            background:rgba(255,255,255,.16);">
+                    <div style="width:40%;height:100%;border-radius:99px;
+                                background:linear-gradient(90deg,#34d399,#22d3ee,#a3e635);
+                                animation:recycle_splash_bar 1.4s ease-in-out infinite;"/>
+                </div>
+
+                <style>
+                    @keyframes recycle_splash_spin {
+                        to { transform: rotate(360deg); }
+                    }
+                    @keyframes recycle_splash_spin_rev {
+                        to { transform: rotate(-360deg); }
+                    }
+                    @keyframes recycle_splash_glow {
+                        0%, 100% { transform: scale(.92); opacity: .65; }
+                        50%      { transform: scale(1.12); opacity: 1; }
+                    }
+                    @keyframes recycle_splash_breathe {
+                        0%, 100% { transform: scale(1); }
+                        50%      { transform: scale(1.06); }
+                    }
+                    @keyframes recycle_splash_fade {
+                        0%, 100% { opacity: .65; }
+                        50%      { opacity: 1; }
+                    }
+                    @keyframes recycle_splash_bar {
+                        0%   { transform: translateX(-110%); }
+                        100% { transform: translateX(310%); }
+                    }
+                    /* Motion here is decoration. Someone who has asked their
+                       system for less of it still gets the logo and the
+                       message — they just get them still. */
+                    @media (prefers-reduced-motion: reduce) {
+                        #recycle_splash *,
+                        #recycle_splash *::before,
+                        #recycle_splash *::after {
+                            animation: none !important;
+                        }
+                    }
+                </style>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══════════════════════════════════════════════════════════════════
+         Warehouse damage log.
+
+         The question this screen exists to answer is "how much did each
+         warehouse lose, of what, and when?". Every view below is built around
+         that: the default grouping is by warehouse, the quantity is summed, and
+         the date is never optional.
+
+         Losses arrive from two places — a shipment that did not survive sorting
+         and material that spoiled in storage — and the `source` column keeps
+         them distinguishable, because they say different things about how the
+         warehouse is run.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_recycle_damage_entry_list" model="ir.ui.view">
+        <field name="name">recycle.damage.entry.list</field>
+        <field name="model">recycle.damage.entry</field>
+        <field name="arch" type="xml">
+            <list string="Damage Log" create="false" edit="false" delete="false"
+                  default_order="occurred_at desc">
+                <field name="occurred_at" string="Damaged At"/>
+                <field name="warehouse_id"/>
+                <field name="product_id"/>
+                <field name="condition_label" string="Grade" optional="show"/>
+                <field name="quantity" sum="Total"/>
+                <field name="uom_id" string="Unit" optional="show"/>
+                <field name="source" widget="badge"
+                       decoration-warning="source == 'sorting'"
+                       decoration-danger="source == 'storage'"/>
+                <field name="recorded_by" optional="show"/>
+                <field name="shipment_id" optional="hide"/>
+                <field name="report_id" optional="hide"/>
+                <field name="reason" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_damage_entry_form" model="ir.ui.view">
+        <field name="name">recycle.damage.entry.form</field>
+        <field name="model">recycle.damage.entry</field>
+        <field name="arch" type="xml">
+            <form string="Damage Entry" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group string="What was lost">
+                            <field name="warehouse_id"/>
+                            <field name="product_id"/>
+                            <field name="condition_label" string="Grade"/>
+                            <field name="quantity"/>
+                            <field name="uom_id" string="Unit"/>
+                        </group>
+                        <group string="When and how">
+                            <field name="occurred_at"/>
+                            <field name="source"/>
+                            <field name="recorded_by"/>
+                            <!-- Provenance: exactly one of these is set, and it
+                                 is what lets any figure on the summary be
+                                 traced back to the paperwork behind it. -->
+                            <field name="shipment_id" invisible="not shipment_id"/>
+                            <field name="report_id" invisible="not report_id"/>
+                        </group>
+                    </group>
+                    <group string="Reason">
+                        <field name="reason" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_damage_entry_search" model="ir.ui.view">
+        <field name="name">recycle.damage.entry.search</field>
+        <field name="model">recycle.damage.entry</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="warehouse_id"/>
+                <field name="product_id"/>
+                <field name="condition" string="Grade"/>
+                <separator/>
+                <filter string="From sorting" name="filter_sorting"
+                        domain="[('source','=','sorting')]"/>
+                <filter string="From storage" name="filter_storage"
+                        domain="[('source','=','storage')]"/>
+                <separator/>
+                <filter string="Last 30 days" name="filter_30d"
+                        domain="[('occurred_at','&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter string="This year" name="filter_year"
+                        domain="[('occurred_at','&gt;=', datetime.date(context_today().year, 1, 1).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="Warehouse" name="group_warehouse"
+                        context="{'group_by': 'warehouse_id'}"/>
+                <filter string="Material" name="group_product"
+                        context="{'group_by': 'product_id'}"/>
+                <filter string="Source" name="group_source"
+                        context="{'group_by': 'source'}"/>
+                <filter string="Month" name="group_month"
+                        context="{'group_by': 'occurred_at:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_recycle_damage_entry_pivot" model="ir.ui.view">
+        <field name="name">recycle.damage.entry.pivot</field>
+        <field name="model">recycle.damage.entry</field>
+        <field name="arch" type="xml">
+            <!-- Warehouse down the side, month across the top: the shape the
+                 "how much are we losing, and is it getting worse?" question
+                 actually has. -->
+            <pivot string="Damage by Warehouse">
+                <field name="warehouse_id" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="occurred_at" interval="month" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_recycle_damage_entry_graph" model="ir.ui.view">
+        <field name="name">recycle.damage.entry.graph</field>
+        <field name="model">recycle.damage.entry</field>
+        <field name="arch" type="xml">
+            <graph string="Damage" type="bar">
+                <field name="warehouse_id"/>
+                <field name="quantity" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_recycle_damage_entry" model="ir.actions.act_window">
+        <field name="name">Damage Log</field>
+        <field name="res_model">recycle.damage.entry</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_recycle_damage_entry_search"/>
+        <field name="context">{'search_default_group_warehouse': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No damage recorded yet</p>
+            <p>
+                Every quantity written off appears here — whether it failed
+                sorting on arrival or spoiled in storage — with the warehouse it
+                belonged to and the date it was lost.
+            </p>
+        </field>
+    </record>
+</odoo>

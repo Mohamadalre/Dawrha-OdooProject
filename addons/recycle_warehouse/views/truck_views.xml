@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  Trucks — classic Odoo views (admin back-office / dev use).  -->
+    <!--  The primary UI is the themed admin dashboard (Trucks nav).  -->
+    <!--  NOTE: menu items live in menus.xml (load-order: this file   -->
+    <!--  loads before menus.xml, so parents defined there are not    -->
+    <!--  available yet).                                             -->
+    <!-- ============================================================ -->
+
+    <record id="view_recycle_truck_list" model="ir.ui.view">
+        <field name="name">recycle.truck.list</field>
+        <field name="model">recycle.truck</field>
+        <field name="arch" type="xml">
+            <list default_order="name">
+                <field name="name"/>
+                <field name="plate_number"/>
+                <field name="truck_type" widget="badge"
+                       decoration-info="truck_type == 'collection'"
+                       decoration-warning="truck_type == 'delivery'"/>
+                <field name="model"/>
+                <field name="year"/>
+                <field name="max_payload_kg"/>
+                <field name="warehouse_id"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_truck_form" model="ir.ui.view">
+        <field name="name">recycle.truck.form</field>
+        <field name="model">recycle.truck</field>
+        <field name="arch" type="xml">
+            <form string="Truck">
+                <sheet>
+                    <group>
+                        <group string="Identity">
+                            <field name="name"/>
+                            <field name="plate_number"/>
+                            <!-- What the truck is FOR. A collection truck runs
+                                 pick-up rounds on a shift and is driven by a
+                                 backend collector; a delivery truck carries
+                                 sold goods and is driven by a delivery driver
+                                 recruited here. The two never mix. -->
+                            <!-- Set on creation only. Changing it would strand
+                                 every driver assignment built on this truck, in
+                                 a different table with different rules. -->
+                            <field name="truck_type" readonly="id != False"/>
+                            <field name="model"/>
+                            <field name="year"/>
+                        </group>
+                        <group string="Assignment &amp; Capacity">
+                            <field name="warehouse_id"
+                                   placeholder="Unassigned"/>
+                            <field name="max_payload_kg"/>
+                            <field name="is_active"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Internal notes about this truck…"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_truck_search" model="ir.ui.view">
+        <field name="name">recycle.truck.search</field>
+        <field name="model">recycle.truck</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="plate_number"/>
+                <field name="model"/>
+                <field name="warehouse_id"/>
+                <!-- One screen, filtered — rather than two lists that would
+                     drift apart and hide a truck whose type was mis-set. -->
+                <filter string="Collection trucks" name="filter_collection"
+                        domain="[('truck_type', '=', 'collection')]"/>
+                <filter string="Delivery trucks" name="filter_delivery"
+                        domain="[('truck_type', '=', 'delivery')]"/>
+                <separator/>
+                <filter string="In Service" name="in_service" domain="[('is_active', '=', True)]"/>
+                <filter string="Out of Service" name="out_of_service" domain="[('is_active', '=', False)]"/>
+                <separator/>
+                <filter string="Unassigned" name="unassigned" domain="[('warehouse_id', '=', False)]"/>
+                <separator/>
+                <filter string="Warehouse" name="group_warehouse" context="{'group_by': 'warehouse_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_recycle_truck" model="ir.actions.act_window">
+        <field name="name">Trucks</field>
+        <field name="res_model">recycle.truck</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_recycle_truck_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add the first truck of the fleet</p>
+            <p>Trucks are authored here and mirrored automatically to the Dawrha backend.</p>
+        </field>
+    </record>
+
+</odoo>

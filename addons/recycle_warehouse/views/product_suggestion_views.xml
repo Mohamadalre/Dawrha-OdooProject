@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_recycle_product_suggestion_list" model="ir.ui.view">
+        <field name="name">recycle.product.suggestion.list</field>
+        <field name="model">recycle.product.suggestion</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'submitted'"
+                  decoration-danger="state == 'failed'">
+                <field name="name"/>
+                <field name="category_id"/>
+                <!-- Shown next to the picker so a proposed category is visible
+                     in the list, not only after opening the record. -->
+                <field name="new_category_name" string="Proposed Category"
+                       optional="show"/>
+                <field name="state"/>
+                <field name="submitted_on"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recycle_product_suggestion_form" model="ir.ui.view">
+        <field name="name">recycle.product.suggestion.form</field>
+        <field name="model">recycle.product.suggestion</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" type="object" class="btn-primary"
+                            string="Send for Review"
+                            invisible="state == 'submitted'"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="Reset to Draft"
+                            invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted"/>
+                </header>
+                <sheet>
+                    <!-- Says plainly why this form exists, so nobody looks for
+                         the "New Product" button that used to be here. -->
+                    <div class="alert alert-info" role="alert">
+                        Materials are created in the backend, together with their
+                        prices — a material with no price list is visible to no
+                        buyer. Describe the material here and the backend
+                        administrator will review it.
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Material name"/></h1>
+                    </div>
+                    <group>
+                        <!-- Asked as a choice rather than as two fields the
+                             proposer might fill both of: only one of them can be
+                             the answer, and the payload keys are what tell the
+                             reviewer which of the two questions was answered. -->
+                        <field name="category_mode" widget="radio"/>
+                        <!-- Picks from the categories the system actually holds
+                             (recycle.product.category — mirrored from the
+                             backend). This model has no archive flag, so every
+                             category listed is a real, selectable one. -->
+                        <field name="category_id"
+                               invisible="category_mode != 'existing'"
+                               required="category_mode == 'existing'"/>
+                        <field name="new_category_name"
+                               invisible="category_mode != 'new'"
+                               required="category_mode == 'new'"
+                               placeholder="e.g. Electronic waste"/>
+                        <field name="backend_suggestion_id"
+                               invisible="not backend_suggestion_id"/>
+                        <field name="submitted_on" invisible="state != 'submitted'"/>
+                    </group>
+                    <group string="Details">
+                        <field name="description" nolabel="1"
+                               placeholder="Where does it come from, who buys it, why is it worth adding?"/>
+                    </group>
+                    <!-- Pictures of the material, sent to the backend as URLs. -->
+                    <group string="Images">
+                        <field name="image_ids" widget="many2many_binary"
+                               nolabel="1"/>
+                    </group>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'failed'">
+                        <field name="last_error" nolabel="1" readonly="1"/>
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recycle_product_suggestion_search" model="ir.ui.view">
+        <field name="name">recycle.product.suggestion.search</field>
+        <field name="model">recycle.product.suggestion</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="category_id"/>
+                <filter string="Not Sent Yet" name="pending"
+                        domain="[('state', '!=', 'submitted')]"/>
+                <separator/>
+                <filter string="Status" name="group_state"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_recycle_product_suggestion" model="ir.actions.act_window">
+        <field name="name">Suggest a Material</field>
+        <field name="res_model">recycle.product.suggestion</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
