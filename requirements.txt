@@ -1,0 +1,21 @@
+# Python dependencies of the recycle_warehouse addon.
+#
+# This is the "package.json" of the Odoo side: the single source of truth for
+# what pip must install into the image. Installed by the Dockerfile.
+#
+# The addon deliberately uses ONLY:
+#   - the Python standard library (json, hashlib, hmac, secrets, urllib,
+#     base64, datetime, subprocess, xml.etree, importlib, io, re, os, time,
+#     random, logging), and
+#   - packages already shipped inside the official `odoo:19.0` image
+#     (psycopg2, pytz).
+#
+# So there are no extra runtime dependencies to install today. The two lines
+# below are pinned only to guarantee they are present even on a slimmed base
+# image; pip treats an already-satisfied requirement as a no-op.
+#
+# ── If a dependency is ever added, put it here (e.g. `requests==2.32.3`) and
+#    rebuild the image — nothing else needs to change. ──
+
+psycopg2-binary>=2.9
+pytz>=2023.3

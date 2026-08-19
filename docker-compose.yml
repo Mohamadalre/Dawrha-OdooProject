@@ -13,7 +13,13 @@ services:
  
 
   odoo:
-    image: odoo:19.0
+    # Build the Dawrha image (base Odoo 19 + Arabic fonts + pip requirements +
+    # odoo.conf + the addon). `image:` names the built artifact so it can be
+    # pushed to a registry for deploy.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dawrha/odoo:19
     container_name: odoo19
     restart: always
     depends_on:
@@ -31,27 +37,22 @@ services:
       HOST: db
       USER: odoo
       PASSWORD: odoo
-    # Pin the server to the "odoo19" database so it is auto-selected even
-    # when the database manager is disabled and several PG databases exist.
-    # ($$ becomes a single $ after Compose variable-substitution.)
-    command: "odoo --db-filter=^odoo19$$"
+      # ── Dynamic backend sync (per-environment) ───────────────────────────
+      # The addon's post_init_hook reads these on install/upgrade and writes the
+      # matching recycle.backend_* system parameters — so the SAME image syncs
+      # correctly in dev, staging and production by env alone, no manual DB edit.
+      # Set the secret (and, in production, the real URL) in a `.env` file beside
+      # this compose (see .env.example). The secret MUST match the backend's
+      # ODOO_WEBHOOK_SECRET, or the backend rejects the pings (401).
+      RECYCLE_BACKEND_BASE_URL: ${RECYCLE_BACKEND_BASE_URL:-http://host.docker.internal:3000}
+      RECYCLE_BACKEND_WEBHOOK_SECRET: ${RECYCLE_BACKEND_WEBHOOK_SECRET:-}
+      RECYCLE_BACKEND_API_KEY: ${RECYCLE_BACKEND_API_KEY:-}
     volumes:
       - odoo-web:/var/lib/odoo
+      # DEV ONLY: bind-mount the addon over the baked copy so local edits take
+      # effect without a rebuild. For a production deploy, REMOVE this line and
+      # rely on the addon baked into the image (reproducible artifact).
       - ./addons:/mnt/extra-addons
-      # Arabic in printed PDFs.
-      #
-      # wkhtmltopdf renders through Qt WebKit, which resolves fonts through
-      # FONTCONFIG and largely ignores @font-face over HTTP. The base image
-      # ships only DejaVu for Arabic, and DejaVu carries the code points
-      # WITHOUT the tables that join them — so every Arabic name printed as
-      # disconnected letters in the wrong order.
-      #
-      # Mounted from the addon rather than apt-installed into the container:
-      # a package installed into a running container disappears the next time
-      # it is rebuilt, and the reports would quietly go back to garbling names
-      # with nothing in the logs to explain it. fontconfig scans
-      # /usr/share/fonts recursively at startup, so this is all it takes.
-      - ./addons/recycle_warehouse/static/src/fonts:/usr/share/fonts/truetype/dawrha:ro
 
   pgadmin:
     image: dpage/pgadmin4

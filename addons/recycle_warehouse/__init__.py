@@ -1,9 +1,53 @@
+import logging
+import os
+
 from . import models
 from . import controllers
 
+_logger = logging.getLogger(__name__)
+
+
+def _configure_backend_sync(env):
+    """Wire the backend integration FROM THE ENVIRONMENT — dynamic, per-deploy.
+
+    The two-way sync depends on three system parameters: where the NestJS
+    backend lives and the shared secret that signs the outbound pings. They used
+    to be typed by hand into Technical → System Parameters, so a fresh
+    environment synced NOTHING and gave no hint why (a truck/warehouse created
+    here never reached the backend).
+
+    Here they are seeded from environment variables on install/upgrade, so the
+    same image runs in dev, staging and production and each just declares its own
+    values — no code change, no manual DB edit. The ENVIRONMENT wins: a value
+    present in the env overwrites whatever was there, so deployment config is the
+    single source of truth. An empty/absent env var is left untouched, so a value
+    set by hand is not wiped by a redeploy that simply did not pass it.
+
+    Recognised variables:
+      RECYCLE_BACKEND_BASE_URL       e.g. https://api.dawrha.com
+                                     (or http://host.docker.internal:3000 in dev)
+      RECYCLE_BACKEND_WEBHOOK_SECRET must match the backend ODOO_WEBHOOK_SECRET
+      RECYCLE_BACKEND_API_KEY        optional extra header for the outbound calls
+    """
+    icp = env['ir.config_parameter'].sudo()
+    mapping = {
+        'RECYCLE_BACKEND_BASE_URL': 'recycle.backend_base_url',
+        'RECYCLE_BACKEND_WEBHOOK_SECRET': 'recycle.backend_webhook_secret',
+        'RECYCLE_BACKEND_API_KEY': 'recycle.backend_api_key',
+    }
+    for env_key, param_key in mapping.items():
+        value = (os.environ.get(env_key) or '').strip()
+        if value:
+            icp.set_param(param_key, value)
+            shown = value if 'SECRET' not in env_key and 'KEY' not in env_key else '***'
+            _logger.info('Backend sync configured from env: %s = %s', param_key, shown)
+
 
 def post_init_hook(env):
-    """Enable free signup and create Set Password email template."""
+    """Enable free signup, seed the Set Password email template, and wire the
+    backend sync from the environment (see `_configure_backend_sync`)."""
+    _configure_backend_sync(env)
+
     # Enable free signup on the website
     env['ir.config_parameter'].sudo().set_param(
         'auth_signup.invitation_scope', 'b2c')
