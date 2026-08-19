@@ -20,6 +20,13 @@ services:
       - db
     ports:
       - "8069:8069"
+    # Lets the container reach a backend running on the HOST via
+    # http://host.docker.internal:<port>. Without it the outbound sync pings
+    # (fleet / warehouse / inventory / suggestions) cannot leave the container to
+    # a host-run NestJS backend, so a truck/warehouse added in Odoo silently
+    # never reaches the backend. `host-gateway` is resolved by Docker to the host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       HOST: db
       USER: odoo

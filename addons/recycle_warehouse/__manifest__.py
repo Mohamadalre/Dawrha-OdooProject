@@ -53,6 +53,7 @@ Recycle Warehouse Management
         'views/delivery_trip_views.xml',
         'views/recruitment_views.xml',
         'views/menus.xml',
+        'views/res_config_settings_views.xml',
         'reports/order_invoice_report.xml',
         'reports/shipment_stock_reports.xml',
         'reports/shipment_detail_report.xml',

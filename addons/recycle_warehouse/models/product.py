@@ -128,24 +128,51 @@ class RecycleProduct(models.Model):
             'target': 'current',
         }
 
+    @api.model
+    def _resolve_unit_code(self, vals):
+        """Turn the transient `unit_code` key into a real `uom_id`, in place.
+
+        The backend knows its units by CODE ('KG'), never by an Odoo id, so the
+        product push carries the code and it is resolved here — which keeps the
+        push a single RPC with no id table on either side. Shared by create AND
+        write, so an EDIT that changes the unit in the backend reaches Odoo the
+        same way a create does (it did not before: write ignored the key, so a
+        unit change never propagated)."""
+        code = vals.pop('unit_code', None)
+        if code and not vals.get('uom_id'):
+            unit = self.env['recycle.measurement.unit'].sudo().with_context(
+                active_test=False).search([('code', '=ilike', code)], limit=1)
+            if not unit:
+                raise ValidationError(_(
+                    'Unknown measurement unit "%s". Sync the units first.', code))
+            vals['uom_id'] = unit.id
+
     @api.model_create_multi
     def create(self, vals_list):
-        # The backend knows its units by CODE ('KG'), never by an Odoo id, so
-        # `unit_code` is accepted as a transient key and resolved here. That is
-        # what keeps the product push a single RPC with no id table on either
-        # side.
-        Unit = self.env['recycle.measurement.unit'].sudo()
         for vals in vals_list:
-            code = vals.pop('unit_code', None)
-            if code and not vals.get('uom_id'):
-                unit = Unit.with_context(active_test=False).search(
-                    [('code', '=ilike', code)], limit=1)
-                if not unit:
-                    raise ValidationError(_(
-                        'Unknown measurement unit "%s". Sync the units first.',
-                        code))
-                vals['uom_id'] = unit.id
+            self._resolve_unit_code(vals)
         return super().create(vals_list)
+
+    def write(self, vals):
+        # A backend EDIT that changes the unit sends `unit_code`; resolve it the
+        # same way create does, otherwise Odoo would reject the write with
+        # "Invalid field 'unit_code'" and the edit would never land.
+        self._resolve_unit_code(vals)
+        res = super().write(vals)
+        # REVERSE sync: a NAME edited on the Odoo screen is mirrored back to the
+        # backend. Fired on any name write — the backend applies it only when it
+        # actually differs and never pushes back, so a backend→Odoo push that
+        # comes straight back here finds no diff and stops (no ping-pong).
+        if 'name' in vals:
+            Sync = self.env['recycle.backend.sync'].sudo()
+            for rec in self:
+                try:
+                    Sync.notify_product_changed(rec)
+                except Exception:            # noqa: BLE001 — reported, never raised
+                    _logger.exception(
+                        'Could not tell the backend that product %s was renamed',
+                        rec.display_name)
+        return res
 
     # NOTE — deliberately NOT pushed to the backend.
     #

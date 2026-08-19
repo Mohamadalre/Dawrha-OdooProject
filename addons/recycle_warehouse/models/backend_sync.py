@@ -78,7 +78,11 @@ BACKEND_ROUTES = {
     # decision a warehouse made 404'd, so the buyer was never told their order
     # had been approved, prepared or handed over.
     'orders':     '/api/v1/odoo/webhooks/orders',
-    'products':   '/webhooks/odoo/products',    # product created / prices updated
+    # REVERSE product sync — LIVE in the NestJS backend (OdooWebhookController
+    # @Post('products')): a product name edited on the Odoo screen is mirrored
+    # back. Versioned path + x-odoo-webhook-secret auth, like 'orders'/'fleet'.
+    # (The old unversioned '/webhooks/odoo/products' had no listener and 404'd.)
+    'products':   '/api/v1/odoo/webhooks/products',
     'categories': '/webhooks/odoo/categories',  # category created
     'warehouses': '/webhooks/odoo/warehouses',  # warehouse created / updated
     # Fleet ping — this one is LIVE in the NestJS backend (OdooWebhookController):
@@ -133,7 +137,14 @@ class RecycleBackendSync(models.AbstractModel):
         icp = self.env['ir.config_parameter'].sudo()
         base = (icp.get_param('recycle.backend_base_url') or '').rstrip('/')
         if not base:
-            _logger.debug('Backend sync skipped (no base url): %s', route_key)
+            # WARNING, not debug: an unset base URL silently disables EVERY
+            # outbound sync (fleet, inventory, warehouse, suggestions), so a
+            # truck added here never reaches the backend and nothing says why.
+            # Set it in Settings → Recycling → Backend integration.
+            _logger.warning(
+                'Backend sync skipped: recycle.backend_base_url is not set, so '
+                'the "%s" change was NOT sent to the backend. Configure it in '
+                'Settings → Recycling.', route_key)
             return False
         path = self._route(route_key)
         headers = {
@@ -166,7 +177,14 @@ class RecycleBackendSync(models.AbstractModel):
         icp = self.env['ir.config_parameter'].sudo()
         secret = icp.get_param('recycle.backend_webhook_secret') or ''
         if not secret:
-            _logger.debug('Ping skipped (no webhook secret set): %s', route_key)
+            # WARNING, not debug: the signed pings (fleet / inventory / warehouse
+            # / tariffs) all need this shared secret, and without it the backend
+            # rejects them 401 — or, as here, they are never sent. Silent before,
+            # which is why a missing secret looked like "sync just doesn't work".
+            _logger.warning(
+                'Ping skipped: recycle.backend_webhook_secret is not set, so the '
+                '"%s" change was NOT sent to the backend. Set it (matching the '
+                'backend ODOO_WEBHOOK_SECRET) in Settings → Recycling.', route_key)
             return False
         return self._post(route_key, payload or {}, extra_headers={
             'x-odoo-webhook-secret': secret,
@@ -360,6 +378,21 @@ class RecycleBackendSync(models.AbstractModel):
         to one site instead of all of them.
         """
         return self.schedule_ping('warehouse', warehouse)
+
+    @api.model
+    def notify_product_changed(self, product):
+        """Tell the backend a product's NAME was edited here (reverse sync).
+
+        Carries the Odoo product id; the backend re-reads the name over JSON-RPC
+        and mirrors it onto its own row. Loop-safe by construction on the far
+        side: the backend writes only when the value actually differs and never
+        pushes back, so the backend→Odoo push and this Odoo→backend mirror
+        converge after one hop instead of ping-ponging. Best-effort — a failed
+        ping is a name that stays briefly out of step, never a blocked edit.
+        """
+        if not product or not product.id:
+            return False
+        return self._post_signed('products', {'odoo_product_id': product.id})
 
     @api.model
     def notify_fleet_changed(self):

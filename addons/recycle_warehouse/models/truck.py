@@ -50,6 +50,16 @@ class RecycleTruck(models.Model):
         help='Manufacturer / model, e.g. "Hyundai HD65".')
     year = fields.Integer('Year')
     max_payload_kg = fields.Float('Max Payload (kg)', digits=(10, 2))
+    # Bed dimensions. Recorded for EVERY truck (collection and delivery alike):
+    # a load is not only a weight — a bulky-but-light load can fill the bed long
+    # before the payload ceiling — so the person planning a run needs the size,
+    # not just the kilograms.
+    length_m = fields.Float(
+        'Length (m)', digits=(6, 2),
+        help='Cargo bed length in metres. Optional; mirrored to the backend.')
+    width_m = fields.Float(
+        'Width (m)', digits=(6, 2),
+        help='Cargo bed width in metres. Optional; mirrored to the backend.')
     warehouse_id = fields.Many2one(
         'recycle.warehouse', string='Warehouse', index=True,
         ondelete='set null',
@@ -86,6 +96,8 @@ class RecycleTruck(models.Model):
         for rec in self:
             if rec.max_payload_kg < 0:
                 raise ValidationError(_('Max payload cannot be negative.'))
+            if rec.length_m < 0 or rec.width_m < 0:
+                raise ValidationError(_('Truck dimensions cannot be negative.'))
 
     # ------------------------------------------------------------------
     # Backend mirror sync (fire-and-forget, never blocks the workflow)

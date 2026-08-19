@@ -3,9 +3,9 @@
 
 The transport is stubbed — what is tested is everything AROUND it: that a
 failure leaves the proposal on file and re-sendable rather than lost, that a
-sent proposal cannot silently drift from what the backend received, and that the
-payload carries the unit CODE (which the backend validates against) rather than
-a display name.
+sent proposal cannot silently drift from what the backend received, that a
+second Send is idempotent, and that the payload carries NO unit (the unit is
+authored on the backend when the real material is created, not proposed here).
 """
 from unittest.mock import patch
 
@@ -71,12 +71,27 @@ class TestProductSuggestion(TransactionCase):
         self.assertEqual(s.state, 'submitted')
         self.assertEqual(s.backend_suggestion_id, 'be-9')
 
-    def test_cannot_submit_twice(self):
+    def test_submitting_twice_is_idempotent(self):
+        """A second Send on an already-sent proposal is a no-op, not an error.
+
+        `create` auto-submits, so the admin dashboard both creates AND presses
+        Send on the same row; making the second call raise would turn its own
+        successful push into a spurious "already sent" failure. So an
+        already-submitted proposal reports success WITHOUT pushing again — no
+        duplicate reaches the backend. (Drift is prevented separately, by
+        blocking CONTENT edits after submit — see the test below.)
+        """
         s = self._new()
         with self._push_returns(True, {'suggestion_id': 'be-1'}):
-            s.action_submit()
-            with self.assertRaises(UserError):
-                s.action_submit()
+            self.assertTrue(s.action_submit())
+        self.assertEqual(s.state, 'submitted')
+
+        # The second Send must NOT touch the network again.
+        with patch(MODEL + '._push') as push:
+            self.assertTrue(s.action_submit())
+            push.assert_not_called()
+        self.assertEqual(s.state, 'submitted')
+        self.assertEqual(s.backend_suggestion_id, 'be-1')
 
     def test_a_sent_proposal_cannot_be_edited_behind_the_backend_s_back(self):
         s = self._new()
@@ -91,9 +106,15 @@ class TestProductSuggestion(TransactionCase):
         s.name = 'Something Else'
         self.assertEqual(s.name, 'Something Else')
 
-    def test_payload_carries_the_unit_code_not_its_label(self):
-        """The backend validates the unit against its own `measurement_units`
-        table BY CODE — sending 'Kilogram (test)' would be rejected."""
+    def test_payload_omits_the_unit(self):
+        """A proposal is a name + category + description + pictures — NO unit.
+
+        The unit is chosen later, when the backend admin authors the real
+        material together with its prices. Sending a unit here would put that
+        decision on the wrong side, so the payload must not carry one at all —
+        even though `uom_id` still exists on the model to leave old rows
+        undisturbed (`_new` sets one precisely to prove it is ignored).
+        """
         s = self._new()
         captured = {}
 
@@ -138,8 +159,13 @@ class TestProductSuggestion(TransactionCase):
         self.assertIn('/odoo/webhooks/product-suggestion', captured['url'])
         import json
         payload = json.loads(captured['body'])
-        self.assertEqual(payload['unit_type'], 'KG_TEST')
+        # The unit is authored on the backend, never proposed from here.
+        self.assertNotIn('unit_type', payload)
+        self.assertNotIn('uom_id', payload)
+        # What a proposal DOES carry.
+        self.assertEqual(payload['product_name'], 'Shredded Aluminium')
         self.assertEqual(payload['category_name'], 'Suggestion Test Category')
+        self.assertEqual(payload['suggested_by'], self.env.user.name)
         # The idempotency key: a retry after a timeout must land on this row.
         self.assertEqual(payload['odoo_suggestion_id'], s.id)
 

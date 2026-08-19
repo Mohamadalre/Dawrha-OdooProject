@@ -86,13 +86,21 @@
                 <field name="order_number"/>
                 <field name="buyer_name"/>
                 <field name="driver_id"/>
+                <!-- Filter the board down to the warehouse(s) the admin cares
+                     about, then the "Live" filter shows only the active trips
+                     departing them, each with its truck and route. -->
+                <field name="origin_warehouse_id"/>
+                <field name="truck_id"/>
                 <filter name="live" string="Live"
                         domain="[('status', 'in', ['assigned', 'in_progress'])]"/>
                 <filter name="completed" string="Completed"
                         domain="[('status', '=', 'completed')]"/>
                 <separator/>
+                <filter name="by_warehouse" string="Origin warehouse"
+                        context="{'group_by': 'origin_warehouse_id'}"/>
                 <filter name="by_status" string="Status" context="{'group_by': 'status'}"/>
                 <filter name="by_driver" string="Driver" context="{'group_by': 'driver_id'}"/>
+                <filter name="by_truck" string="Truck" context="{'group_by': 'truck_id'}"/>
             </search>
         </field>
     </record>

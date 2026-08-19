@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Settings page for the addon. These config values (the backend link and
+         the sorting tolerances) previously had NO screen at all: they lived as
+         system parameters an admin had to know to type by hand. An unset backend
+         URL silently disabled every outbound sync, which is exactly how "a truck
+         added in Odoo never shows in the app" happened with nothing to explain
+         it. This gives them a supported home. -->
+    <record id="res_config_settings_view_form_recycle" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.recycle</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Recycling" string="Recycling" name="recycle_warehouse">
+                    <block title="Backend integration"
+                           name="recycle_backend_integration">
+                        <setting string="Backend base URL"
+                                 help="Origin of the NestJS backend the pings are sent to. Empty disables ALL outbound sync.">
+                            <field name="backend_base_url"
+                                   placeholder="https://api.dawrha.example"/>
+                        </setting>
+                        <setting string="Backend webhook secret"
+                                 help="Shared secret (x-odoo-webhook-secret). Must match the backend ODOO_WEBHOOK_SECRET exactly.">
+                            <field name="backend_webhook_secret" password="True"
+                                   placeholder="matches backend ODOO_WEBHOOK_SECRET"/>
+                        </setting>
+                        <setting string="Check the link"
+                                 help="Sends a real signed ping to the backend and reports whether the URL, the secret and the network path work — so a broken sync is visible here instead of silent.">
+                            <button name="action_test_backend_connection"
+                                    type="object" string="Test backend connection"
+                                    class="btn-secondary"/>
+                        </setting>
+                    </block>
+                    <block title="Sorting tolerance"
+                           name="recycle_sorting_tolerance">
+                        <setting string="Auto-accepted shortage per material (%)">
+                            <field name="sorting_tolerance_threshold_1"/>
+                        </setting>
+                        <setting string="Max shortage before manager approval (%)">
+                            <field name="sorting_tolerance_threshold_2"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Open the settings scoped to this module, and a menu to reach it. -->
+    <record id="action_recycle_config_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'recycle_warehouse'}</field>
+    </record>
+
+    <menuitem id="menu_recycle_settings"
+              name="Settings"
+              parent="menu_recycle_root"
+              action="action_recycle_config_settings"
+              sequence="900"/>
+
+</odoo>

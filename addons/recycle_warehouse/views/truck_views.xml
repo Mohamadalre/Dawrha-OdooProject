@@ -54,6 +54,12 @@
                             <field name="warehouse_id"
                                    placeholder="Unassigned"/>
                             <field name="max_payload_kg"/>
+                            <label for="length_m" string="Dimensions (m)"/>
+                            <div class="o_row">
+                                <field name="length_m" class="oe_inline"/>
+                                <span class="mx-2">×</span>
+                                <field name="width_m" class="oe_inline"/>
+                            </div>
                             <field name="is_active"/>
                         </group>
                     </group>
