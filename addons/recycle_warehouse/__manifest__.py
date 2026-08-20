@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Recycle Warehouse Management',
-    'version': '19.0.1.46.0',
+    'version': '19.0.1.47.0',
     'category': 'Inventory',
     'summary': 'Warehouses, shipments, sorting, stock, orders API and recruitment portal',
     'description': """
@@ -93,14 +93,24 @@ Recycle Warehouse Management
                 'recycle_warehouse/static/src/js/recycle_home_action.js',
                 'recycle_warehouse/static/src/js/recycle_sorting_dashboard.js',
                 'recycle_warehouse/static/src/js/recycle_delivery_driver_dashboard.js',
+                'recycle_warehouse/static/src/css/recycle_driver_dashboard.css',
                 'recycle_warehouse/static/src/js/recycle_output_dashboard.js',
                 'recycle_warehouse/static/src/js/recycle_manager_dashboard.js',
                 'recycle_warehouse/static/src/js/recycle_admin_dashboard.js',
+                'recycle_warehouse/static/src/css/recycle_admin_polish.css',
                 'recycle_warehouse/static/src/js/recycle_applications_board.js',
                 'recycle_warehouse/static/src/js/recycle_employees_board.js',
                 'recycle_warehouse/static/src/js/recycle_shift_manager.js',
                 'recycle_warehouse/static/src/js/recycle_manager_attendance.js',
                 'recycle_warehouse/static/src/js/recycle_chatbot.js',
+                # Leaflet + OpenStreetMap: the key-less warehouse location picker.
+                # Vendored (no CDN, no API key); the widget writes lat/long from a
+                # click on the map.
+                'recycle_warehouse/static/lib/leaflet/leaflet.css',
+                'recycle_warehouse/static/lib/leaflet/leaflet.js',
+                'recycle_warehouse/static/src/css/warehouse_location_picker.css',
+                'recycle_warehouse/static/src/js/warehouse_location_picker.js',
+                'recycle_warehouse/static/src/xml/warehouse_location_picker.xml',
             ],
         # NOTE: the bundle is 'web.assets_frontend' in Odoo 16+ — the old
         # 'website.assets_frontend' name is silently ignored, which left the

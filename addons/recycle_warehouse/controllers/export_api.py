@@ -57,9 +57,10 @@ class RecycleExportController(http.Controller):
         """Build a one-sheet workbook from a list of row-tuples and return it as
         a download response.
 
-        The app LOGO is stamped in the top-left, with a title beside it, and the
-        table starts below them — so every exported sheet carries the Dawrha
-        brand at the top of the file.
+        No logo image is placed in the Excel file — a spreadsheet is data, not a
+        branded document, and a floated image only gets in the way of filtering,
+        sorting and copying. The sheet carries a plain text title band instead;
+        the branded logo belongs on the PDF reports, not here.
         """
         output = io.BytesIO()
         wb = xlsxwriter.Workbook(output, {'in_memory': True})
@@ -74,25 +75,15 @@ class RecycleExportController(http.Controller):
         })
         cell = wb.add_format({'border': 1})
 
-        # ── Branding band: logo top-left, report title beside it ──────────────
-        # The logo (305x423 portrait) is scaled to ~60px tall and floated over
-        # the first rows; the table is pushed below it. A missing logo just
-        # leaves the title — the export never fails on it.
-        HEADER_ROW = 4  # 0-indexed: the header lands on the 5th row
-        ws.set_row(0, 22)
-        ws.set_row(1, 34)
-        logo = _logo_path()
-        if logo:
-            ws.insert_image(0, 0, logo, {
-                'x_scale': 0.15, 'y_scale': 0.15,
-                'x_offset': 4, 'y_offset': 3,
-                'object_position': 1,
-            })
+        # ── Title band (text only, NO logo image) ─────────────────────────────
+        # A plain title on the first row; the table starts two rows below it.
+        HEADER_ROW = 2  # 0-indexed: the header lands on the 3rd row
+        ws.set_row(0, 26)
         if len(headers) > 1:
-            ws.merge_range(1, 1, 1, min(len(headers) - 1, 6),
+            ws.merge_range(0, 0, 0, min(len(headers) - 1, 6),
                            'Dawrha — %s Report' % sheet_name, title_fmt)
         else:
-            ws.write(1, 1, 'Dawrha — %s Report' % sheet_name, title_fmt)
+            ws.write(0, 0, 'Dawrha — %s Report' % sheet_name, title_fmt)
 
         for c, h in enumerate(headers):
             ws.write(HEADER_ROW, c, h, head_fmt)

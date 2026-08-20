@@ -367,7 +367,15 @@ class RecycleWebsiteController(http.Controller):
             # manager group assigned without recycle_role being set.
             operational_role = user.recycle_role and user.recycle_role != 'admin'
             has_manager_group = user.has_group('recycle_warehouse.group_recycle_manager')
-            has_accepted = bool(operational_role) or has_manager_group or bool(
+            # A delivery driver is a delivery EMPLOYEE, not an applicant — the
+            # Jobs page (openings + "apply") is not theirs. Their account is
+            # created straight into the delivery-driver group with no hr.employee
+            # row and often no recycle_role, so without this check the Jobs link
+            # leaked into their site navigation.
+            has_delivery_group = user.has_group(
+                'recycle_warehouse.group_recycle_delivery_driver')
+            has_accepted = bool(operational_role) or has_manager_group or (
+                has_delivery_group) or bool(
                 request.env['hr.employee'].sudo().search_count([
                     ('user_id', '=', user.id),
                 ], limit=1))

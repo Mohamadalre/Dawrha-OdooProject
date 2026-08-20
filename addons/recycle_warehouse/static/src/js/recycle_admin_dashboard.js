@@ -325,6 +325,10 @@ export class RecycleAdminDashboard extends Component {
         this.barChart = null;
         this.donutCanvasRef = useRef('donutCanvas');
         this.barCanvasRef = useRef('barCanvas');
+        // Map picker on the "Add Warehouse" screen — click to set the coordinates.
+        this.whCreateMapRef = useRef('whCreateMap');
+        this._whCreateMap = null;
+        this._whCreateMarker = null;
 
         onWillStart(async () => {
             // Session guard: one Odoo session per browser — if another
@@ -1231,8 +1235,16 @@ export class RecycleAdminDashboard extends Component {
             this.tr('Closing cancelled — no employee or truck was re-assigned automatically.'));
     }
 
-    /** Bring a fully stopped warehouse back into service. */
-    async reopenWarehouse() {
+    /** Bring a fully stopped warehouse back into service — from the MANAGE
+     *  screen, which acts on `selectedWarehouse`.
+     *
+     *  Deliberately a DIFFERENT name from `reopenWarehouse(wh)` above. They are
+     *  two flows: the closed-warehouses LIST passes the row it was clicked on,
+     *  this one reads the warehouse already open on the manage screen. When both
+     *  were called `reopenWarehouse`, this no-arg version silently overrode the
+     *  other — so the list's "Reopen" button ran this instead, found no
+     *  `selectedWarehouse`, and returned doing nothing. That was the bug. */
+    async reopenManagedWarehouse() {
         const wh = this.state.selectedWarehouse;
         if (!wh) return;
         if (!(await this.askConfirm(this.tr('Re-open warehouse'), this.tr('Reopen this warehouse? Its old team and trucks will NOT come back automatically.')))) return;
@@ -1457,6 +1469,46 @@ export class RecycleAdminDashboard extends Component {
         this.state.warehouseError = null;
         this.state.warehouseSuccess = null;
         this._navigate('warehouse_create');
+        // Draw the location-picker map once the form has painted.
+        setTimeout(() => this._initWarehouseCreateMap(), 150);
+    }
+
+    /**
+     * The "Add Warehouse" location picker: an OpenStreetMap map (Leaflet, from
+     * the bundle) where the admin CLICKS the spot and the latitude/longitude
+     * fields fill themselves. No API key, no typing coordinates by hand.
+     */
+    _initWarehouseCreateMap() {
+        const L = window.L;
+        const el = this.whCreateMapRef.el;
+        if (!L || !el) return;
+        if (this._whCreateMap) { try { this._whCreateMap.remove(); } catch (e) {} this._whCreateMap = null; }
+        const f = this.state.warehouseForm;
+        const hasPoint = f.latitude !== '' && f.longitude !== '';
+        const start = hasPoint ? [parseFloat(f.latitude), parseFloat(f.longitude)] : [33.5138, 36.2765];
+        this._whCreateMap = L.map(el).setView(start, hasPoint ? 13 : 6);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19, attribution: "© OpenStreetMap contributors",
+        }).addTo(this._whCreateMap);
+        // A clearly RED pin marks the picked spot — a red teardrop drawn as an
+        // inline SVG (no image file needed) so it reads instantly as "here".
+        const redPin = L.divIcon({
+            className: 'o_recycle_redpin',
+            html: '<svg width="28" height="40" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg"><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#dc2626" stroke="#991b1b" stroke-width="1"/><circle cx="14" cy="14" r="5.5" fill="#ffffff"/></svg>',
+            iconSize: [28, 40],
+            iconAnchor: [14, 40],
+        });
+        this._whCreateMarker = L.marker(start, { draggable: true, icon: redPin }).addTo(this._whCreateMap);
+        const setFromLatLng = (ll) => {
+            this.state.warehouseForm.latitude = Number(ll.lat.toFixed(7));
+            this.state.warehouseForm.longitude = Number(ll.lng.toFixed(7));
+        };
+        this._whCreateMarker.on('dragend', () => setFromLatLng(this._whCreateMarker.getLatLng()));
+        this._whCreateMap.on('click', (ev) => {
+            this._whCreateMarker.setLatLng(ev.latlng);
+            setFromLatLng(ev.latlng);
+        });
+        setTimeout(() => this._whCreateMap && this._whCreateMap.invalidateSize(), 200);
     }
     addWarehouseZoneRow() {
         this.state.warehouseZoneRows.push({ name: '', zone_type: 'storage' });

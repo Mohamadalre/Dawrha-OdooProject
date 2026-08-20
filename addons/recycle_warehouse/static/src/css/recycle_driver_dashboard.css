@@ -1,0 +1,120 @@
+/* Delivery-driver dashboard refinements.
+ *
+ * EVERYTHING here is scoped to `.o_ra_driver`, so the other employees' screens
+ * are never touched — only the driver's own dashboard is tuned: readable font
+ * sizes, a layout that holds on every screen width, a clearer active/delivered
+ * tab split, and the read-only warehouse map.
+ */
+
+/* ── Read-only warehouse location map ─────────────────────────────────── */
+.o_ra_driver .o_recycle_wh_map_wrap {
+    margin-top: 14px;
+}
+.o_ra_driver .o_recycle_wh_map {
+    width: 100%;
+    height: 260px;
+    border: 1px solid rgba(4, 120, 87, 0.25);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(4, 120, 87, 0.10);
+    z-index: 0;
+}
+.o_ra_driver .o_recycle_wh_map .leaflet-bar a { color: #047857; font-weight: 700; }
+
+/* ── Trips: a clearer split between the two tabs ──────────────────────── */
+.o_ra_driver .o_ra_tab_bar {
+    gap: 6px;
+    background: rgba(4, 120, 87, 0.06);
+    border: 1px solid rgba(4, 120, 87, 0.14);
+    border-radius: 12px;
+    padding: 5px;
+    margin-bottom: 1.1rem;
+}
+.o_ra_driver .o_ra_tab {
+    flex: 1 1 0;
+    text-align: center;
+    border: none !important;
+    border-radius: 9px;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 0; /* override the underline offset from the shared style */
+}
+.o_ra_driver .o_ra_tab_active {
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: #fff !important;
+    box-shadow: 0 3px 10px rgba(4, 120, 87, 0.28);
+}
+.o_ra_driver.dark .o_ra_tab { color: #cbd5e1; }
+.o_ra_driver.dark .o_ra_tab_bar {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.22);
+}
+
+/* A completed trip reads as a card with a green delivered accent. */
+.o_ra_driver .o_recycle_detail_sheet { font-size: 0.95rem; line-height: 1.5; }
+.o_ra_driver .o_recycle_detail_title { font-size: 1.05rem; font-weight: 800; }
+.o_ra_driver .o_recycle_detail_section_title { font-size: 0.95rem; font-weight: 800; }
+.o_ra_driver .o_recycle_detail_lbl { font-size: 0.8rem; letter-spacing: 0.02em; }
+.o_ra_driver .o_recycle_detail_val { font-size: 0.95rem; }
+
+/* ── Readable, consistent font sizes across the driver screens ────────── */
+.o_ra_driver .o_ra_page_hero_title { font-size: clamp(1.1rem, 4vw, 1.4rem); }
+.o_ra_driver .o_ra_page_hero_desc { font-size: clamp(0.8rem, 2.5vw, 0.92rem); }
+.o_ra_driver .o_ra_kpi_lbl { font-size: 0.72rem; letter-spacing: 0.02em; text-transform: uppercase; }
+/* The value can be a long name ("E2E Auto WH"), not just a number — keep it
+   compact so it reads as a card stat, not a headline. */
+.o_ra_driver .o_ra_kpi_val {
+    font-size: clamp(0.95rem, 2.6vw, 1.1rem) !important;
+    font-weight: 700 !important;
+    line-height: 1.25;
+    word-break: break-word;
+}
+.o_ra_driver .o_ra_kpi_sub { font-size: 0.72rem; }
+.o_ra_driver .o_ra_kpi_icon { font-size: 1.1rem; }
+.o_ra_driver .o_ra_action_btn { font-size: 0.95rem; font-weight: 700; }
+
+/* ── Home: the two action buttons (My Trips · My Truck) as tidy cards ──── */
+.o_ra_driver .o_ra_quick_actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.o_ra_driver .o_ra_quick_actions .o_ra_action_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 1.05rem 1rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, #047857, #10b981);
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(4, 120, 87, 0.22);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.o_ra_driver .o_ra_quick_actions .o_ra_action_btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(4, 120, 87, 0.30);
+    filter: brightness(1.03);
+}
+.o_ra_driver .o_ra_quick_actions .o_ra_action_btn:active { transform: translateY(0); }
+
+/* ── Responsive: hold up on phones AND wide screens ───────────────────── */
+/* Cap the content width so a wide monitor does not stretch cards edge-to-edge. */
+.o_ra_driver .o_recycle_view_container { max-width: 900px; margin-left: auto; margin-right: auto; }
+
+/* KPI cards wrap instead of forcing a horizontal scroll on small screens. */
+@media (max-width: 640px) {
+    .o_ra_driver .o_ra_quick_actions { grid-template-columns: 1fr; }
+    .o_ra_driver .o_recycle_wh_map { height: 220px; }
+    .o_ra_driver .o_recycle_detail_grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+    .o_ra_driver .o_ra_tab { font-size: 0.85rem; }
+}

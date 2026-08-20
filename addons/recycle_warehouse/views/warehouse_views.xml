@@ -52,6 +52,12 @@
                                    required="not id"/>
                         </group>
                         <group>
+                            <!-- Pick the location on a map — the two coordinate
+                                 fields fill themselves. Free/OpenStreetMap, no
+                                 API key. The numbers stay editable below the map
+                                 so a known pair can still be typed. -->
+                            <field name="latitude" widget="warehouse_location_picker"
+                                   nolabel="1" colspan="2"/>
                             <field name="latitude"/>
                             <field name="longitude"/>
                         </group>

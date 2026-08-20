@@ -8,10 +8,6 @@
                   decoration-danger="state == 'failed'">
                 <field name="name"/>
                 <field name="category_id"/>
-                <!-- Shown next to the picker so a proposed category is visible
-                     in the list, not only after opening the record. -->
-                <field name="new_category_name" string="Proposed Category"
-                       optional="show"/>
                 <field name="state"/>
                 <field name="submitted_on"/>
             </list>
@@ -46,22 +42,12 @@
                         <h1><field name="name" placeholder="Material name"/></h1>
                     </div>
                     <group>
-                        <!-- Asked as a choice rather than as two fields the
-                             proposer might fill both of: only one of them can be
-                             the answer, and the payload keys are what tell the
-                             reviewer which of the two questions was answered. -->
-                        <field name="category_mode" widget="radio"/>
                         <!-- Picks from the categories the system actually holds
                              (recycle.product.category — mirrored from the
-                             backend). This model has no archive flag, so every
-                             category listed is a real, selectable one. -->
-                        <field name="category_id"
-                               invisible="category_mode != 'existing'"
-                               required="category_mode == 'existing'"/>
-                        <field name="new_category_name"
-                               invisible="category_mode != 'new'"
-                               required="category_mode == 'new'"
-                               placeholder="e.g. Electronic waste"/>
+                             backend). Always an EXISTING category: proposing a
+                             brand-new category name was removed — categories are
+                             the administrator's decision, made in the backend. -->
+                        <field name="category_id"/>
                         <field name="backend_suggestion_id"
                                invisible="not backend_suggestion_id"/>
                         <field name="submitted_on" invisible="state != 'submitted'"/>

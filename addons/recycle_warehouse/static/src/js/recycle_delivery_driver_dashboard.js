@@ -51,10 +51,21 @@ export class RecycleDeliveryDriverDashboard extends Component {
             truckAssigned: false,
             truckError: null,
 
+            // The driver's base warehouse (the "My Warehouse" screen every other
+            // role has) and how many trips they have delivered this month.
+            warehouse: null,
+            tripsThisMonth: 0,
+
             // The driver's live delivery trips — one NEXT stop each.
             trips: [],
             tripsError: null,
             tripBusy: null,
+            // My Trips has two tabs: the trips still to run (active), and the
+            // ones already delivered (completed, in full — time, warehouses and
+            // quantities, but never the order cost).
+            tripsTab: 'active',
+            tripsActive: [],
+            tripsCompleted: [],
 
             notifUnreadCount: 0,
             notifications: [],
@@ -79,6 +90,7 @@ export class RecycleDeliveryDriverDashboard extends Component {
             sessions: [],
             sessionsLoading: false,
         });
+
 
         onWillStart(async () => {
             // One Odoo session per browser: if another user signed in from a
@@ -116,6 +128,9 @@ export class RecycleDeliveryDriverDashboard extends Component {
             // no shift; the vehicle is the thing they are answerable for.
             { key: 'trips', icon: '\u{1F4E6}', label: 'My Trips', single: true, go: 'openMyTrips', view: 'my_trips' },
             { key: 'truck', icon: '\u{1F69A}', label: 'My Truck', single: true, go: 'openMyTruck', view: 'my_truck' },
+            // The base warehouse this driver belongs to — the "My Warehouse"
+            // screen every other role has, given to the driver too.
+            { key: 'warehouse', icon: '\u{1F3ED}', label: 'My Warehouse', single: true, go: 'openMyWarehouse', view: 'my_warehouse' },
             { key: 'settings', icon: '⚙️', label: 'Settings', single: true, go: 'showSettings', view: 'settings' },
         ];
     }
@@ -137,6 +152,13 @@ export class RecycleDeliveryDriverDashboard extends Component {
     goBack() { this.state.view = this._navHistory.pop() || 'home'; }
     goHome() { this._navHistory = []; this.state.view = 'home'; this._loadMyTruck(); }
     showSettings() { this._navigate('settings'); }
+
+    /** The driver's base warehouse — its details refresh with the truck call.
+     *  No map: the screen shows the coordinates and a Google-Maps button only. */
+    async openMyWarehouse() {
+        this._navigate('my_warehouse');
+        await this._loadMyTruck();
+    }
 
     toggleDarkMode() {
         this.state.darkMode = !this.state.darkMode;
@@ -160,6 +182,8 @@ export class RecycleDeliveryDriverDashboard extends Component {
         await this._loadMyTrips();
     }
 
+    setTripsTab(tab) { this.state.tripsTab = tab; }
+
     async _loadMyTrips() {
         this.state.loading = true;
         this.state.tripsError = null;
@@ -168,8 +192,13 @@ export class RecycleDeliveryDriverDashboard extends Component {
             if (res && res.error) {
                 this.state.tripsError = this.tr('This account is not linked to a delivery driver record.');
                 this.state.trips = [];
+                this.state.tripsActive = [];
+                this.state.tripsCompleted = [];
             } else {
-                this.state.trips = (res && res.trips) || [];
+                this.state.tripsActive = (res && res.active) || [];
+                this.state.tripsCompleted = (res && res.completed) || [];
+                // The active flow (confirm-pickup) still reads state.trips.
+                this.state.trips = this.state.tripsActive;
             }
         } catch (e) {
             this.state.tripsError = (e && e.data && e.data.message) || this.tr('Action failed.');
@@ -231,6 +260,8 @@ export class RecycleDeliveryDriverDashboard extends Component {
                 // empty screen that reads like something broke.
                 this.state.truckAssigned = !!res.assigned;
                 this.state.truck = res.truck || null;
+                this.state.warehouse = res.warehouse || null;
+                this.state.tripsThisMonth = res.trips_completed_this_month || 0;
             }
         } catch (e) {
             this.state.truckError = (e && e.data && e.data.message) || this.tr('Action failed.');
@@ -364,6 +395,19 @@ export class RecycleDeliveryDriverDashboard extends Component {
         if (!val) return '—';
         try { return new Date(val).toLocaleDateString('en-GB'); }
         catch { return val; }
+    }
+
+    /** Date AND time — for "when was this trip delivered / collected". Odoo
+     *  hands back naive UTC strings ("2026-08-19 21:30:00"); normalise to a
+     *  parseable ISO so the browser shows the driver a real local time. */
+    formatDateTime(val) {
+        if (!val) return '—';
+        try {
+            const iso = String(val).includes('T') ? val : String(val).replace(' ', 'T') + 'Z';
+            const d = new Date(iso);
+            return isNaN(d.getTime()) ? val
+                : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        } catch { return val; }
     }
 }
 

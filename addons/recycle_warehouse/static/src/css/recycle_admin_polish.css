@@ -1,0 +1,104 @@
+/* Admin dashboard polish — EVERYTHING scoped to `.o_recycle_admin_theme` so the
+ * employees' dashboards (a different root, `tw-dashboard`) are never touched.
+ *
+ * Two fixes the warehouse screens needed:
+ *   1. the warehouse-detail stat cards were a wrapping flex row, so a 5th card
+ *      dropped to a line of its own and the sizes looked uneven — made them a
+ *      responsive grid where every card is the same width and they fill the row;
+ *   2. the search box border was almost invisible — gave it a clear green frame,
+ *      a readable placeholder and a focus ring.
+ */
+
+/* ── Warehouse-detail stat cards: equal size, responsive grid ──────────── */
+/* `!important` because the base stylesheet flips this container to a flex COLUMN
+   on small screens — this keeps it a balanced grid at every width. */
+.o_recycle_admin_theme .o_ra_wh_detail_stats {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 14px !important;
+    padding: 1.25rem 2rem !important;
+    align-items: stretch !important;
+    flex-direction: initial !important;
+}
+.o_recycle_admin_theme .o_ra_wh_stat_card {
+    min-width: 0 !important;   /* let the grid decide the width, all equal */
+    width: auto !important;
+    padding: 1rem 0.75rem !important;
+    justify-content: center;
+}
+.o_recycle_admin_theme .o_ra_wh_stat_val { font-size: 1.7rem; }
+.o_recycle_admin_theme .o_ra_wh_stat_icon { font-size: 1.4rem; }
+
+/* Phones: a tidy 2-up grid rather than one giant card per row. */
+@media (max-width: 640px) {
+    .o_recycle_admin_theme .o_ra_wh_detail_stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        padding: 1rem !important;
+        gap: 10px !important;
+    }
+    .o_recycle_admin_theme .o_ra_wh_stat_val { font-size: 1.4rem; }
+    .o_recycle_admin_theme .o_ra_wh_stat_card { padding: 0.85rem 0.5rem !important; }
+}
+
+/* ── Warehouse-detail navigation cards: compact, uniform grid ──────────── */
+/* On the warehouse-detail screen these link cards (Shipments / Orders / Team …)
+   were huge full-width blocks, dwarfing every other control. Only THIS
+   container is switched to a tidy equal-size grid (the marker class keeps the
+   admin HOME cards, which share the base class, untouched). */
+.o_recycle_admin_theme .o_ra_compact_cards {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+    gap: 12px !important;
+    max-width: 100% !important;
+    justify-content: stretch !important;
+}
+.o_recycle_admin_theme .o_ra_compact_cards .o_recycle_home_card {
+    flex: unset !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 0.9rem 1rem !important;
+    gap: 0.75rem !important;
+    border-radius: 12px !important;
+}
+.o_recycle_admin_theme .o_ra_compact_cards .o_recycle_card_icon { font-size: 1.5rem !important; }
+.o_recycle_admin_theme .o_ra_compact_cards .o_recycle_card_body h2 { font-size: 1rem !important; margin: 0 !important; }
+.o_recycle_admin_theme .o_ra_compact_cards .o_recycle_card_body p,
+.o_recycle_admin_theme .o_ra_compact_cards .o_recycle_card_sub { font-size: 0.78rem !important; }
+@media (max-width: 640px) {
+    .o_recycle_admin_theme .o_ra_compact_cards { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 420px) {
+    .o_recycle_admin_theme .o_ra_compact_cards { grid-template-columns: 1fr !important; }
+}
+
+/* ── Search box: a clear, obvious field ────────────────────────────────── */
+.o_recycle_admin_theme .o_ra_search_bar { padding: 0.85rem 2rem; }
+.o_recycle_admin_theme .o_ra_search_input {
+    border: 2px solid rgba(4, 120, 87, 0.30);
+    background: #f7fefb;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+}
+.o_recycle_admin_theme .o_ra_search_input::placeholder { color: #64748b; opacity: 1; }
+.o_recycle_admin_theme .o_ra_search_input:focus {
+    border-color: #059669;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.16);
+}
+
+@media (max-width: 640px) {
+    .o_recycle_admin_theme .o_ra_search_bar { padding: 0.65rem 1rem; }
+    .o_recycle_admin_theme .o_ra_search_input { max-width: 100%; }
+}
+
+/* Dark mode — keep the same clarity on the dark theme. */
+.o_recycle_admin_theme.o_ra_dark .o_ra_search_input {
+    border-color: rgba(16, 185, 129, 0.40);
+    background: rgba(16, 185, 129, 0.06);
+}
+.o_recycle_admin_theme.o_ra_dark .o_ra_search_input:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}

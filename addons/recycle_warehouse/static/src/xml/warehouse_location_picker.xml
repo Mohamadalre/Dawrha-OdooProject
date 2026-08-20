@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="recycle_warehouse.WarehouseLocationPicker">
+        <div class="o_recycle_map_picker">
+            <div class="o_recycle_map_head">
+                <span class="o_recycle_map_pin">📍</span>
+                <span t-esc="'Pick the warehouse location'"/>
+            </div>
+            <div class="o_recycle_map" t-ref="map"/>
+            <small>
+                <t t-if="!isReadonly">Click the map or drag the marker — the latitude and longitude fill in automatically.</t>
+                <t t-else="">Warehouse location.</t>
+            </small>
+        </div>
+    </t>
+</templates>

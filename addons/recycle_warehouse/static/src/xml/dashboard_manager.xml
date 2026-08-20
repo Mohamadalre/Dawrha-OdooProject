@@ -1653,6 +1653,10 @@
                     </div>
                 </div>
                 <div class="o_ra_filter_row" style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+                    <input type="text" class="o_ra_form_input o_ra_search_input"
+                           style="flex:1;min-width:200px;"
+                           t-att-placeholder="tr('Search by product…')"
+                           t-model="state.stockSearch"/>
                     <select class="o_ra_form_select o_ra_filter_select" t-model="state.stockZoneFilter">
                         <option value="" t-esc="tr('All Storage Zones')"/>
                         <t t-foreach="state.stockZones" t-as="z" t-key="z.id">

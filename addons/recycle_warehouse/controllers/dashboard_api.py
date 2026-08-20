@@ -2270,16 +2270,45 @@ class RecycleDashboardApiController(http.Controller):
             return {'error': 'not_a_delivery_driver'}
 
         truck = driver.truck_id
+        wh = driver.warehouse_id
+
+        # Trips this driver DELIVERED since the first of the month — the home
+        # screen's headline number, the delivery equivalent of a shift count.
+        month_start = fields.Date.today().replace(day=1)
+        trips_this_month = request.env['recycle.delivery.trip'].sudo().search_count([
+            ('driver_id', '=', driver.id),
+            ('status', '=', 'completed'),
+            ('completed_at', '>=', month_start),
+        ])
+
         return {
             'driver': {
                 'name': driver.name or '',
                 'phone': driver.phone or '',
                 'national_id': driver.national_id or '',
-                'warehouse': driver.warehouse_id.name or '',
+                'warehouse': wh.name or '',
                 'is_active': driver.is_active,
                 'license_number': driver.license_number or '',
                 'license_expiry': str(driver.license_expiry or ''),
             },
+            # The driver's base warehouse, in full — the "My Warehouse" screen
+            # every other role has, answered with the same fields they see.
+            'warehouse': {
+                'name': wh.name or '',
+                'code': wh.code or '',
+                'governorate': wh.governorate or '',
+                'address': wh.address or '',
+                # The manager of this warehouse — the person the driver answers
+                # to, shown on the "My Warehouse" screen.
+                'manager': wh.manager_user_id.name or '',
+                'manager_phone': wh.manager_user_id.partner_id.phone or '',
+                'latitude': wh.latitude or 0.0,
+                'longitude': wh.longitude or 0.0,
+                'maps_url': (
+                    'https://www.google.com/maps?q=%s,%s' % (wh.latitude, wh.longitude)
+                ) if (wh.latitude and wh.longitude) else '',
+            } if wh else None,
+            'trips_completed_this_month': trips_this_month,
             'assigned': bool(truck),
             'truck': {
                 'id': truck.id,
@@ -2309,18 +2338,21 @@ class RecycleDashboardApiController(http.Controller):
         driver = request.env['recycle.delivery.driver'].sudo().search(
             [('user_id', '=', request.env.uid)], limit=1)
         if not driver:
-            return {'error': 'not_a_delivery_driver', 'trips': []}
+            return {'error': 'not_a_delivery_driver', 'trips': [], 'active': [], 'completed': []}
 
-        trips = request.env['recycle.delivery.trip'].sudo().search([
+        Trip = request.env['recycle.delivery.trip'].sudo()
+
+        # ── ACTIVE: the trips still to run, each showing ONLY the next station ──
+        active_trips = Trip.search([
             ('driver_id', '=', driver.id),
             ('status', 'in', ['assigned', 'in_progress']),
         ], order='create_date asc')
 
-        out = []
-        for trip in trips:
+        active = []
+        for trip in active_trips:
             nxt = trip.next_stop()
             collected = trip.stop_ids.filtered(lambda s: s.picked_up_at)
-            out.append({
+            active.append({
                 'trip_id': trip.id,
                 'trip_number': trip.trip_number,
                 'order_number': trip.order_number,
@@ -2345,7 +2377,39 @@ class RecycleDashboardApiController(http.Controller):
                 } if nxt else None,
                 'ready_to_deliver': not trip.next_stop() and trip.status == 'in_progress',
             })
-        return {'trips': out}
+
+        # ── COMPLETED: the trips already delivered, in FULL — when it finished,
+        #    every warehouse stop it collected from and the quantity taken there.
+        #    The delivery COST is deliberately NOT included: a driver is shown what
+        #    they carried and where, not what the buyer was charged.
+        done_trips = Trip.search([
+            ('driver_id', '=', driver.id),
+            ('status', '=', 'completed'),
+        ], order='completed_at desc', limit=40)
+
+        completed = []
+        for trip in done_trips:
+            stops = []
+            for s in trip.stop_ids.sorted('sequence'):
+                stops.append({
+                    'sequence': s.sequence,
+                    'warehouse': s.warehouse_id.name or '',
+                    'goods': s.product_summary or '',       # quantity / materials taken
+                    'collected_at': str(s.picked_up_at or ''),
+                })
+            completed.append({
+                'trip_id': trip.id,
+                'trip_number': trip.trip_number,
+                'order_number': trip.order_number,
+                'buyer_name': trip.buyer_name,
+                'completed_at': str(trip.completed_at or ''),
+                'total_stops': len(trip.stop_ids),
+                'stops': stops,
+                # NO delivery_cost / currency here — see the note above.
+            })
+
+        # `trips` kept for older clients that read the flat active list.
+        return {'trips': active, 'active': active, 'completed': completed}
 
     @http.route('/api/recycle/delivery-confirm-pickup', type='jsonrpc',
                 auth='user', methods=['POST'])

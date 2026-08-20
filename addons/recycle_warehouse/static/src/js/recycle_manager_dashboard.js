@@ -1609,6 +1609,7 @@ export class RecycleManagerDashboard extends Component {
         this._navigate('stock_list');
         this.state.loading = true;
         this.state.stockZoneFilter = '';
+        this.state.stockSearch = '';         // free-text product-name filter
         this.state.stockCondFilter = null;   // null = All; '' = ungraded/unsorted
         try {
             this.state.stock = await this.orm.searchRead(
@@ -1625,6 +1626,13 @@ export class RecycleManagerDashboard extends Component {
 
     get filteredStock() {
         let list = this.state.stock;
+        // Free-text search on the product name — product_id is Odoo's
+        // [id, display_name] pair, so the name is the second element.
+        const q = (this.state.stockSearch || '').toLowerCase().trim();
+        if (q) {
+            list = list.filter(st =>
+                ((st.product_id && st.product_id[1]) || '').toLowerCase().includes(q));
+        }
         const z = this.state.stockZoneFilter;
         if (z) list = list.filter(st => st.zone_id && st.zone_id[0] === Number(z));
         if (this.state.stockCondFilter !== null) {

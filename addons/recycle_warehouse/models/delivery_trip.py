@@ -62,6 +62,11 @@ class RecycleDeliveryTrip(models.Model):
         TRIP_STATUSES, string='Status', default='assigned', required=True,
         index=True, tracking=True)
 
+    # Stamped the instant a trip is delivered — the honest "when did this finish"
+    # a monthly count needs. `write_date` would drift on any later edit; this
+    # does not move once set.
+    completed_at = fields.Datetime(string='Completed At', copy=False, readonly=True)
+
     route_distance_km = fields.Float(string='Route Distance (km)')
     delivery_cost = fields.Float(string='Delivery Cost')
     currency_code = fields.Char(string='Currency', default='SYP')
@@ -237,6 +242,7 @@ class RecycleDeliveryTrip(models.Model):
                 '%s stop(s) have not been collected — the load is incomplete.'
             ) % len(outstanding))
         self.status = 'completed'
+        self.completed_at = fields.Datetime.now()
         self.message_post(body=_('Delivered to the buyer by %s.')
                           % self.env.user.name)
         self._notify_backend('completed')

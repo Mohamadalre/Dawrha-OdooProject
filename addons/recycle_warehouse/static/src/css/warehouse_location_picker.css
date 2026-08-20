@@ -1,0 +1,81 @@
+/* Warehouse location picker — styled to match the Dawrha site, not a bare
+   Leaflet box. Green frame, rounded card, soft shadow; the same greens the rest
+   of the platform uses, with a dark-mode variant. */
+
+.o_recycle_map_picker {
+    width: 100%;
+    max-width: 640px;   /* fit the form column, not the whole screen */
+    margin: 4px 0 8px;
+}
+
+/* Little header strip above the map, in the platform green. */
+.o_recycle_map_head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #047857;
+    background: linear-gradient(135deg, rgba(4,120,87,0.10), rgba(16,185,129,0.10));
+    border: 1px solid rgba(4,120,87,0.25);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 8px 12px;
+}
+.o_recycle_map_pin { font-size: 1rem; }
+
+.o_recycle_map {
+    width: 100%;
+    /* Responsive height: scales with the viewport but stays within sane bounds
+       so it fits the form on a phone and does not dominate a big monitor. */
+    height: clamp(220px, 42vh, 360px);
+    border: 1px solid rgba(4,120,87,0.25);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(4,120,87,0.10);
+    z-index: 0; /* keep tiles/controls below Odoo's own overlays */
+}
+@media (max-width: 480px) {
+    .o_recycle_map_head { font-size: 0.8rem; padding: 7px 10px; }
+    .o_recycle_map { height: 220px; }
+}
+
+/* Match Leaflet's own controls to the green theme. */
+.o_recycle_map .leaflet-bar a {
+    color: #047857;
+    font-weight: 700;
+}
+
+/* The red picked-location pin (a divIcon SVG) — strip Leaflet's default white
+   box and drop shadow so only the teardrop shows. */
+.o_recycle_redpin {
+    background: transparent;
+    border: none;
+}
+.o_recycle_redpin svg {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+.o_recycle_map .leaflet-bar a:hover {
+    background: #ecfdf5;
+}
+
+.o_recycle_map_picker small {
+    display: block;
+    margin-top: 6px;
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+/* Dark mode — follow Odoo's dark web client. */
+.o_web_client.o_dark_mode .o_recycle_map,
+.o-dark .o_recycle_map,
+[data-theme="dark"] .o_recycle_map {
+    border-color: rgba(16,185,129,0.35);
+}
+.o_web_client.o_dark_mode .o_recycle_map_head,
+.o-dark .o_recycle_map_head,
+[data-theme="dark"] .o_recycle_map_head {
+    color: #6ee7b7;
+    background: linear-gradient(135deg, rgba(16,185,129,0.16), rgba(4,120,87,0.16));
+    border-color: rgba(16,185,129,0.35);
+}

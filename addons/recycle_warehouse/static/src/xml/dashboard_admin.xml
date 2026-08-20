@@ -1705,6 +1705,21 @@
                     <label class="o_ra_form_label" t-esc="tr('Address')"/>
                     <input type="text" class="o_ra_form_input" t-model="state.warehouseForm.address"/>
                 </div>
+                <!-- Pick the location on the map — the latitude and longitude
+                     fill in automatically. Free/OpenStreetMap, no API key. The
+                     numbers stay editable below so a known pair can still be
+                     typed and the map follows. -->
+                <div class="o_ra_form_group">
+                    <label class="o_ra_form_label" t-esc="tr('Location')"/>
+                    <div class="o_recycle_map_picker">
+                        <div class="o_recycle_map_head">
+                            <span class="o_recycle_map_pin">&#x1F4CD;</span>
+                            <span t-esc="tr('Click the map to set the warehouse location')"/>
+                        </div>
+                        <div class="o_recycle_map" t-ref="whCreateMap"
+                             style="width:100%;height:clamp(220px,42vh,360px);"/>
+                    </div>
+                </div>
                 <div class="o_ra_form_row_2">
                     <div class="o_ra_form_group">
                         <label class="o_ra_form_label" t-esc="tr('Latitude')"/>
@@ -1803,7 +1818,7 @@
 <!-- Fleet stat cards above; navigation below uses the SAME card design
                  as Shipments/Orders (user request) — Trucks + Drivers open the global
                  lists pre-filtered to THIS warehouse. -->
-            <div class="o_recycle_home_cards" style="padding:1rem 2rem;">
+            <div class="o_recycle_home_cards o_ra_compact_cards" style="padding:1rem 2rem;">
                 <div class="o_recycle_home_card" t-on-click="() => this.openWarehouseEmployees()">
                     <div class="o_recycle_card_icon">&#x1F464;</div>
                     <div class="o_recycle_card_body">
@@ -1982,7 +1997,7 @@
                             </button>
                             <!-- A fully stopped warehouse can be brought back. -->
                             <button t-if="wh.state === 'inactive'" class="o_ra_action_btn"
-                                    t-on-click="reopenWarehouse">
+                                    t-on-click="reopenManagedWarehouse">
                                 &#x1F513; <t t-esc="tr('Reopen Warehouse')"/>
                             </button>
                         </div>

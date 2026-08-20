@@ -2149,6 +2149,29 @@ reg('their truck is taken back and their login is disabled.', 'تُسحب شاح
 reg('Driver blocked.', 'تم حظر السائق.');
 reg('Driver unblocked.', 'تم رفع الحظر عن السائق.');
 reg('My Truck', 'سيارتي');
+reg('My Trips', 'رحلاتي');
+reg('Click the map to set the warehouse location', 'انقر على الخريطة لتحديد موقع المستودع');
+// ── Delivery-driver dashboard: redesigned home, trips tabs, warehouse ──
+reg('To deliver', 'للتوصيل');
+reg('Delivered', 'تم التوصيل');
+reg('Trips this month', 'رحلات هذا الشهر');
+reg('Delivered this month', 'سُلّمت هذا الشهر');
+reg('The trips still to run, and the ones you have already delivered.', 'الرحلات التي عليك تنفيذها، والرحلات التي سلّمتها.');
+reg('You have no delivery trips to run right now.', 'لا توجد لديك رحلات توصيل لتنفيذها الآن.');
+reg('You have not delivered any trips yet.', 'لم تُسلّم أي رحلات بعد.');
+reg('Delivered at', 'سُلّمت في');
+reg('Stations', 'المحطات');
+reg('Warehouses & quantities', 'المستودعات والكميات');
+reg('Collected', 'جُمِعت');
+// My Warehouse screen
+reg('The warehouse you deliver from. Set by your warehouse manager.', 'المستودع الذي توصّل منه. يحدّده مدير مستودعك.');
+reg('No warehouse yet', 'لا يوجد مستودع بعد');
+reg('You have not been assigned to a warehouse yet. You will see it here as soon as your manager sets it.', 'لم يتم تعيينك لمستودع بعد. سيظهر هنا فور أن يحدّده مديرك.');
+reg('Open in Maps', 'افتح في الخرائط');
+// Settings + system info
+reg('Customize your dashboard appearance and preferences.', 'خصّص مظهر لوحتك وتفضيلاتك.');
+reg('Privacy & Security', 'الخصوصية والأمان');
+reg('Delivery Driver', 'سائق توصيل');
 // ── Delivery-trip dashboard (driver's next-stop screen) ──
 reg('My Delivery Trips', 'رحلات التوصيل الخاصة بي');
 reg('Drive to the next station shown, confirm the pickup, and the following one opens.', 'اذهب إلى المحطة التالية المعروضة، أكّد الاستلام، ثم تُفتح التي تليها.');

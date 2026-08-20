@@ -1,3 +1,4 @@
+import base64
 import logging
 import os
 
@@ -5,6 +6,25 @@ from . import models
 from . import controllers
 
 _logger = logging.getLogger(__name__)
+
+
+def _set_company_logo(env):
+    """Stamp the Dawrha logo as the COMPANY logo, so `web.external_layout` prints
+    it at the top of every report instead of Odoo's grey "Your Logo" placeholder.
+
+    Setting it here — once, from the addon's own asset — is why the shipment /
+    order PDFs carry the brand without anyone uploading an image in Settings, and
+    why the header shows OUR logo rather than the empty placeholder. Best-effort:
+    a missing file must never block installation."""
+    logo_path = os.path.join(os.path.dirname(__file__), 'static', 'src', 'img', 'Logo.png')
+    try:
+        with open(logo_path, 'rb') as fh:
+            encoded = base64.b64encode(fh.read())
+        # Every company (there is normally one) gets the brand.
+        env['res.company'].sudo().search([]).write({'logo': encoded})
+        _logger.info('Company logo set to the Dawrha brand for report headers.')
+    except Exception as exc:  # noqa: BLE001 - reported, never fatal
+        _logger.warning('Could not set the company logo: %s', exc)
 
 
 def _configure_backend_sync(env):
@@ -44,9 +64,10 @@ def _configure_backend_sync(env):
 
 
 def post_init_hook(env):
-    """Enable free signup, seed the Set Password email template, and wire the
-    backend sync from the environment (see `_configure_backend_sync`)."""
+    """Enable free signup, seed the Set Password email template, wire the backend
+    sync from the environment, and brand the report header with the app logo."""
     _configure_backend_sync(env)
+    _set_company_logo(env)
 
     # Enable free signup on the website
     env['ir.config_parameter'].sudo().set_param(

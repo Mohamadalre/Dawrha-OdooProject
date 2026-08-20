@@ -28,28 +28,20 @@ class RecycleProductSuggestion(models.Model):
     _order = 'create_date desc'
 
     name = fields.Char(string='Material Name', required=True, tracking=True)
-    # ── Which category? An existing one, or one that does not exist yet ──
+    # ── Which category? An EXISTING one, always. ──
     #
-    # A new material very often belongs to a category nobody has set up. With
-    # only the picker below, the proposer had two options and both lost the
-    # information the proposal was made to carry: file it under a category it
-    # does not belong to, or leave it empty and hope the reviewer guesses.
-    category_mode = fields.Selection([
-        ('existing', 'An existing category'),
-        ('new', 'A new category (propose it too)'),
-    ], string='Category', default='existing', required=True, tracking=True)
+    # A proposal names a material and files it under a category that already
+    # exists — proposing a brand-new category name was removed on purpose: a
+    # category is the shape of the whole catalogue, and one created from a typed
+    # name would be spelled differently by the next proposer with nothing to
+    # merge the two. New categories are the administrator's decision, made in the
+    # backend, not something a suggestion invents.
     category_id = fields.Many2one(
-        'recycle.product.category', string='Existing Category', tracking=True,
-        help='Sent to the backend BY NAME: the two systems name categories the '
-             'same way but do not share keys. An unmatched name is kept as '
-             'text on the proposal so the reviewer still reads it.')
-    new_category_name = fields.Char(
-        string='Proposed Category', tracking=True,
-        help='A category you believe should exist. It is sent as a REQUEST — '
-             'nothing is created automatically on either side. Categories are '
-             'the shape of the whole catalogue, and one created from a typed '
-             'name would be spelled differently by the next proposer with '
-             'nothing to merge the two.')
+        'recycle.product.category', string='Category', required=True,
+        tracking=True,
+        help='An existing category to file this material under. Sent to the '
+             'backend BY NAME: the two systems name categories the same way but '
+             'do not share keys.')
     # The unit is NOT part of a backend suggestion — the backend proposal is a
     # name + a category + pictures + a description, and the unit is chosen later,
     # when the real material is authored there. Kept on the model (optional, no
@@ -200,21 +192,13 @@ class RecycleProductSuggestion(models.Model):
 
         path = (icp.get_param('recycle.backend_route_product_suggestion')
                 or '/api/v1/odoo/webhooks/product-suggestion')
-        # The two category fields travel in DIFFERENT keys. `category_name` is
-        # matched against the backend's existing categories; `new_category_name`
-        # is a request for one that has none to match. Sending both under one key
-        # would make an unmatched name indistinguishable from a typo in an
-        # existing one — and the reviewer's response to those is not the same.
+        # The category travels BY NAME (the two systems name categories the same
+        # way but do not share keys); it is always an existing one, matched
+        # against the backend's categories on arrival.
         payload = {
             'odoo_suggestion_id': self.id,
             'product_name': self.name,
-            'category_name': (
-                self.category_id.name if self.category_mode == 'existing' else None
-            ) or None,
-            'new_category_name': (
-                (self.new_category_name or '').strip()
-                if self.category_mode == 'new' else None
-            ) or None,
+            'category_name': self.category_id.name or None,
             'description': self.description or None,
             # Pictures as URLs the backend can display — see `_image_urls`.
             'image_urls': self._image_urls(),
@@ -259,40 +243,13 @@ class RecycleProductSuggestion(models.Model):
     # ------------------------------------------------------------------
     # Guards
     # ------------------------------------------------------------------
-    @api.constrains('category_mode', 'category_id', 'new_category_name')
-    def _check_category_choice(self):
-        """Whichever mode is chosen must actually carry its answer.
-
-        A proposal that says "a new category" and names none is not a request —
-        it is a blank the reviewer cannot act on, and it would arrive looking
-        exactly like a proposal with no category at all.
-        """
-        for rec in self:
-            if rec.category_mode == 'new' and not (rec.new_category_name or '').strip():
-                raise ValidationError(_(
-                    'Name the category you are proposing, or choose an existing '
-                    'one instead.'))
-
-    @api.onchange('category_mode')
-    def _onchange_category_mode(self):
-        """Clear the field that no longer applies.
-
-        Leaving the other one filled would send a category the proposer has
-        stopped choosing, and the payload keys are what tell the reviewer which
-        of the two questions was being answered.
-        """
-        if self.category_mode == 'new':
-            self.category_id = False
-        else:
-            self.new_category_name = False
-
     def write(self, vals):
         # A proposal the backend has already filed must not drift from what was
         # actually sent; edit it there, or reset and send again.
         if not self.env.context.get('recycle_suggestion_sync'):
             locked = self.filtered(lambda r: r.state == 'submitted')
             content = {'name', 'category_id', 'uom_id', 'description',
-                       'category_mode', 'new_category_name', 'image_ids'}
+                       'image_ids'}
             if locked and content.intersection(vals):
                 raise UserError(
                     _('This suggestion is already with the backend. Reset it to '

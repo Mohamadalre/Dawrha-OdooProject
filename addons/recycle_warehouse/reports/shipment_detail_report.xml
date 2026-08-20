@@ -15,11 +15,9 @@
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
                     <div class="page">
-                        <!-- App logo at the top of the file (Dawrha brand). -->
-                        <div class="text-center mb-3">
-                            <img src="/recycle_warehouse/static/src/img/Logo.png"
-                                 alt="Dawrha" style="height: 70px;"/>
-                        </div>
+                        <!-- The Dawrha logo already prints in the external_layout
+                             header (the company logo is set to it on install), so
+                             no second logo here. -->
                         <h2>Shipment <span t-field="doc.name"/></h2>
 
                         <!-- Header. t-field is wrapped in a span inside every cell:
