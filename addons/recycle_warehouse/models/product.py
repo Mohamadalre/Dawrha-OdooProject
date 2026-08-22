@@ -8,6 +8,11 @@ class RecycleProductCategory(models.Model):
     _description = 'Recycle Product Category'
     _order = 'name'
 
+    # Stable link to the backend row. The backend OWNS this record and matches on
+    # THIS uuid, never on the numeric Odoo id — so after an Odoo database is
+    # wiped/restored and rows get fresh ids, the backend re-finds its own record
+    # by backend_id instead of grabbing whichever product now holds the old id.
+    backend_id = fields.Char('Backend Id', index=True, copy=False)
     name = fields.Char(required=True)
     product_ids = fields.One2many('recycle.product', 'category_id', string='Products')
 
@@ -29,6 +34,10 @@ class RecycleProduct(models.Model):
     _inherit = ['mail.thread']
     _order = 'name'
 
+    # Stable backend link — matched on instead of the numeric id so an Odoo
+    # wipe/restore cannot confuse one material with another (see the note on
+    # RecycleProductCategory.backend_id).
+    backend_id = fields.Char('Backend Id', index=True, copy=False)
     name = fields.Char(required=True, tracking=True)
     category_id = fields.Many2one(
         'recycle.product.category', string='Category', required=True, tracking=True)

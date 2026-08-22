@@ -68,7 +68,8 @@ export class RecycleAdminDashboard extends Component {
         // decides who may drive it. A truck saved without the answer would
         // silently become a collection truck.
         truckForm: { name: '', plate_number: '', model: '', year: '',
-                     max_payload_kg: '', warehouse_id: '', truck_type: 'collection',
+                     max_payload_kg: '', length_m: '', width_m: '',
+                     warehouse_id: '', truck_type: 'collection',
                      is_active: true, notes: '' },
         truckTypeFilter: '',
         // ── Delivery drivers: recruited here, unlike collectors ──────────
@@ -1594,8 +1595,8 @@ export class RecycleAdminDashboard extends Component {
     // (trucks table + admin notification) refreshes on its own — nothing
     // extra to call from this screen.
     TRUCK_FIELDS = ["id", "name", "plate_number", "model", "year",
-                    "max_payload_kg", "warehouse_id", "is_active",
-                    "truck_type", "disable_reason", "notes"];
+                    "max_payload_kg", "length_m", "width_m", "warehouse_id",
+                    "is_active", "truck_type", "disable_reason", "notes"];
 
     async openTrucks() {
         this.state.openSection = null;
@@ -1654,7 +1655,8 @@ export class RecycleAdminDashboard extends Component {
         this.state.truckEditMode = false;
         this.state.selectedTruck = null;
         this.state.truckForm = { name: '', plate_number: '', model: '', year: '',
-                                 max_payload_kg: '', warehouse_id: '',
+                                 max_payload_kg: '', length_m: '', width_m: '',
+                                 warehouse_id: '',
                                  truck_type: 'collection', is_active: true, notes: '' };
         this.state.truckError = null;
         this.state.truckSuccess = null;
@@ -1670,6 +1672,8 @@ export class RecycleAdminDashboard extends Component {
             model: truck.model || '',
             year: truck.year ? '' + truck.year : '',
             max_payload_kg: truck.max_payload_kg ? '' + truck.max_payload_kg : '',
+            length_m: truck.length_m ? '' + truck.length_m : '',
+            width_m: truck.width_m ? '' + truck.width_m : '',
             warehouse_id: truck.warehouse_id ? '' + truck.warehouse_id[0] : '',
             truck_type: truck.truck_type || 'collection',
             is_active: !!truck.is_active,
@@ -1704,12 +1708,33 @@ export class RecycleAdminDashboard extends Component {
                 return null;
             }
         }
+        // Bed dimensions — both OPTIONAL, mirror the payload rule: a value that
+        // IS given must be a non-negative number (decimals allowed, e.g. 2.4);
+        // left blank it is sent as 0, exactly as the Odoo form stores it.
+        let lengthM = 0;
+        if (f.length_m !== '' && f.length_m !== null) {
+            lengthM = parseFloat(f.length_m);
+            if (isNaN(lengthM) || lengthM < 0) {
+                this.state.truckError = this.tr('Length must be a positive number.');
+                return null;
+            }
+        }
+        let widthM = 0;
+        if (f.width_m !== '' && f.width_m !== null) {
+            widthM = parseFloat(f.width_m);
+            if (isNaN(widthM) || widthM < 0) {
+                this.state.truckError = this.tr('Width must be a positive number.');
+                return null;
+            }
+        }
         return {
             name: name,
             plate_number: plate,
             model: (f.model || '').trim() || false,
             year: year,
             max_payload_kg: payload,
+            length_m: lengthM,
+            width_m: widthM,
             warehouse_id: f.warehouse_id ? parseInt(f.warehouse_id) : false,
             // Only on CREATE. A truck's job is fixed for life, and re-sending it
             // on every edit would make each save depend on the server's

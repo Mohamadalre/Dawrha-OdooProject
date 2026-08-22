@@ -2887,6 +2887,18 @@
                         </select>
                     </div>
                 </div>
+                <div class="o_ra_form_row_2">
+                    <div class="o_ra_form_group">
+                        <label class="o_ra_form_label" t-esc="tr('Length (m)')"/>
+                        <input type="number" class="o_ra_form_input" min="0" step="0.01"
+                               placeholder="2.4" t-model="state.truckForm.length_m"/>
+                    </div>
+                    <div class="o_ra_form_group">
+                        <label class="o_ra_form_label" t-esc="tr('Width (m)')"/>
+                        <input type="number" class="o_ra_form_input" min="0" step="0.01"
+                               placeholder="1.6" t-model="state.truckForm.width_m"/>
+                    </div>
+                </div>
                 <div class="o_ra_form_group">
                     <label class="o_ra_form_label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
                         <input type="checkbox" t-model="state.truckForm.is_active"/>

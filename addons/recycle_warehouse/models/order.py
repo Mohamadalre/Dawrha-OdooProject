@@ -28,7 +28,10 @@ class RecycleOrder(models.Model):
     _name = 'recycle.order'
     _description = 'Customer Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    _order = 'priority asc, id desc'
+    # Highest priority first (lowest number — split parts at 1 before ordinary at
+    # 10), then OLDEST first within a priority (ascending id) so the output queue
+    # is strictly first-come-first-served among equals, matching get_blocking_order.
+    _order = 'priority asc, id asc'
 
     name = fields.Char(
         string='Order Reference', required=True, copy=False, readonly=True,
@@ -389,10 +392,31 @@ class RecycleOrder(models.Model):
             'manager_approval': 'pending',
             'line_ids': lines,
         })
-        order.message_post(body=_(
-            'Received from the backend as part of a buyer order. Awaiting the '
-            'warehouse manager\'s decision.'))
+        # Notify WHOEVER must decide it — a directed message, not just a chatter
+        # note nobody is subscribed to. A single-warehouse order with a manager
+        # notifies that manager; a split part, or a warehouse with no manager,
+        # notifies the administrator(s) who decide it. This is the "the approver
+        # gets a notification on assignment" the scenario asks for.
+        order.message_post(
+            body=_(
+                'Received from the backend as part of a buyer order. '
+                'Awaiting your decision.'),
+            partner_ids=order._approver_partner_ids(),
+        )
         return {'odoo_id': order.id, 'created': True}
+
+    def _approver_partner_ids(self):
+        """Partners of whoever decides this order — the manager, or the
+        administrator(s) for a split part or a manager-less warehouse."""
+        self.ensure_one()
+        is_split = (self.part_count or 1) > 1
+        if not is_split and self.warehouse_id.manager_user_id:
+            users = self.warehouse_id.manager_user_id
+        else:
+            grp = self.env.ref('recycle_warehouse.group_recycle_admin',
+                               raise_if_not_found=False)
+            users = grp.all_user_ids if grp else self.env['res.users']
+        return users.mapped('partner_id').ids
 
     @api.model
     def backend_cancel_part(self, part_id, reason=None):
@@ -411,11 +435,17 @@ class RecycleOrder(models.Model):
         return {'cancelled': True}
 
     def get_blocking_order(self):
-        """Return the higher-priority PENDING order (lower priority number)
-        in the same warehouse that must be processed before this one —
-        empty recordset if none. Orders whose stock is currently
-        insufficient are skipped: they cannot block anyone since they
-        cannot be completed as-is (§ priority queue rule)."""
+        """Return the order in the same warehouse that must be processed before
+        this one — empty recordset if none. Orders whose stock is currently
+        insufficient are skipped: they cannot block anyone since they cannot be
+        completed as-is (§ priority queue rule).
+
+        An order blocks this one when it is EITHER of higher priority (a lower
+        priority number — split parts at 1 sit ahead of ordinary orders at 10),
+        OR of the SAME priority but OLDER (a smaller id). The second half is what
+        makes same-priority work strictly first-come-first-served: two split
+        parts in one warehouse, or two ordinary orders, are taken oldest first,
+        never whichever an employee happens to open."""
         self.ensure_one()
         candidates = self.search([
             ('warehouse_id', '=', self.warehouse_id.id),
@@ -423,8 +453,10 @@ class RecycleOrder(models.Model):
             # An order the manager hasn't approved (or rejected) can never
             # be processed, so it must never block the queue either.
             ('manager_approval', '=', 'approved'),
-            ('priority', '<', self.priority),
-            ('id', '!=', self.id),
+            # Higher priority OR (same priority AND older) — FIFO within a tier.
+            '|',
+                ('priority', '<', self.priority),
+                '&', ('priority', '=', self.priority), ('id', '<', self.id),
         ], order='priority asc, id asc')
         for candidate in candidates:
             if candidate._line_stock_sufficient():
@@ -511,6 +543,11 @@ class RecycleOrder(models.Model):
         approved and half rejected, with nobody answerable for the whole and the
         buyer waiting on a state no one intended. There is exactly one person
         who can see every part, so the decision is theirs: the administrator.
+
+        A single-warehouse order whose warehouse has NO manager is the
+        administrator's too: there is no manager to own that floor, so the
+        allocator's part would otherwise sit pending forever with nobody scoped
+        to decide it. The administrator, who sees every warehouse, decides it.
         """
         self.ensure_one()
         if self.is_split_part and not self._is_admin():
@@ -521,6 +558,11 @@ class RecycleOrder(models.Model):
                 'reject one piece on its own.'
             ) % {'name': self.name, 'seq': self.part_sequence or 1,
                  'count': self.part_count or 1})
+        if not self.warehouse_id.manager_user_id and not self._is_admin():
+            raise UserError(_(
+                'Warehouse %(wh)s has no manager assigned, so only the '
+                'administrator can approve or reject its orders.'
+            ) % {'wh': self.warehouse_id.name or self.warehouse_id.code or '?'})
         if not self._is_supervisor():
             raise UserError(_(
                 'Only the warehouse manager or the administrator can decide '
@@ -567,6 +609,53 @@ class RecycleOrder(models.Model):
                          'count': target.part_count or 1}
                 target.message_post(body=note)
                 target._notify_backend('manager_approved')
+
+            # B) A manager-less warehouse just had an order accepted by the admin.
+            # Prompt them to assign a manager — an actionable to-do ON the
+            # warehouse plus a notification — so the manager-approval principle
+            # is restored for its NEXT orders and the system is not left leaning
+            # on the admin for every one.
+            missing = targets.mapped('warehouse_id').filtered(
+                lambda w: not w.manager_user_id)
+            if missing:
+                self._prompt_assign_manager(missing)
+
+    def _prompt_assign_manager(self, warehouses):
+        """Nudge the administrator(s) to give each manager-less warehouse a
+        manager: a directed message and a de-duplicated 'assign a manager'
+        to-do on the warehouse itself."""
+        todo = self.env.ref('mail.mail_activity_data_todo',
+                            raise_if_not_found=False)
+        grp = self.env.ref('recycle_warehouse.group_recycle_admin',
+                           raise_if_not_found=False)
+        admins = grp.all_user_ids if grp else self.env['res.users']
+        summary = _('Assign a warehouse manager')
+        for wh in warehouses:
+            wh.message_post(
+                body=_(
+                    'An order was accepted for warehouse %s, which has NO '
+                    'manager. Assign a manager so its orders are approved by a '
+                    'manager rather than the administrator.') % (wh.name or ''),
+                partner_ids=admins.mapped('partner_id').ids,
+            )
+            if not todo:
+                continue
+            already = self.env['mail.activity'].sudo().search_count([
+                ('res_model', '=', 'recycle.warehouse'),
+                ('res_id', '=', wh.id),
+                ('activity_type_id', '=', todo.id),
+                ('summary', '=', summary),
+            ])
+            if already:
+                continue
+            for admin in admins:
+                wh.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=admin.id,
+                    summary=summary,
+                    note=_('This warehouse has no manager. Assign one so its '
+                           'orders are approved by a manager, not the admin.'),
+                )
 
     def action_manager_reject(self, reason=None):
         """Reject an order: it never appears to output employees.

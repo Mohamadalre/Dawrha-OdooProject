@@ -21,6 +21,9 @@ class RecycleWarehouse(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'name'
 
+    # Stable backend link — matched on instead of the numeric id so an Odoo
+    # wipe/restore cannot confuse one warehouse with another.
+    backend_id = fields.Char('Backend Id', index=True, copy=False)
     name = fields.Char(required=True, tracking=True)
     code = fields.Char(required=True, copy=False, tracking=True)
     # Location: governorate + GPS coordinates entered by the admin when the
@@ -587,6 +590,19 @@ class RecycleWarehouse(models.Model):
             raise UserError(_(
                 'Cannot stop the warehouse: %d stock line(s) still hold '
                 'quantity. Ship the remaining stock out first.') % remaining)
+
+        # …and no order may still be in flight. An order that is pending,
+        # processing or ready-but-not-handed-over is live work: stopping the
+        # warehouse under it would strand a buyer's order in a site nobody
+        # operates. Only once every order is completed or cancelled may it stop.
+        open_orders = self.env['recycle.order'].sudo().search_count([
+            ('warehouse_id', '=', self.id),
+            ('state', 'not in', ('completed', 'cancelled')),
+        ])
+        if open_orders:
+            raise UserError(_(
+                'Cannot stop the warehouse: %d order(s) are still being '
+                'processed. Finish or cancel them first.') % open_orders)
 
         self.sudo().write({
             'state': 'inactive',

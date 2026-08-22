@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Recycle Warehouse Management',
-    'version': '19.0.1.47.0',
+    'version': '19.0.1.51.0',
     'category': 'Inventory',
     'summary': 'Warehouses, shipments, sorting, stock, orders API and recruitment portal',
     'description': """

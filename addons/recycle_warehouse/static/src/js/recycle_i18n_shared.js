@@ -1858,6 +1858,8 @@ reg('Plate Number', 'رقم اللوحة');
 reg('Model', 'الموديل');
 reg('Year', 'سنة الصنع');
 reg('Max Payload (kg)', 'الحمولة القصوى (كغ)');
+reg('Length (m)', 'الطول (م)');
+reg('Width (m)', 'العرض (م)');
 reg('In Service', 'في الخدمة');
 reg('Loading trucks…', 'جارٍ تحميل الشاحنات…');
 reg('No trucks found.', 'لا توجد شاحنات.');
@@ -1873,6 +1875,8 @@ reg('Truck name is required.', 'اسم الشاحنة مطلوب.');
 reg('Plate number is required.', 'رقم اللوحة مطلوب.');
 reg('Year must be between 1980 and next year.', 'سنة الصنع يجب أن تكون بين 1980 والسنة القادمة.');
 reg('Max payload must be a positive number.', 'الحمولة القصوى يجب أن تكون رقماً موجباً.');
+reg('Length must be a positive number.', 'الطول يجب أن يكون رقماً موجباً.');
+reg('Width must be a positive number.', 'العرض يجب أن يكون رقماً موجباً.');
 reg('Save failed. Please check the fields.', 'فشل الحفظ. يرجى التحقق من الحقول.');
 reg('Could not update the truck status.', 'تعذر تحديث حالة الشاحنة.');
 

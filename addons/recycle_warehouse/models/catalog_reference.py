@@ -23,6 +23,9 @@ class RecycleMeasurementUnit(models.Model):
     _description = 'Measurement Unit (mirrored from backend)'
     _order = 'name'
 
+    # Stable backend link — matched on instead of the numeric id so an Odoo
+    # wipe/restore cannot confuse one unit with another.
+    backend_id = fields.Char('Backend Id', index=True, copy=False)
     name = fields.Char(required=True)
     code = fields.Char(
         required=True, index=True,
@@ -320,6 +323,9 @@ class RecycleMaterialCondition(models.Model):
     _description = 'Material Condition / Grade (mirrored from backend)'
     _order = 'product_id, sort_order, name'
 
+    # Stable backend link — matched on instead of the numeric id so an Odoo
+    # wipe/restore cannot confuse one grade with another.
+    backend_id = fields.Char('Backend Id', index=True, copy=False)
     product_id = fields.Many2one(
         'recycle.product', string='Material', required=True,
         ondelete='cascade', index=True,
