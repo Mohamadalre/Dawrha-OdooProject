@@ -3894,13 +3894,18 @@
                         <tr t-foreach="filteredOrders" t-as="o" t-key="o.id"
                             class="o_ra_tbl_row" t-on-click="() => this.openOrderDetail(o)">
                             <td class="o_ra_tbl_id" t-esc="o.id"/>
-                            <td t-esc="o.name"/>
+                            <td>
+                                <t t-esc="o.name"/>
+                                <span t-if="o.isWholeOrder" class="o_ra_badge o_ra_badge_info" style="margin-inline-start:6px;"
+                                      t-esc="tr('Split') + ' · ' + o.partCount"/>
+                            </td>
                             <td t-esc="o.customer_name || '—'"/>
-                            <td t-esc="m2oName(o.warehouse_id)"/>
+                            <td t-esc="o.isWholeOrder ? (o.partCount + ' ' + tr('warehouses')) : m2oName(o.warehouse_id)"/>
                             <td t-esc="o.amount_total ? o.amount_total.toFixed(2) + ' SAR' : '—'"/>
                             <td t-esc="o.invoice_number || '—'"/>
-                            <td><span t-att-class="'o_ra_badge ' + stateBadgeClass(o.state)"
-                                      t-esc="stateLabel(o.state,'order')"/></td>
+                            <td>
+                                <span t-att-class="orderStatusClass(o)" t-esc="orderStatusLabel(o)"/>
+                            </td>
                         </tr>
                         <tr t-if="!filteredOrders.length">
                             <td colspan="7" class="o_recycle_tbl_empty" t-esc="tr('No orders found.')"/>
@@ -3919,7 +3924,7 @@
                         </div>
                         <div class="o_ra_mobile_card_body">
                             <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Customer')"/><span class="o_ra_mobile_card_val" t-esc="o.customer_name || '—'"/></div>
-                            <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Warehouse')"/><span class="o_ra_mobile_card_val" t-esc="m2oName(o.warehouse_id)"/></div>
+                            <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Warehouse')"/><span class="o_ra_mobile_card_val" t-esc="o.isWholeOrder ? (o.partCount + ' ' + tr('warehouses')) : m2oName(o.warehouse_id)"/></div>
                             <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Total')"/><span class="o_ra_mobile_card_val" t-esc="o.amount_total ? o.amount_total.toFixed(2) + ' SAR' : '—'"/></div>
                             <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Invoice #')"/><span class="o_ra_mobile_card_val" t-esc="o.invoice_number || '—'"/></div>
                         </div>
@@ -3991,36 +3996,105 @@
                 </div>
                 <div t-if="state.loading" class="o_ra_loading" t-esc="tr('Loading lines…')"/>
 
-                <!-- Reassign one part of a SPLIT order to another warehouse.
-                     Shown only while the admin can still decide (pending), and
-                     the model re-checks every rule the button relies on. -->
-                <div t-if="canReassignOrder(state.selectedOrder)" class="o_recycle_detail_section">
-                    <div class="o_recycle_detail_section_title" t-esc="tr('Reassign This Part (Split Order)')"/>
-                    <div class="o_recycle_detail_field">
-                        <span class="o_recycle_detail_lbl" t-esc="tr('Part')"/>
-                        <span class="o_recycle_detail_val">
-                            <t t-esc="state.selectedOrder.part_sequence || 1"/> / <t t-esc="state.selectedOrder.part_count || 1"/>
-                        </span>
-                    </div>
-                    <div class="o_ra_form_hint" t-esc="tr('Move this part to another warehouse that holds the quantity. A split may be re-routed, never grown — its current and sibling warehouses are excluded.')"/>
+                <!-- Per-warehouse quantity breakdown of a SPLIT order — how the
+                     buyer's order was divided across warehouses, so the admin
+                     sees each warehouse's assigned quantity before deciding. -->
+                <div t-if="!state.loading &amp;&amp; state.splitParts.length > 1" class="o_recycle_detail_section">
+                    <div class="o_recycle_detail_section_title" t-esc="tr('Split Across Warehouses')"/>
+                    <div class="o_ra_form_hint" t-esc="tr('This buyer order was divided across these warehouses. Each row is the quantity assigned to that warehouse. The whole split is decided by the administrator as ONE order — not per warehouse.')"/>
+                    <table class="o_recycle_sub_table">
+                        <thead><tr><th t-esc="tr('Warehouse')"/><th t-esc="tr('Assigned Quantity')"/></tr></thead>
+                        <tbody>
+                            <tr t-foreach="state.splitParts" t-as="sp" t-key="sp.id">
+                                <td t-esc="sp.warehouse"/>
+                                <td t-esc="sp.quantity"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Approve / reject a SPLIT order. The model routes split parts
+                     to the ADMIN (a warehouse manager cannot decide one piece),
+                     so the decision buttons live here — shown only while it is
+                     still pending, the same guard the server re-checks. -->
+                <div t-if="canDecideOrder(state.selectedOrder)" class="o_recycle_detail_section">
+                    <div class="o_recycle_detail_section_title" t-esc="tr('Decide This Split Order')"/>
+                    <div class="o_ra_form_hint" t-esc="tr('This is part of a split buyer order — you decide all its parts. Approving releases it to the output employees; rejecting cancels this part.')"/>
                     <div class="o_ra_form_row_2">
                         <div class="o_ra_form_group">
-                            <label class="o_ra_form_label" t-esc="tr('Move to warehouse')"/>
-                            <select class="o_ra_form_input" t-model="state.reassignWarehouseId">
-                                <option value="" t-esc="tr('— choose —')"/>
-                                <option t-foreach="state.reassignCandidates" t-as="w" t-key="w.id" t-att-value="w.id" t-esc="w.name"/>
-                            </select>
+                            <label class="o_ra_form_label">&#160;</label>
+                            <button class="o_ra_action_btn"
+                                    t-att-disabled="state.orderApprovalSaving"
+                                    t-on-click="(ev) => this.approveOrder(state.selectedOrder, ev)">
+                                &#x2713; <t t-esc="tr('Approve')"/>
+                            </button>
                         </div>
                         <div class="o_ra_form_group">
                             <label class="o_ra_form_label">&#160;</label>
-                            <button class="o_ra_action_btn" t-att-disabled="state.reassignBusy || !state.reassignCandidates.length" t-on-click="reassignOrderPart">
-                                <t t-esc="state.reassignBusy ? tr('Reassigning…') : tr('Reassign')"/>
+                            <button class="o_ra_emp_cancel_btn"
+                                    t-att-disabled="state.orderApprovalSaving"
+                                    t-on-click="(ev) => this.rejectOrder(state.selectedOrder, ev)">
+                                &#x2717; <t t-esc="tr('Reject')"/>
                             </button>
                         </div>
                     </div>
-                    <div t-if="!state.reassignCandidates.length" class="o_ra_form_hint" t-esc="tr('No other eligible warehouse is available for this part.')"/>
-                    <div t-if="state.reassignError" class="o_ra_form_error" t-esc="state.reassignError"/>
-                    <div t-if="state.reassignSuccess" class="o_ra_form_success" t-esc="state.reassignSuccess"/>
+                </div>
+                <!-- Reject-order reason dialog -->
+                <div t-if="state.orderRejecting"
+                     style="position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;"
+                     t-on-click="cancelRejectOrder">
+                    <div style="background:var(--o-ra-surface, #fff);border-radius:18px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35);"
+                         t-on-click="(ev) => ev.stopPropagation()">
+                        <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px;">
+                            ✗ <t t-esc="tr('Reject Order')"/> — <t t-esc="state.orderRejecting.name"/>
+                        </div>
+                        <textarea class="o_ra_form_input" rows="3" style="width:100%;margin:8px 0 14px;"
+                                  t-att-placeholder="tr('Optional reason…')"
+                                  t-model="state.orderRejectReason"/>
+                        <div style="display:flex;gap:10px;justify-content:flex-end;">
+                            <button class="o_recycle_back_btn" t-on-click="cancelRejectOrder" t-esc="tr('Cancel')"/>
+                            <button class="o_ra_emp_cancel_btn"
+                                    t-att-disabled="state.orderApprovalSaving"
+                                    t-on-click="confirmRejectOrder">✗ <t t-esc="tr('Reject')"/></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODIFY a SPLIT order — the allocator's suggestions.
+                     The admin swaps the WHOLE split onto a different, same-size
+                     warehouse set that covers the order. The alternatives come
+                     from the backend (province stock + distances), nearest
+                     first; the admin picks one and the backend re-plans. -->
+                <div t-if="canReassignOrder(state.selectedOrder)" class="o_recycle_detail_section">
+                    <div class="o_recycle_detail_section_title" t-esc="tr('Modify Split — Algorithm Suggestions')"/>
+                    <div class="o_ra_form_hint" t-esc="tr('Swap this split onto a different set of warehouses that together cover the whole order — the same number of warehouses, nearest first. The allocator suggests the sets.')"/>
+                    <div t-if="state.modifyOptions === null">
+                        <button class="o_ra_action_btn" t-att-disabled="state.modifyLoading" t-on-click="loadModifyOptions">
+                            <t t-esc="state.modifyLoading ? tr('Loading suggestions…') : tr('Show suggestions')"/>
+                        </button>
+                    </div>
+                    <div t-if="state.modifyOptions !== null">
+                        <div class="o_ra_form_hint">
+                            <t t-esc="tr('Current')"/>: <strong t-esc="state.modifyCurrent.join(' + ')"/>
+                        </div>
+                        <div t-if="!state.modifyOptions.length" class="o_ra_form_hint" t-esc="tr('No alternative set of the same size covers this order right now.')"/>
+                        <table t-if="state.modifyOptions.length" class="o_recycle_sub_table">
+                            <thead><tr><th t-esc="tr('Suggested Warehouses')"/><th t-esc="tr('Distance (km)')"/><th/></tr></thead>
+                            <tbody>
+                                <tr t-foreach="state.modifyOptions" t-as="opt" t-key="opt_index">
+                                    <td t-esc="opt.names.join(' + ')"/>
+                                    <td t-esc="opt.distance !== null &amp;&amp; opt.distance !== undefined ? opt.distance.toFixed(3) : '—'"/>
+                                    <td>
+                                        <button class="o_ra_action_btn" t-att-disabled="state.modifyBusy"
+                                                t-on-click="() => this.applyModifyOption(opt)">
+                                            <t t-esc="state.modifyBusy ? tr('Applying…') : tr('Use this set')"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div t-if="state.modifyError" class="o_ra_form_error" t-esc="state.modifyError"/>
                 </div>
             </div>
             <div class="o_ra_bottom_nav">

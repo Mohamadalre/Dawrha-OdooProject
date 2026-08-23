@@ -410,8 +410,26 @@ export class RecycleHomeAction extends Component {
         this._navigate('process');
     }
 
+    /**
+     * The scanned QR does not always carry the bare id. The driver/front-end
+     * app encodes it with a role label, e.g. "DAWRHA-DRIVER:e5000000-…". The
+     * backend looks the shipment up by its id, so send the id ALONE, never the
+     * whole label — otherwise it answers "not found" (or a DB error) for an id
+     * that does not exist. Prefer a UUID found anywhere in the text; failing
+     * that, take whatever follows the last ':'; otherwise use the text as-is (a
+     * plain id typed by hand, or an Odoo-native numeric barcode).
+     */
+    _normalizeShipmentRef(raw) {
+        const text = (raw || '').trim();
+        const uuid = text.match(
+            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (uuid) return uuid[0];
+        if (text.includes(':')) return text.split(':').pop().trim();
+        return text;
+    }
+
     async loadShipmentForProcessing() {
-        const ref = (this.state.processRef || '').trim();
+        const ref = this._normalizeShipmentRef(this.state.processRef);
         if (!ref) {
             this.showProcessToast(this.tr('Enter the shipment ID first.'));
             return;
@@ -420,8 +438,30 @@ export class RecycleHomeAction extends Component {
         this.state.processError = null;
         this.state.processShipment = null;
         try {
+            // Collection shipments are AUTHORED IN THE BACKEND: the QR carries
+            // the shipment's backend id. Pull it in FIRST — the backend
+            // validates warehouse isolation and returns its load (materials,
+            // quantities, driver, truck), which is mirrored as one
+            // recycle.shipment. A code that is not a backend shipment (an
+            // Odoo-native one) falls through to the normal reserve/scan below.
+            let scanRef = ref;
+            const recv = await this._rpc('/api/reception/receive-shipment', {
+                backend_shipment_id: ref,
+            });
+            if (recv && recv.ok && recv.shipment) {
+                // scan-shipment identifies by the recycle.shipment's numeric DB
+                // id (the physical barcode encodes the id, not the display name).
+                scanRef = String(recv.shipment.odoo_shipment_id);
+            } else if (recv && recv.error && !/not\s*found/i.test(recv.error)) {
+                // A real refusal (e.g. not your warehouse) — show it, and do NOT
+                // fall through to the Odoo-native lookup.
+                this.showProcessToast(recv.error);
+                this.state.processLoading = false;
+                return;
+            }
+
             const result = await this._rpc('/api/receiving/scan-shipment', {
-                shipment_ref: ref,
+                shipment_ref: scanRef,
             });
 
             if (result.case === 'not_found') {
@@ -625,9 +665,11 @@ export class RecycleHomeAction extends Component {
      * reason about instead of two, no native dependency, and the image never
      * leaves the device.
      *
-     * The server call is kept as a fallback for when the CDN is unreachable:
-     * it is broken today, but it is the only path left if the library never
-     * loads, and a clear "library not installed" beats a dead button.
+     * The library is VENDORED LOCALLY (static/lib/html5-qrcode) and served by
+     * Odoo — no CDN, no external network call for decoding. The server call
+     * below is only a last-resort fallback for when the local library somehow
+     * fails to load; it is broken today (zbar missing), but a clear "library
+     * not installed" beats a dead button.
      */
     async _scanBarcodeFile(file) {
         this.state.barcodeScanning = true;
@@ -854,6 +896,23 @@ export class RecycleHomeAction extends Component {
             await this.orm.write('recycle.shipment', [s.id],
                 { receiving_zone_id: parseInt(this.state.processZoneId) });
             await this.orm.call('recycle.shipment', 'action_accept', [[s.id]]);
+            // The truck is accepted in Odoo — NOW tell the backend the reception
+            // confirmed, so the shipment flips to RECEIVED and the driver sees
+            // it. Scanning alone never changed the backend status; this does.
+            const rows = await this.orm.read('recycle.shipment', [s.id], ['backend_shipment_id']);
+            const backendId = rows && rows[0] && rows[0].backend_shipment_id;
+            if (backendId) {
+                const conf = await this._rpc('/api/reception/confirm-shipment', {
+                    backend_shipment_id: backendId,
+                });
+                if (!conf || !conf.ok) {
+                    // Accepted in Odoo but the backend flip failed — say so plainly
+                    // rather than pretend the driver was notified.
+                    this.showProcessToast(
+                        this.tr('Received here, but the collection system was not updated. Tell your manager.'),
+                        'danger');
+                }
+            }
             this.state.processSuccess = { mode: 'accepted', name: s.name };
             this.state.processShipment = null;
             this._loadMyWarehouse();

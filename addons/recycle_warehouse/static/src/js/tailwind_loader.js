@@ -1,7 +1,11 @@
 /** @odoo-module **/
 /**
- * Tailwind CSS CDN Loader for Odoo 19 Backend
+ * Tailwind CSS Loader for Odoo 19 Backend
  * Loads Tailwind as a <script> tag (it's JS, not CSS).
+ *
+ * VENDORED LOCALLY (static/lib/tailwind) — never fetched from a CDN. The
+ * Tailwind Play runtime is served by Odoo itself and does its JIT in the
+ * browser, so styling needs no external network call.
  */
 import { registry } from "@web/core/registry";
 
@@ -10,7 +14,7 @@ function loadTailwindCDN() {
 
     const script = document.createElement('script');
     script.id = 'tw-cdn';
-    script.src = 'https://cdn.tailwindcss.com';
+    script.src = '/recycle_warehouse/static/lib/tailwind/tailwind.play.js';
     script.onload = () => {
         if (window.tailwind) {
             window.tailwind.config = {
@@ -53,13 +57,17 @@ function loadTailwindCDN() {
 // Load immediately
 loadTailwindCDN();
 
-// Load html5-qrcode library for live QR scanning
+// Load html5-qrcode library for QR scanning/decoding.
+// VENDORED LOCALLY (static/lib/html5-qrcode) — never fetched from a CDN. QR
+// decoding must run entirely on this machine with no external network call:
+// the library is served by Odoo itself and the decode (scanFile) happens in the
+// browser, so the scanned image never leaves the device.
 function loadHtml5QrCode() {
     if (window.Html5Qrcode) return;
     const script = document.createElement('script');
-    script.id = 'html5-qrcode-cdn';
-    script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
-    script.onload = () => console.log('[RecycleWMS] html5-qrcode loaded');
+    script.id = 'html5-qrcode-local';
+    script.src = '/recycle_warehouse/static/lib/html5-qrcode/html5-qrcode.min.js';
+    script.onload = () => console.log('[RecycleWMS] html5-qrcode loaded (local)');
     document.head.appendChild(script);
 }
 loadHtml5QrCode();

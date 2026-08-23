@@ -190,6 +190,47 @@ class RecycleBackendSync(models.AbstractModel):
             'x-odoo-webhook-secret': secret,
         })
 
+    @api.model
+    def post_signed_return(self, path, payload):
+        """Like `_post_signed`, but a REQUEST/RESPONSE call: POST to an explicit
+        backend PATH with the shared secret and RETURN the parsed JSON body.
+
+        The signed pings above are fire-and-forget (a boolean is enough). The
+        RECEPTION scan is different: it needs the shipment's load back — materials,
+        quantities, driver, truck — so this returns the decoded body (including a
+        backend 4xx error body, so "not your warehouse" reaches the employee) or
+        None when the backend could not be reached at all.
+        """
+        icp = self.env['ir.config_parameter'].sudo()
+        base = (icp.get_param('recycle.backend_base_url') or '').rstrip('/')
+        secret = icp.get_param('recycle.backend_webhook_secret') or ''
+        if not base or not secret:
+            _logger.warning(
+                'Backend request skipped: base URL or webhook secret is not set '
+                '(Settings → Recycling). Path: %s', path)
+            return None
+        headers = {
+            'Content-Type': 'application/json',
+            'x-odoo-webhook-secret': secret,
+        }
+        data = json.dumps(payload or {}, default=str).encode('utf-8')
+        try:
+            req = _urlrequest.Request(
+                base + path, data=data, headers=headers, method='POST')
+            with _urlrequest.urlopen(req, timeout=10) as resp:
+                body = resp.read().decode('utf-8')
+                return json.loads(body) if body else {}
+        except _urlrequest.HTTPError as exc:
+            # A validation/authorisation failure (e.g. 403 wrong warehouse) — the
+            # backend still sends a JSON body explaining it; surface that.
+            try:
+                return json.loads(exc.read().decode('utf-8') or '{}')
+            except Exception:
+                return {'success': False, 'statusCode': exc.code}
+        except Exception as exc:
+            _logger.warning('Backend request failed (%s): %s', path, exc)
+            return None
+
     # ------------------------------------------------------------------
     # Deferred, de-duplicated pings
     # ------------------------------------------------------------------

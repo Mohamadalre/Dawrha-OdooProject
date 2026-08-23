@@ -254,7 +254,7 @@
                     <!-- Quick actions -->
                     <div class="o_ra_actions_row" style="margin-bottom:1rem;">
                         <button class="o_ra_action_btn" t-on-click="openProcess">&#x2795; <t t-esc="tr('Process New Shipment')"/></button>
-                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
+                        <button class="o_ra_action_btn" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
                     </div>
                 </t>
                 <div class="o_ra_bottom_nav">

@@ -548,6 +548,188 @@ class RecycleDashboardApiController(http.Controller):
             'warehouse': order.warehouse_id.name,
         }
 
+    @http.route('/api/admin/order/approve', type='jsonrpc', auth='user',
+                methods=['POST'])
+    def admin_order_approve(self, order_id=None, **kwargs):
+        """Approve a SPLIT order — the administrator's decision.
+
+        The manager endpoints are scoped to ONE warehouse, so they cannot reach
+        a split part in another; and the model routes split parts to the admin
+        anyway (`_assert_may_decide`). This is the admin's own path: resolve the
+        order directly, then run the decision AS the admin so `_is_admin()` and
+        the chatter both see the real user.
+        """
+        if not self._test_admin():
+            return {'error': 'forbidden'}
+        if not order_id:
+            return {'error': 'missing_parameters'}
+        order = request.env['recycle.order'].sudo().browse(int(order_id))
+        if not order.exists():
+            return {'error': 'not_found'}
+        try:
+            order.with_user(request.env.user).action_manager_approve()
+        except UserError as e:
+            return {'error': str(e)}
+        return {'ok': True, 'id': order.id, 'manager_approval': 'approved'}
+
+    @http.route('/api/admin/order/reject', type='jsonrpc', auth='user',
+                methods=['POST'])
+    def admin_order_reject(self, order_id=None, reason=None, **kwargs):
+        """Reject a SPLIT order — the administrator's decision (see approve)."""
+        if not self._test_admin():
+            return {'error': 'forbidden'}
+        if not order_id:
+            return {'error': 'missing_parameters'}
+        order = request.env['recycle.order'].sudo().browse(int(order_id))
+        if not order.exists():
+            return {'error': 'not_found'}
+        try:
+            order.with_user(request.env.user).action_manager_reject(reason=reason)
+        except UserError as e:
+            return {'error': str(e)}
+        return {'ok': True, 'id': order.id, 'manager_approval': 'rejected'}
+
+    @http.route('/api/admin/order/modify-options', type='jsonrpc', auth='user',
+                methods=['POST'])
+    def admin_order_modify_options(self, backend_order_id=None, **kwargs):
+        """The allocator's alternative warehouse sets for a SPLIT order.
+
+        The suggestions live in the backend (it holds the province stock and the
+        distances). We pass the buyer order's backend id and return the same-size
+        covering sets, nearest first — each with the Odoo warehouse ids so the
+        picker can be applied here.
+        """
+        if not self._test_admin():
+            return {'error': 'forbidden'}
+        backend_order_id = (backend_order_id or '').strip()
+        if not backend_order_id:
+            return {'error': 'missing_parameters'}
+        resp = request.env['recycle.backend.sync'].sudo().post_signed_return(
+            '/api/v1/odoo/orders/modification-options',
+            {'backend_order_id': backend_order_id})
+        if resp is None:
+            return {'error': 'backend_unreachable'}
+        if not resp.get('success'):
+            return {'error': resp.get('message') or 'backend_error'}
+        return {'ok': True, 'options': resp.get('data') or {}}
+
+    @http.route('/api/admin/order/apply-modify', type='jsonrpc', auth='user',
+                methods=['POST'])
+    def admin_order_apply_modify(self, backend_order_id=None,
+                                 warehouse_backend_ids=None, **kwargs):
+        """Apply the admin's chosen warehouse set to a SPLIT order.
+
+        The backend re-plans onto the chosen set and re-pushes the parts, so the
+        change flows back into Odoo the way the original split did.
+        """
+        if not self._test_admin():
+            return {'error': 'forbidden'}
+        backend_order_id = (backend_order_id or '').strip()
+        ids = warehouse_backend_ids or []
+        if not backend_order_id or not ids:
+            return {'error': 'missing_parameters'}
+        resp = request.env['recycle.backend.sync'].sudo().post_signed_return(
+            '/api/v1/odoo/orders/apply-modification',
+            {'backend_order_id': backend_order_id,
+             'warehouse_backend_ids': ids})
+        if resp is None:
+            return {'error': 'backend_unreachable'}
+        if not resp.get('success'):
+            return {'error': resp.get('message') or 'backend_error'}
+        return {'ok': True, 'result': resp.get('data') or {}}
+
+    # ------------------------------------------------------------------
+    # Reception: scan a collection shipment's QR (backend shipment id) and pull
+    # its load from the NestJS backend into a recycle.shipment.
+    # ------------------------------------------------------------------
+    @http.route('/api/reception/receive-shipment', type='jsonrpc', auth='user',
+                methods=['POST'])
+    def reception_receive_shipment(self, backend_shipment_id=None, **kwargs):
+        """The RECEPTION employee scanned a collection shipment's QR.
+
+        The employee lives only in Odoo, scoped to their warehouse. We resolve
+        that warehouse's stable backend id, ask the backend for the shipment
+        (which enforces warehouse ISOLATION), then mirror the returned load as
+        one recycle.shipment that enters the normal reception/sorting flow. This
+        is a READ: the backend status is NOT changed here — it flips to RECEIVED
+        only when the employee confirms (see reception_confirm_shipment). The
+        browser never sees the shared secret — this server-side controller holds
+        it.
+        """
+        user = request.env.user
+        allowed = (
+            user.has_group('recycle_warehouse.group_recycle_input')
+            or user.has_group('recycle_warehouse.group_recycle_sorting')
+            or user.has_group('recycle_warehouse.group_recycle_manager')
+            or user.has_group('recycle_warehouse.group_recycle_admin'))
+        if not allowed:
+            return {'error': 'forbidden'}
+        backend_shipment_id = (backend_shipment_id or '').strip()
+        if not backend_shipment_id:
+            return {'error': 'missing_parameters'}
+
+        # The employee's own warehouse (their own field, else a warehouse they
+        # manage) — never another's, so they can only receive their own trucks.
+        warehouse = user.recycle_warehouse_id or self._get_manager_warehouse()
+        if not warehouse:
+            return {'error': 'no_warehouse'}
+        if not warehouse.backend_id:
+            return {'error': 'warehouse_not_synced'}
+
+        resp = request.env['recycle.backend.sync'].sudo().post_signed_return(
+            '/api/v1/odoo/shipments/receive',
+            {'backend_shipment_id': backend_shipment_id,
+             'warehouse_backend_id': warehouse.backend_id})
+        if resp is None:
+            return {'error': 'backend_unreachable'}
+        if not resp.get('success'):
+            # Surface the backend's own message (e.g. "does not belong to your
+            # warehouse", "Shipment not found").
+            return {'error': resp.get('message') or 'backend_error'}
+
+        load = resp.get('data') or {}
+        shipment = request.env['recycle.shipment'].sudo().backend_upsert_shipment(load)
+        return {'ok': True, 'shipment': shipment, 'load': load}
+
+    @http.route('/api/reception/confirm-shipment', type='jsonrpc', auth='user',
+                methods=['POST'])
+    def reception_confirm_shipment(self, backend_shipment_id=None, **kwargs):
+        """The RECEPTION employee CONFIRMED receipt of the truck in Odoo.
+
+        This is the moment the backend shipment must move to RECEIVED (and its
+        requests complete) so the collection DRIVER sees the receipt. We apply
+        the same warehouse-isolation guard as the scan, then call the backend's
+        confirm route. Scanning alone never changes the backend status; only
+        this confirm does.
+        """
+        user = request.env.user
+        allowed = (
+            user.has_group('recycle_warehouse.group_recycle_input')
+            or user.has_group('recycle_warehouse.group_recycle_sorting')
+            or user.has_group('recycle_warehouse.group_recycle_manager')
+            or user.has_group('recycle_warehouse.group_recycle_admin'))
+        if not allowed:
+            return {'error': 'forbidden'}
+        backend_shipment_id = (backend_shipment_id or '').strip()
+        if not backend_shipment_id:
+            return {'error': 'missing_parameters'}
+
+        warehouse = user.recycle_warehouse_id or self._get_manager_warehouse()
+        if not warehouse:
+            return {'error': 'no_warehouse'}
+        if not warehouse.backend_id:
+            return {'error': 'warehouse_not_synced'}
+
+        resp = request.env['recycle.backend.sync'].sudo().post_signed_return(
+            '/api/v1/odoo/shipments/confirm',
+            {'backend_shipment_id': backend_shipment_id,
+             'warehouse_backend_id': warehouse.backend_id})
+        if resp is None:
+            return {'error': 'backend_unreachable'}
+        if not resp.get('success'):
+            return {'error': resp.get('message') or 'backend_error'}
+        return {'ok': True, 'load': resp.get('data') or {}}
+
     @http.route('/api/manager/awaiting-role', type='jsonrpc', auth='user',
                 methods=['POST'])
     def manager_awaiting_role(self, **kwargs):

@@ -607,6 +607,75 @@ class RecycleShipment(models.Model):
                     'recycle.shipment') or _('New')
         return super().create(vals_list)
 
+    @api.model
+    def backend_upsert_shipment(self, payload):
+        """Create or refresh an incoming shipment from the NestJS backend, keyed
+        by `backend_shipment_id` so a retry lands on the same record (idempotent).
+
+        Called when the RECEPTION employee scans the shipment QR: the backend has
+        already validated warehouse isolation and flipped the shipment's state,
+        and hands the materials AGGREGATED per product — reception, sorting and
+        storage only ever work off the shipment's TOTALS, never per collection
+        request. The per-request breakdown stays in the backend for the admin.
+
+        The shipment lands in the normal `pending` state, so the whole existing
+        reception → sorting → storage flow works UNCHANGED — nothing here touches
+        it. `expected_line_ids` are the same aggregated declared lines the sorter
+        already reconciles against.
+        """
+        backend_id = (payload.get('backend_shipment_id') or '').strip()
+        if not backend_id:
+            raise UserError(_('backend_shipment_id is required.'))
+        wh_backend_id = (payload.get('warehouse_backend_id') or '').strip()
+        warehouse = self.env['recycle.warehouse'].sudo().search(
+            [('backend_id', '=', wh_backend_id)], limit=1)
+        if not warehouse:
+            raise UserError(
+                _('No warehouse matches backend id %s.') % (wh_backend_id or '-'))
+
+        vals = {
+            'warehouse_id': warehouse.id,
+            'driver_name': payload.get('driver_name') or _('Driver'),
+            'truck_info': payload.get('truck_info') or False,
+            'truck_serial_number': payload.get('truck_serial_number') or False,
+            'expected_weight': float(
+                payload.get('total_weight_kg')
+                or payload.get('expected_weight') or 0.0),
+            'backend_shipment_id': backend_id,
+        }
+        if payload.get('dispatch_date'):
+            # The backend sends ISO 8601 (e.g. 2026-08-22T21:25:51.447Z); Odoo
+            # stores naive UTC datetimes, so normalise to 'YYYY-MM-DD HH:MM:SS'.
+            raw = str(payload['dispatch_date'])
+            vals['dispatch_date'] = (
+                raw.replace('T', ' ').replace('Z', '').split('.')[0].strip())
+
+        # Aggregated declared materials: one expected line per product.
+        exp_cmds = []
+        for line in (payload.get('expected_lines') or []):
+            pid = int(line.get('odoo_product_id') or 0)
+            qty = float(line.get('quantity') or 0.0)
+            if pid and qty > 0:
+                exp_cmds.append((0, 0, {'product_id': pid, 'expected_qty': qty}))
+
+        shipment = self.sudo().search(
+            [('backend_shipment_id', '=', backend_id)], limit=1)
+        if shipment:
+            # Refresh declared lines only while still awaiting reception; never
+            # rewrite a shipment a sorter has already started working.
+            if shipment.state == 'pending':
+                vals['expected_line_ids'] = [(5, 0, 0)] + exp_cmds
+            shipment.sudo().write(vals)
+        else:
+            vals['expected_line_ids'] = exp_cmds
+            shipment = self.sudo().create(vals)
+
+        return {
+            'odoo_shipment_id': shipment.id,
+            'name': shipment.name,
+            'state': shipment.state,
+        }
+
     def write(self, vals):
         # Priority comes from the backend or is set by the warehouse
         # manager/admin only — reception and sorting employees never touch it.

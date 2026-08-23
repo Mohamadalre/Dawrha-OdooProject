@@ -247,7 +247,7 @@
                     <!-- Quick actions -->
                     <div class="o_ra_actions_row" style="margin-bottom:1rem;">
                         <button class="o_ra_action_btn" t-on-click="openSortQueue">&#x1F5C2;&#xFE0F; <t t-esc="tr('Process Sorting')"/></button>
-                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
+                        <button class="o_ra_action_btn" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
                     </div>
                 </t>
             </div>

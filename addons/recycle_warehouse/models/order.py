@@ -683,6 +683,11 @@ class RecycleOrder(models.Model):
                     continue
                 target.write({
                     'manager_approval': 'rejected',
+                    # A rejected order is CANCELLED, not left 'pending' — the
+                    # buyer's order can never be fulfilled from here, so its
+                    # state must say so (and the backend is told below, so the
+                    # factory sees the cancellation, not a stuck 'pending').
+                    'state': 'cancelled',
                     'approval_decided_by': self.env.user.id,
                     'approval_decided_at': fields.Datetime.now(),
                     'approval_reject_reason': (reason or '').strip() or False,

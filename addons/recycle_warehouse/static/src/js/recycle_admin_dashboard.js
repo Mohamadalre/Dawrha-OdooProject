@@ -137,11 +137,22 @@ export class RecycleAdminDashboard extends Component {
         damageRows: [], damageOpenId: null, damageSearch: '',
         damageWHFilter: null, damageFrom: '', damageTo: '',
         // Orders
-        orders: [], selectedOrder: null, selectedOrderLines: [],
+        orders: [], _rawOrders: [], selectedOrder: null, selectedOrderLines: [],
         orderFilter: '', orderWHFilter: null, orderStateFilter: '',
         // Reassigning one part of a split order to another warehouse (admin only).
         reassignCandidates: [], reassignWarehouseId: '',
         reassignError: null, reassignSuccess: null, reassignBusy: false,
+        // The per-warehouse quantity breakdown of a split order — what each
+        // warehouse was assigned — so the admin sees how the buyer's order was
+        // divided before deciding it.
+        splitParts: [],
+        // MODIFY a split: the allocator's suggested alternative warehouse sets
+        // (same size, cover the order, nearest first), fetched from the backend.
+        modifyOptions: null, modifyCurrent: [], modifyLoading: false,
+        modifyError: null, modifyBusy: false,
+        // Approving / rejecting a SPLIT order (the admin decides split parts —
+        // the model routes them here, not to the warehouse managers).
+        orderApprovalSaving: false, orderRejecting: null, orderRejectReason: '',
         ordersHasMore: true, ordersLoadingMore: false,
         archivedOrders: [], archivedOrdersHasMore: true, archivedOrdersLoadingMore: false,
         // Warehouse filter context (from warehouse detail nav)
@@ -777,7 +788,7 @@ export class RecycleAdminDashboard extends Component {
         if (this.state.orders.length > this.ORDERS_PAGE_SIZE) return;
         this._pollingOrders = true;
         try {
-            this.state.orders = await this.orm.searchRead(
+            const raw = await this.orm.searchRead(
                 "recycle.order", this._orderDomain(),
                 ["id", "name", "customer_name", "owner_name", "customer_email",
                  "warehouse_id", "state", "amount_total", "total_weight",
@@ -786,7 +797,11 @@ export class RecycleAdminDashboard extends Component {
                  "manager_approval", "backend_order_id"],
                 { order: "id desc", limit: this.ORDERS_PAGE_SIZE }
             );
-            this.state.ordersHasMore = this.state.orders.length === this.ORDERS_PAGE_SIZE;
+            // Group the same way the initial load does — otherwise this poll
+            // would clobber the whole-order rows with raw split parts.
+            this.state._rawOrders = raw;
+            this.state.orders = this._groupOrders(raw);
+            this.state.ordersHasMore = raw.length === this.ORDERS_PAGE_SIZE;
         } catch (e) { /* silent */ }
         this._pollingOrders = false;
     }
@@ -3080,9 +3095,10 @@ export class RecycleAdminDashboard extends Component {
     async _refetchOrders() {
         this.state.loading = true;
         this.state.orders = [];
+        this.state._rawOrders = [];
         this.state.ordersHasMore = true;
         try {
-            this.state.orders = await this.orm.searchRead(
+            const raw = await this.orm.searchRead(
                 "recycle.order", this._orderDomain(),
                 ["id", "name", "customer_name", "owner_name", "customer_email",
                  "warehouse_id", "state", "amount_total", "total_weight",
@@ -3091,10 +3107,55 @@ export class RecycleAdminDashboard extends Component {
                  "manager_approval", "backend_order_id"],
                 { order: "id desc", limit: this.ORDERS_PAGE_SIZE }
             );
-            this.state.ordersHasMore = this.state.orders.length === this.ORDERS_PAGE_SIZE;
+            this.state._rawOrders = raw;
+            this.state.orders = this._groupOrders(raw);
+            this.state.ordersHasMore = raw.length === this.ORDERS_PAGE_SIZE;
         } finally {
             this.state.loading = false;
         }
+    }
+
+    /**
+     * Collapse the parts of one buyer order into a single WHOLE-ORDER row.
+     *
+     * A split order is stored as several `recycle.order` parts sharing a
+     * `backend_order_id`; the admin should see it as ONE order (the buyer placed
+     * one), not as N look-alike rows. Parts of the same order collapse into a
+     * whole-order row carrying the combined total, the part count, and the
+     * combined approval; single-warehouse orders and Odoo-native orders (no
+     * backend order id) pass through untouched. Parts are created together and
+     * the list is id-descending, so a split's parts sit adjacent on the same
+     * page — grouping the loaded rows is enough.
+     */
+    _groupOrders(rows) {
+        const buckets = new Map();
+        const ordered = [];
+        for (const r of rows) {
+            const key = r.backend_order_id;
+            if (!key) { ordered.push(r); continue; }
+            if (buckets.has(key)) { buckets.get(key).push(r); continue; }
+            const bucket = [r];
+            buckets.set(key, bucket);
+            ordered.push(bucket);
+        }
+        return ordered.map((item) => {
+            if (!Array.isArray(item)) return item;   // native single order
+            if (item.length === 1) return item[0];   // single-warehouse order
+            const parts = item.slice().sort(
+                (a, b) => (a.part_sequence || 0) - (b.part_sequence || 0));
+            const rep = parts[0];
+            const approvals = parts.map((p) => p.manager_approval);
+            const combined = approvals.every((a) => a === 'approved') ? 'approved'
+                : approvals.some((a) => a === 'rejected') ? 'rejected' : 'pending';
+            return {
+                ...rep,
+                isWholeOrder: true,
+                partCount: parts.length,
+                amount_total: parts.reduce((s, p) => s + (p.amount_total || 0), 0),
+                manager_approval: combined,
+                _partIds: parts.map((p) => p.id),
+            };
+        });
     }
 
     async loadMoreOrders() {
@@ -3102,8 +3163,8 @@ export class RecycleAdminDashboard extends Component {
         if (!this.state.ordersHasMore || this.state.ordersLoadingMore || this.state.loading) return;
         this.state.ordersLoadingMore = true;
         try {
-            const lastId = this.state.orders.length
-                ? this.state.orders[this.state.orders.length - 1].id : 0;
+            const raw = this.state._rawOrders;
+            const lastId = raw.length ? raw[raw.length - 1].id : 0;
             const domain = this._orderDomain().concat(lastId ? [["id", "<", lastId]] : []);
             const more = await this.orm.searchRead(
                 "recycle.order", domain,
@@ -3114,7 +3175,8 @@ export class RecycleAdminDashboard extends Component {
                  "manager_approval", "backend_order_id"],
                 { order: "id desc", limit: this.ORDERS_PAGE_SIZE }
             );
-            this.state.orders = this.state.orders.concat(more);
+            this.state._rawOrders = raw.concat(more);
+            this.state.orders = this._groupOrders(this.state._rawOrders);
             this.state.ordersHasMore = more.length === this.ORDERS_PAGE_SIZE;
         } catch (e) { /* silent — the list simply stops growing, no error UI needed */ }
         this.state.ordersLoadingMore = false;
@@ -3165,15 +3227,58 @@ export class RecycleAdminDashboard extends Component {
         this.state.reassignSuccess = null;
         this.state.reassignWarehouseId = '';
         this.state.reassignCandidates = [];
+        this.state.modifyOptions = null;
+        this.state.modifyCurrent = [];
+        this.state.modifyError = null;
         this.state.selectedOrderLines = await this.orm.searchRead(
             "recycle.order.line",
             [["order_id", "=", o.id]],
             ["product_id", "quantity", "price_unit", "subtotal"]
         );
+        await this._loadSplitBreakdown(o);
         if (this.canReassignOrder(o)) {
             await this._loadReassignCandidates(o);
         }
         this.state.loading = false;
+    }
+
+    /**
+     * The per-warehouse quantity breakdown of a split order: every part of the
+     * same buyer order (siblings share `backend_order_id`), each with the
+     * warehouse it went to and the total quantity assigned there. Empty for a
+     * single-warehouse order — there is nothing to break down.
+     */
+    async _loadSplitBreakdown(o) {
+        this.state.splitParts = [];
+        if (!o.is_split_part || !o.backend_order_id) return;
+        const parts = await this.orm.searchRead(
+            "recycle.order",
+            [["backend_order_id", "=", o.backend_order_id]],
+            ["name", "warehouse_id", "part_sequence", "part_count",
+             "state", "manager_approval"]
+        );
+        const partIds = parts.map((p) => p.id);
+        const lines = partIds.length
+            ? await this.orm.searchRead(
+                  "recycle.order.line",
+                  [["order_id", "in", partIds]],
+                  ["order_id", "quantity"])
+            : [];
+        const qtyByOrder = {};
+        for (const l of lines) {
+            const oid = Array.isArray(l.order_id) ? l.order_id[0] : l.order_id;
+            qtyByOrder[oid] = (qtyByOrder[oid] || 0) + (l.quantity || 0);
+        }
+        this.state.splitParts = parts
+            .sort((a, b) => (a.part_sequence || 0) - (b.part_sequence || 0))
+            .map((p) => ({
+                id: p.id,
+                name: p.name,
+                warehouse: this.m2oName(p.warehouse_id),
+                quantity: qtyByOrder[p.id] || 0,
+                isCurrent: p.id === o.id,
+                approval: p.manager_approval,
+            }));
     }
 
     /**
@@ -3210,6 +3315,70 @@ export class RecycleAdminDashboard extends Component {
             "recycle.warehouse", [["state", "=", "active"]], ["id", "name"]
         );
         this.state.reassignCandidates = active.filter((w) => !taken.has(w.id));
+    }
+
+    /**
+     * Fetch the allocator's alternative warehouse sets for THIS split order —
+     * same size, covering the whole order, nearest first — from the backend.
+     * Shown when the admin chooses to MODIFY the split.
+     */
+    async loadModifyOptions() {
+        const o = this.state.selectedOrder;
+        if (!o || !o.backend_order_id) {
+            this.state.modifyError = this.tr('This order has no backend reference to modify.');
+            return;
+        }
+        this.state.modifyLoading = true;
+        this.state.modifyError = null;
+        this.state.modifyOptions = null;
+        try {
+            const r = await this._rpc('/api/admin/order/modify-options', {
+                backend_order_id: o.backend_order_id,
+            });
+            if (r && r.ok && r.options) {
+                this.state.modifyCurrent = (r.options.current || []).map((w) => w.name);
+                this.state.modifyOptions = (r.options.options || []).map((opt) => ({
+                    names: opt.warehouses.map((w) => w.name),
+                    backendIds: opt.warehouses.map((w) => w.id),
+                    distance: opt.total_distance_km,
+                }));
+            } else {
+                this.state.modifyError = (r && r.error) || this.tr('Could not load suggestions.');
+            }
+        } catch (e) {
+            this.state.modifyError = (e && e.data && e.data.message) || this.tr('Could not load suggestions.');
+        }
+        this.state.modifyLoading = false;
+    }
+
+    /** Apply a chosen alternative set — the backend re-plans and re-pushes. */
+    async applyModifyOption(opt) {
+        const o = this.state.selectedOrder;
+        if (!o || !o.backend_order_id || this.state.modifyBusy) return;
+        this.state.modifyBusy = true;
+        this.state.modifyError = null;
+        try {
+            const r = await this._rpc('/api/admin/order/apply-modify', {
+                backend_order_id: o.backend_order_id,
+                warehouse_backend_ids: opt.backendIds,
+            });
+            if (r && r.ok) {
+                if (this.notification) {
+                    this.notification.add(
+                        this.tr('Split re-routed to the chosen warehouses.'),
+                        { type: 'success' });
+                }
+                this.state.modifyOptions = null;
+                // The parts were recreated in the backend and re-pushed; step back
+                // to the list so the refreshed split is picked up.
+                await this.openOrders();
+            } else {
+                this.state.modifyError = (r && r.error) || this.tr('Could not apply the change.');
+            }
+        } catch (e) {
+            this.state.modifyError = (e && e.data && e.data.message) || this.tr('Could not apply the change.');
+        }
+        this.state.modifyBusy = false;
     }
 
     /** Move this split part to the chosen warehouse (admin decision). */
@@ -3250,6 +3419,102 @@ export class RecycleAdminDashboard extends Component {
         } finally {
             this.state.reassignBusy = false;
         }
+    }
+
+    /**
+     * A SPLIT part is DECIDED by the admin (the model routes split parts here,
+     * not to the warehouse managers). The button is shown only while the admin
+     * can still decide — same guard the server re-checks, so it is never shown
+     * for a decision the model would refuse.
+     */
+    canDecideOrder(o) {
+        return !!o && o.is_split_part
+            && o.state === 'pending'
+            && o.manager_approval === 'pending';
+    }
+
+    /**
+     * ONE status for the orders list — never two badges. A rejected/cancelled
+     * order reads "Cancelled"; an order the admin approved but that has not
+     * started processing reads "Approved" (so it is not confused with one still
+     * awaiting the decision); everything else shows its own workflow state.
+     */
+    orderStatusLabel(o) {
+        if (!o) return '';
+        if (o.state === 'cancelled' || o.manager_approval === 'rejected') return this.tr('Cancelled');
+        if (o.manager_approval === 'approved' && o.state === 'pending') return this.tr('Approved');
+        return this.stateLabel(o.state, 'order');
+    }
+    orderStatusClass(o) {
+        if (!o) return 'o_ra_badge';
+        if (o.state === 'cancelled' || o.manager_approval === 'rejected') return 'o_ra_badge o_ra_badge_danger';
+        if (o.manager_approval === 'approved' && o.state === 'pending') return 'o_ra_badge o_ra_badge_success';
+        return 'o_ra_badge ' + this.stateBadgeClass(o.state);
+    }
+
+    /** Approve a split part (admin) via the admin-scoped endpoint; the model's
+     *  `_assert_may_decide` authorises the admin for split parts. */
+    async approveOrder(o, ev) {
+        if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+        if (this.state.orderApprovalSaving) return;
+        this.state.orderApprovalSaving = true;
+        try {
+            const r = await this._rpc('/api/admin/order/approve', { order_id: o.id });
+            if (r && r.ok) {
+                o.manager_approval = 'approved';
+                if (this.state.selectedOrder && this.state.selectedOrder.id === o.id) {
+                    this.state.selectedOrder.manager_approval = 'approved';
+                }
+                if (this.notification) this.notification.add(
+                    this.tr('Order approved and released to output employees.'), { type: 'success' });
+            } else if (this.notification) {
+                this.notification.add((r && r.error) || 'Error', { type: 'danger' });
+            }
+        } catch (e) {
+            if (this.notification) this.notification.add(String(e), { type: 'danger' });
+        }
+        this.state.orderApprovalSaving = false;
+    }
+
+    /** Open the reject-reason dialog for a split part. */
+    rejectOrder(o, ev) {
+        if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+        this.state.orderRejecting = o;
+        this.state.orderRejectReason = '';
+    }
+
+    cancelRejectOrder() {
+        this.state.orderRejecting = null;
+        this.state.orderRejectReason = '';
+    }
+
+    /** Reject a split part with a reason (admin). */
+    async confirmRejectOrder() {
+        const o = this.state.orderRejecting;
+        if (!o || this.state.orderApprovalSaving) return;
+        this.state.orderApprovalSaving = true;
+        try {
+            const r = await this._rpc('/api/admin/order/reject', {
+                order_id: o.id, reason: this.state.orderRejectReason || '' });
+            if (r && r.ok) {
+                // Rejecting cancels the order — reflect BOTH the approval and the
+                // cancelled state locally so the detail updates without a reload.
+                o.manager_approval = 'rejected';
+                o.state = 'cancelled';
+                if (this.state.selectedOrder && this.state.selectedOrder.id === o.id) {
+                    this.state.selectedOrder.manager_approval = 'rejected';
+                    this.state.selectedOrder.state = 'cancelled';
+                }
+                if (this.notification) this.notification.add(
+                    this.tr('Order rejected and cancelled.'), { type: 'success' });
+                this.cancelRejectOrder();
+            } else if (this.notification) {
+                this.notification.add((r && r.error) || 'Error', { type: 'danger' });
+            }
+        } catch (e) {
+            if (this.notification) this.notification.add(String(e), { type: 'danger' });
+        }
+        this.state.orderApprovalSaving = false;
     }
 
     async printOrderReport(orderId) {

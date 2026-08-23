@@ -906,6 +906,12 @@ msgid "Shipment is not in sorting state."
 msgstr "الشحنة ليست في حالة فرز."
 
 #. module: recycle_warehouse
+#. odoo-javascript
+#: code:addons/recycle_warehouse/static/src/js/recycle_home_action.js:0
+msgid "Received here, but the collection system was not updated. Tell your manager."
+msgstr "تم الاستلام هنا، لكن لم يُحدَّث نظام الجمع. أبلغ مديرك."
+
+#. module: recycle_warehouse
 #. odoo-python
 #: code:addons/recycle_warehouse/models/driver_request.py:0
 msgid ""
