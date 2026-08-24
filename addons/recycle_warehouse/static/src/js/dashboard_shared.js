@@ -18,7 +18,16 @@ export async function rpcJson(url, params) {
         body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: params || {} }),
     });
     const wrapper = await resp.json();
-    return (wrapper && wrapper.result) || wrapper || {};
+    if (wrapper && 'result' in wrapper) return wrapper.result;
+    // A RAISED server error arrives as { error: { message, data: { message } } }.
+    // Returning that object let callers print it straight into a toast, where it
+    // rendered as the useless "[object Object]". Normalise it to a plain
+    // { error: string } so every caller shows the real reason instead.
+    if (wrapper && wrapper.error) {
+        const e = wrapper.error;
+        return { error: (e.data && e.data.message) || e.message || 'Server error' };
+    }
+    return wrapper || {};
 }
 
 /** Sorting dashboard's variant of the same call: never throws — network
@@ -39,7 +48,14 @@ export async function rpcJsonSafe(url, params) {
             cache: 'no-store',
         });
         const data = await result.json();
-        return data.result || data.error;
+        if (data && 'result' in data) return data.result;
+        // Same normalisation as rpcJson: a raised server error is an object, and
+        // must reach the caller as { error: string }, never the raw object.
+        if (data && data.error) {
+            const e = data.error;
+            return { error: (e.data && e.data.message) || e.message || 'Server error' };
+        }
+        return data || {};
     } catch (e) {
         return { error: e.message || 'Request failed' };
     }

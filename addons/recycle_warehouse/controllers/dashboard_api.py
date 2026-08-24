@@ -696,7 +696,17 @@ class RecycleDashboardApiController(http.Controller):
             return {'error': resp.get('message') or 'backend_error'}
 
         load = resp.get('data') or {}
-        shipment = request.env['recycle.shipment'].sudo().backend_upsert_shipment(load)
+        # Mirroring the load can legitimately fail — most often the warehouse's
+        # backend_id here does not match the one the load carries. Turn that into
+        # a readable answer the reception screen can show, instead of letting the
+        # exception bubble up as a raw JSON-RPC fault the client can only render
+        # as "[object Object]".
+        try:
+            shipment = request.env['recycle.shipment'].sudo().backend_upsert_shipment(load)
+        except (UserError, ValidationError) as e:
+            _logger.warning('Reception mirror failed for shipment %s: %s',
+                            backend_shipment_id, e)
+            return {'error': str(e)}
         return {'ok': True, 'shipment': shipment, 'load': load}
 
     @http.route('/api/reception/confirm-shipment', type='jsonrpc', auth='user',
@@ -751,7 +761,15 @@ class RecycleDashboardApiController(http.Controller):
         # above the flag stays False and the cron keeps retrying — which is what
         # heals a shipment accepted here but never acknowledged there.
         if local:
-            local.sudo().backend_received_synced = True
+            # Best-effort: the backend ALREADY confirmed (the driver sees
+            # RECEIVED), so a failed local flag write must never turn a receipt
+            # that went through into an error. Leaving the flag False only makes
+            # the resync cron re-send once, which is idempotent on the backend.
+            try:
+                local.sudo().backend_received_synced = True
+            except (UserError, ValidationError) as e:
+                _logger.warning('Could not mark shipment %s synced: %s',
+                                backend_shipment_id, e)
         return {'ok': True, 'load': resp.get('data') or {}}
 
     @http.route('/api/manager/awaiting-role', type='jsonrpc', auth='user',
