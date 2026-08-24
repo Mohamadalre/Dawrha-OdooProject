@@ -236,7 +236,7 @@
                     <!-- Quick actions -->
                     <div class="o_ra_actions_row" style="margin-bottom:1rem;">
                         <button class="o_ra_action_btn" t-on-click="openProcessOrder">&#x1F69A; <t t-esc="tr('Process Order')"/></button>
-                        <button class="o_ra_action_btn o_ra_btn_muted" t-on-click="openOrdersList">&#x1F441;&#xFE0F; <t t-esc="tr('View Orders')"/></button>
+                        <button class="o_ra_action_btn" t-on-click="openOrdersList">&#x1F441;&#xFE0F; <t t-esc="tr('View Orders')"/></button>
                     </div>
                 </t>
             </div>
@@ -292,9 +292,8 @@
                         <div class="o_ra_empty_state_title"><t t-esc="tr('No warehouse assigned')"/></div>
                     </div>
                 </t>
-                <div class="o_ra_bottom_nav" style="max-width:600px;margin:1.5rem auto 0;">
-                    <button class="o_recycle_back_btn" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
-                </div>
+                <!-- No Back button on the home screen: it is the top of the
+                     navigation, so a Back here had nowhere to go. -->
             </div>
         </t>
 
@@ -469,7 +468,7 @@
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Order Type')"/><span class="o_recycle_detail_val"><span t-att-class="'o_ra_badge ' + orderTypeClass(state.selectedOrder.order_type)" t-esc="orderTypeLabel(state.selectedOrder.order_type)"/></span></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Priority')"/><span class="o_recycle_detail_val"><span t-att-class="'o_ra_badge ' + priorityClass(state.selectedOrder.priority)" t-esc="state.selectedOrder.priority + ' — ' + priorityLabel(state.selectedOrder.priority)"/></span></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Status')"/><span class="o_recycle_detail_val"><span t-att-class="'o_ra_badge ' + stateBadgeClass(state.selectedOrder.state)" t-esc="stateLabel(state.selectedOrder.state)"/></span></div>
-                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Total')"/><span class="o_recycle_detail_val" t-esc="state.selectedOrder.amount_total + ' ' + tr('$')"/></div>
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Total')"/><span class="o_recycle_detail_val" t-esc="state.selectedOrder.amount_total"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Weight')"/><span class="o_recycle_detail_val" t-esc="state.selectedOrder.total_weight + ' kg'"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Processed By')"/><span class="o_recycle_detail_val" t-esc="state.selectedOrder.output_user || '—'"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Invoice')"/><span class="o_recycle_detail_val" t-esc="state.selectedOrder.invoice_number || '—'"/></div>
@@ -483,14 +482,14 @@
                                     <tr t-foreach="state.selectedOrder.lines" t-as="line" t-key="line.id">
                                         <td t-esc="line.product_name"/>
                                         <td t-esc="line.category"/>
-                                        <td><span t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/></td>
-                                        <td t-esc="line.quantity"/>
+                                        <td><span t-if="line.has_conditions" t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/><span t-else="" class="o_ra_text_muted">&#8212;</span></td>
+                                        <td><t t-esc="line.quantity"/> <t t-esc="line.unit"/><span t-if="line.weight_kg and line.weight_kg !== line.quantity" class="o_ra_text_muted"> (<t t-esc="line.weight_kg"/> <t t-esc="tr('kg')"/>)</span></td>
                                         <td>
                                             <span t-att-class="'o_ra_badge ' + (line.sufficient ? 'o_ra_badge_success' : 'o_ra_badge_danger')"
                                                   t-esc="(line.stock_available !== undefined ? line.stock_available : '—')"/>
                                         </td>
-                                        <td t-esc="line.price_unit + ' ' + tr('$')"/>
-                                        <td t-esc="line.subtotal + ' ' + tr('$')"/>
+                                        <td t-esc="line.price_unit"/>
+                                        <td t-esc="line.subtotal"/>
                                     </tr>
                                 </tbody>
                             </table>
@@ -601,7 +600,7 @@
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Order')"/><span class="o_recycle_detail_val" t-esc="state.selectedInvoice.name"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Customer')"/><span class="o_recycle_detail_val" t-esc="state.selectedInvoice.customer_name"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Date')"/><span class="o_recycle_detail_val" t-esc="state.selectedInvoice.create_date"/></div>
-                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Total')"/><span class="o_recycle_detail_val" t-esc="state.selectedInvoice.amount_total + ' ' + tr('$')"/></div>
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Total')"/><span class="o_recycle_detail_val" t-esc="state.selectedInvoice.amount_total"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Weight')"/><span class="o_recycle_detail_val" t-esc="state.selectedInvoice.total_weight + ' kg'"/></div>
                         </div>
                         <div class="o_recycle_detail_section">
@@ -612,10 +611,10 @@
                                     <tr t-foreach="state.selectedInvoice.lines" t-as="line" t-key="line.id">
                                         <td t-esc="line.product_name"/>
                                         <td t-esc="line.category"/>
-                                        <td><span t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/></td>
-                                        <td t-esc="line.quantity"/>
-                                        <td t-esc="line.price_unit + ' ' + tr('$')"/>
-                                        <td><strong t-esc="line.subtotal + ' ' + tr('$')"/></td>
+                                        <td><span t-if="line.has_conditions" t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/><span t-else="" class="o_ra_text_muted">&#8212;</span></td>
+                                        <td><t t-esc="line.quantity"/> <t t-esc="line.unit"/><span t-if="line.weight_kg and line.weight_kg !== line.quantity" class="o_ra_text_muted"> (<t t-esc="line.weight_kg"/> <t t-esc="tr('kg')"/>)</span></td>
+                                        <td t-esc="line.price_unit"/>
+                                        <td><strong t-esc="line.subtotal"/></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -656,7 +655,7 @@
                                     <td class="o_ra_tbl_id" t-esc="o.name"/>
                                     <td t-esc="o.customer_name"/>
                                     <td t-esc="o.line_count"/>
-                                    <td t-esc="o.amount_total + ' ' + tr('$')"/>
+                                    <td t-esc="o.amount_total"/>
                                     <td><span t-att-class="'o_ra_badge ' + priorityClass(o.priority)" t-esc="priorityLabel(o.priority)"/></td>
                                     <td>
                                         <button t-att-class="'o_ra_action_btn' + ((o.stock_sufficient === false || o.blocking_order_name) ? ' o_ra_btn_muted' : '')"
@@ -684,7 +683,7 @@
                                 <div class="o_ra_mobile_card_body">
                                     <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Customer')"/><span class="o_ra_mobile_card_val" t-esc="o.customer_name"/></div>
                                     <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Items')"/><span class="o_ra_mobile_card_val" t-esc="o.line_count"/></div>
-                                    <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Total')"/><span class="o_ra_mobile_card_val" t-esc="o.amount_total + ' ' + tr('$')"/></div>
+                                    <div class="o_ra_mobile_card_field"><span class="o_ra_mobile_card_lbl" t-esc="tr('Total')"/><span class="o_ra_mobile_card_val" t-esc="o.amount_total"/></div>
                                 </div>
                                 <div t-if="o.stock_sufficient === false" class="o_ra_form_error" style="margin:0 0 0.5rem;padding:0.5rem 0.75rem;font-size:0.78rem;">
                                     <t t-esc="tr('Insufficient stock for one or more materials in the requested condition.')"/>
@@ -738,7 +737,7 @@
                     <div class="o_recycle_detail_sheet">
                         <div class="o_recycle_detail_grid">
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Status')"/><span class="o_recycle_detail_val"><span t-att-class="'o_ra_badge ' + stateClass(state.processOrder.state)" t-esc="stateLabel(state.processOrder.state)"/></span></div>
-                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Total')"/><span class="o_recycle_detail_val" t-esc="state.processOrder.amount_total + ' ' + tr('$')"/></div>
+                            <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Total')"/><span class="o_recycle_detail_val" t-esc="state.processOrder.amount_total"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Customer')"/><span class="o_recycle_detail_val" t-esc="state.processOrder.customer_name"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Owner')"/><span class="o_recycle_detail_val" t-esc="state.processOrder.owner_name"/></div>
                             <div class="o_recycle_detail_field"><span class="o_recycle_detail_lbl" t-esc="tr('Order Type')"/><span class="o_recycle_detail_val"><span t-att-class="'o_ra_badge ' + orderTypeClass(state.processOrder.order_type)" t-esc="orderTypeLabel(state.processOrder.order_type)"/></span></div>
@@ -752,14 +751,14 @@
                                     <tr t-foreach="state.processOrder.lines" t-as="line" t-key="line.id">
                                         <td><strong t-esc="line.product_name"/></td>
                                         <td t-esc="line.category"/>
-                                        <td><span t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/></td>
-                                        <td t-esc="line.quantity"/>
+                                        <td><span t-if="line.has_conditions" t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/><span t-else="" class="o_ra_text_muted">&#8212;</span></td>
+                                        <td><t t-esc="line.quantity"/> <t t-esc="line.unit"/><span t-if="line.weight_kg and line.weight_kg !== line.quantity" class="o_ra_text_muted"> (<t t-esc="line.weight_kg"/> <t t-esc="tr('kg')"/>)</span></td>
                                         <td>
                                             <span t-att-class="'o_ra_badge ' + (line.sufficient ? 'o_ra_badge_success' : 'o_ra_badge_danger')"
                                                   t-esc="(line.stock_available !== undefined ? line.stock_available : '—')"/>
                                         </td>
-                                        <td t-esc="line.price_unit + ' ' + tr('$')"/>
-                                        <td><strong t-esc="line.subtotal + ' ' + tr('$')"/></td>
+                                        <td t-esc="line.price_unit"/>
+                                        <td><strong t-esc="line.subtotal"/></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -820,7 +819,7 @@
                         <div class="o_ra_alloc_line_header">
                             <div class="o_ra_alloc_line_title">
                                 <span t-esc="line.product_name"/>
-                                <span t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/>
+                                <span t-if="line.condition" t-att-class="'o_ra_badge ' + conditionBadgeClass(line.condition)" t-esc="conditionLabel(line.condition)"/>
                             </div>
                             <span t-att-class="'o_ra_alloc_progress' + (lineIsSatisfied(line) ? ' is-ok' : '')"
                                   t-esc="allocatedQty(line.line_id) + ' / ' + line.required"/>

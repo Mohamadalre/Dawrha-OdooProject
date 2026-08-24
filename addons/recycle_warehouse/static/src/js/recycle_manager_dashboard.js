@@ -1226,6 +1226,7 @@ export class RecycleManagerDashboard extends Component {
                     'not_found': this.tr('Employee not found.'),
                     'forbidden': this.tr('You do not have permission to perform this action.'),
                     'write_failed': this.tr('Failed to save. Please try again.'),
+                    'phone_exists': this.tr('This phone number is already registered for another employee.'),
                 };
                 this.state.employeeError = errMap[res.error] || this.tr('Update failed: ') + res.error;
             } else {
@@ -1352,6 +1353,8 @@ export class RecycleManagerDashboard extends Component {
                 this.state.employeeError = this.tr('An account with this email already exists.');
             } else if (res.error === 'national_id_exists') {
                 this.state.employeeError = this.tr('This national ID is already registered for another employee.');
+            } else if (res.error === 'phone_exists') {
+                this.state.employeeError = this.tr('This phone number is already registered for another employee.');
             } else if (res.error === 'email_required') {
                 this.state.employeeError = this.tr('Email is required for login and password reset.');
             } else if (res.error) {

@@ -257,9 +257,9 @@
                         <button class="o_ra_action_btn" t-on-click="openMyShipments">&#x1F441;&#xFE0F; <t t-esc="tr('View Shipments')"/></button>
                     </div>
                 </t>
-                <div class="o_ra_bottom_nav">
-                    <button class="o_recycle_back_btn" t-on-click="goBack">&#x2190; <t t-esc="tr('Back')"/></button>
-                </div>
+                <!-- No Back button here: this IS the home screen (My Warehouse),
+                     the top of the navigation. A Back on the landing view had
+                     nowhere to go and only confused the reception employee. -->
             </div>
         </t>
 

@@ -20,6 +20,9 @@ from . import test_qweb_handler_binding
 from . import test_split_order_approval
 from . import test_report_arabic
 from . import test_admin_employee_create
+from . import test_manager_employee_phone
+from . import test_reception_resync
+from . import test_output_order_detail
 from . import test_employee_dashboard_access
 from . import test_qweb_owl_vocabulary
 from . import test_sorting_plan

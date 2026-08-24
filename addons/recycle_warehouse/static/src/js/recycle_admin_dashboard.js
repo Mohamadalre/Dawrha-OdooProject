@@ -4230,6 +4230,8 @@ export class RecycleAdminDashboard extends Component {
         switch (res.error) {
             case 'login_exists':
                 return this.tr('An account with this email already exists.');
+            case 'phone_exists':
+                return this.tr('This phone number is already registered for another employee.');
             case 'identity_taken': {
                 // Composed HERE, in the screen's own language.
                 //
@@ -4856,7 +4858,9 @@ export class RecycleAdminDashboard extends Component {
                 warehouse_id: e.recycle_warehouse_id ? (Array.isArray(e.recycle_warehouse_id) ? e.recycle_warehouse_id[0] : e.recycle_warehouse_id) : false,
             });
             if (res.error) {
-                this.state.employeeError = res.error;
+                this.state.employeeError = res.error === 'phone_exists'
+                    ? this.tr('This phone number is already registered for another employee.')
+                    : res.error;
             } else {
                 e.name = res.name || e.name;
                 e.phone = res.phone !== undefined ? res.phone : e.phone;

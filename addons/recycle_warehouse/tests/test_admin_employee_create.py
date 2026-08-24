@@ -60,10 +60,16 @@ class TestAdminEmployeeCreate(HttpCase):
         self.authenticate('hiring.admin@example.com', 'hiring-admin-pw-1')
 
     def _create(self, **overrides):
+        import zlib
+        email = overrides.get('email', 'new.hire@example.com')
         payload = {
             'name': 'New Hire',
             'email': 'new.hire@example.com',
-            'phone': '0999000001',
+            # A phone UNIQUE per email by default. Phone is now one-per-person
+            # (like the national id), so a fixed default would make the second
+            # employee in any test collide on it — a collision unrelated to what
+            # these tests check. A test that WANTS a phone clash passes phone=.
+            'phone': '09' + str(zlib.crc32(email.encode()) % 100000000).zfill(8),
             'national_id': 'HIRE-NEW-1',
             'role': 'input',
             'warehouse_id': self.free_wh.id,
@@ -181,6 +187,34 @@ class TestAdminEmployeeCreate(HttpCase):
         res = self._create(email='sitting.manager@example.com',
                            national_id='HIRE-DUP-EMAIL')
         self.assertEqual(res.get('error'), 'login_exists')
+
+    def test_a_phone_already_in_the_system_is_refused(self):
+        """Phone is one-per-person now — a second hire cannot reuse it."""
+        first = self._create(email='phone.one@example.com',
+                             national_id='HIRE-PHONE-1', phone='0999555000')
+        self.assertTrue(first.get('ok'), first)
+        second = self._create(email='phone.two@example.com',
+                              national_id='HIRE-PHONE-2', phone='0999555000')
+        self.assertEqual(second.get('error'), 'phone_exists')
+
+    def test_editing_a_phone_onto_one_already_used_is_refused(self):
+        """The same one-per-person rule on EDIT — and self is excluded."""
+        a = self._create(email='edit.a@example.com',
+                         national_id='HIRE-EDIT-A', phone='0999600000')
+        b = self._create(email='edit.b@example.com',
+                         national_id='HIRE-EDIT-B', phone='0999600001')
+        self.assertTrue(a.get('ok'), a)
+        self.assertTrue(b.get('ok'), b)
+        # Moving B onto A's number is refused.
+        clash = self.make_jsonrpc_request(
+            '/api/admin/employee/update',
+            params={'employee_id': b['id'], 'phone': '0999600000'})
+        self.assertEqual(clash.get('error'), 'phone_exists')
+        # Keeping B's OWN number is fine — the edited record is excluded.
+        same = self.make_jsonrpc_request(
+            '/api/admin/employee/update',
+            params={'employee_id': b['id'], 'phone': '0999600001'})
+        self.assertTrue(same.get('ok'), same)
 
     def test_a_refused_identity_leaves_no_account_behind(self):
         """The savepoint doing its job.

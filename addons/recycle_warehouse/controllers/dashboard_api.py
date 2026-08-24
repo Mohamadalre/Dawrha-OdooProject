@@ -389,7 +389,15 @@ class RecycleDashboardApiController(http.Controller):
                   emp.id, role, shift_id, active, phone, warehouse.id)
         vals = {}
         if phone is not None:
-            vals['phone'] = (phone or '').strip()
+            phone = (phone or '').strip()
+            # Phone is one-per-person: reject a number already held by ANOTHER
+            # user. The employee being edited is excluded, so keeping their own
+            # number (or any no-op save) is fine. An empty phone clears it.
+            if phone and request.env['res.users'].sudo().with_context(
+                    active_test=False).search_count(
+                    [('phone', '=', phone), ('id', '!=', emp.id)]):
+                return {'error': 'phone_exists'}
+            vals['phone'] = phone
         if active is not None:
             vals['active'] = bool(active)
         if shift_id is not None:
@@ -720,6 +728,16 @@ class RecycleDashboardApiController(http.Controller):
         if not warehouse.backend_id:
             return {'error': 'warehouse_not_synced'}
 
+        # STRICT: the driver's status must NEVER flip to RECEIVED unless a
+        # receiving zone was chosen. `action_accept` enforces that in the UI
+        # flow, but a DIRECT call to this route would otherwise skip it and
+        # change the driver's status with no zone set. Re-check the local
+        # shipment here so the guarantee holds by any path, not just the screen.
+        local = request.env['recycle.shipment'].sudo().search(
+            [('backend_shipment_id', '=', backend_shipment_id)], limit=1)
+        if local and not local.receiving_zone_id:
+            return {'error': 'zone_required'}
+
         resp = request.env['recycle.backend.sync'].sudo().post_signed_return(
             '/api/v1/odoo/shipments/confirm',
             {'backend_shipment_id': backend_shipment_id,
@@ -728,6 +746,12 @@ class RecycleDashboardApiController(http.Controller):
             return {'error': 'backend_unreachable'}
         if not resp.get('success'):
             return {'error': resp.get('message') or 'backend_error'}
+        # The backend acknowledged the receipt (driver now sees RECEIVED). Mark
+        # it so the resync cron never re-sends this one. On the failure paths
+        # above the flag stays False and the cron keeps retrying — which is what
+        # heals a shipment accepted here but never acknowledged there.
+        if local:
+            local.sudo().backend_received_synced = True
         return {'ok': True, 'load': resp.get('data') or {}}
 
     @http.route('/api/manager/awaiting-role', type='jsonrpc', auth='user',
@@ -804,6 +828,7 @@ class RecycleDashboardApiController(http.Controller):
         name = (name or '').strip()
         email = (email or '').strip()
         role = (role or '').strip()
+        phone = (phone or '').strip()
 
         national_id = (national_id or '').strip()
 
@@ -824,6 +849,11 @@ class RecycleDashboardApiController(http.Controller):
         if national_id and Users.search_count(
                 [('recycle_national_id', '=', national_id)]):
             return {'error': 'national_id_exists'}
+        # Phone must be unique too: two people cannot share a contact number,
+        # so a phone already on file blocks the create (same shape as the
+        # national-id guard above). An empty phone is left unchecked.
+        if phone and Users.search_count([('phone', '=', phone)]):
+            return {'error': 'phone_exists'}
 
         group = request.env.ref(self.ROLE_GROUP_XMLIDS[role]).sudo()
         base_group = request.env.ref('base.group_user').sudo()
@@ -833,7 +863,7 @@ class RecycleDashboardApiController(http.Controller):
             'name': name,
             'login': login,
             'email': email,
-            'phone': (phone or '').strip(),
+            'phone': phone,
             'recycle_role': role,
             'recycle_warehouse_id': warehouse.id,
             'recycle_national_id': national_id,
@@ -1021,6 +1051,12 @@ class RecycleDashboardApiController(http.Controller):
         Users = request.env['res.users'].sudo().with_context(active_test=False)
         if Users.search_count([('login', '=', login)]):
             return {'error': 'login_exists'}
+        # Phone must be unique across every person: national id and email are
+        # already one-per-person (via recycle.identity); a shared contact number
+        # is the remaining way two records point at the same human. An empty
+        # phone is left unchecked.
+        if phone and Users.search_count([('phone', '=', phone)]):
+            return {'error': 'phone_exists'}
 
         group = request.env.ref(self.ADMIN_ROLE_GROUP_XMLIDS[role]).sudo()
         base_group = request.env.ref('base.group_user').sudo()
@@ -1124,7 +1160,14 @@ class RecycleDashboardApiController(http.Controller):
         if email is not None:
             vals['email'] = (email or '').strip()
         if phone is not None:
-            vals['phone'] = (phone or '').strip()
+            phone = (phone or '').strip()
+            # One phone per person: reject a number already held by ANOTHER user
+            # (the edited employee is excluded, so keeping their own is fine). An
+            # empty phone clears it.
+            if phone and Users.search_count(
+                    [('phone', '=', phone), ('id', '!=', emp.id)]):
+                return {'error': 'phone_exists'}
+            vals['phone'] = phone
         if active is not None:
             vals['active'] = bool(active)
         if shift_id is not None:
@@ -2845,6 +2888,7 @@ class RecycleOutputApiController(http.Controller):
             return {'error': 'Order not found'}
 
         stock_model = request.env['recycle.stock'].sudo()
+        conditions_model = request.env['recycle.material.condition'].sudo()
         lines = []
         for line in order.line_ids:
             product = line.product_id
@@ -2852,6 +2896,11 @@ class RecycleOutputApiController(http.Controller):
                 price = product.price_factory
             else:
                 price = product.price_free_facility
+            # Whether this material HAS grades at all is authored in the backend
+            # and mirrored here as recycle.material.condition. A material with an
+            # empty set simply has no grades — so the screen must show no
+            # condition for it, never a fabricated one.
+            has_conditions = bool(conditions_model.codes_for(product))
             # Availability is per condition: an 'excellent' line can only
             # ever be fulfilled from 'excellent' stock.
             available = stock_model._available_qty(
@@ -2862,7 +2911,18 @@ class RecycleOutputApiController(http.Controller):
                 'product_name': product.name or '',
                 'category': product.category_id.name if product.category_id else '',
                 'quantity': line.quantity or 0.0,
-                'condition': line.condition or 'good',
+                # The material's OWN unit of measure, authored in the backend and
+                # mirrored here — shown next to the quantity so a "piece" count is
+                # never mistaken for kilograms.
+                'unit': product.uom_id.name or product.uom_id.code or '',
+                # The KG equivalent, the SAME basis a shipment's load weight uses
+                # (quantity x weight-per-unit). Lets the screen show how much a
+                # non-kg quantity actually weighs, exactly like the truck load.
+                'weight_kg': round((line.quantity or 0.0) * (product.weight or 0.0), 3),
+                # Only a graded material carries a grade; an ungraded one is kept
+                # False so the screen shows "—" instead of a fabricated "Good".
+                'condition': line.condition or False,
+                'has_conditions': has_conditions,
                 'stock_available': available,
                 'sufficient': available >= (line.quantity or 0.0),
                 'price_unit': price,
@@ -2967,7 +3027,8 @@ class RecycleOutputApiController(http.Controller):
                 'line_id': line.id,
                 'product_id': line.product_id.id,
                 'product_name': line.product_id.name or '',
-                'condition': line.condition or 'good',
+                # False (not a fabricated 'good') when the material has no grades.
+                'condition': line.condition or False,
                 'required': line.quantity,
                 'available': available,
                 'sufficient': available >= line.quantity,
@@ -2995,7 +3056,7 @@ class RecycleOutputApiController(http.Controller):
                     'product_id': stock.product_id.id,
                     'product_name': stock.product_id.name or '',
                     'quantity': stock.quantity,
-                    'condition': stock.condition or 'good',
+                    'condition': stock.condition or False,
                 })
             # Never show a zone with nothing (or nothing relevant) in it.
             if not zone_products:

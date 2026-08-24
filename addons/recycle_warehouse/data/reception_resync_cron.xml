@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Re-send reception confirmations the backend never acknowledged.
+
+        Reception accepts a shipment locally and THEN tells the backend to flip
+        it to RECEIVED so the collection driver sees the receipt. If that second
+        call fails (backend briefly unreachable, a wrong base URL), the shipment
+        is stranded: 'accepted' here, never RECEIVED there, and re-scanning only
+        says "already processed". This cron re-sends every accepted-but-not-yet-
+        acknowledged shipment until the backend confirms — the same self-healing
+        pattern the material-suggestion resend uses.
+    -->
+    <record id="ir_cron_resync_reception" model="ir.cron">
+        <field name="name">Recycle: resync unacknowledged reception receipts</field>
+        <field name="model_id" ref="model_recycle_shipment"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_resync_reception()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

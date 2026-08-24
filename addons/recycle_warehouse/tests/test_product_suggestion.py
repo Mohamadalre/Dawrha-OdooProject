@@ -44,8 +44,11 @@ class TestProductSuggestion(TransactionCase):
 
     # ------------------------------------------------------------------
     def test_submit_records_the_backend_reference(self):
-        s = self._new()
+        # `create` auto-submits, so the push mock must already be in place when
+        # the record is created — otherwise the auto-submit escapes it (and, in
+        # a dev environment, reaches the REAL backend and files a real uuid).
         with self._push_returns(True, {'suggestion_id': 'be-123'}):
+            s = self._new()
             self.assertTrue(s.action_submit())
 
         self.assertEqual(s.state, 'submitted')
@@ -55,8 +58,8 @@ class TestProductSuggestion(TransactionCase):
 
     def test_a_failed_push_stays_on_file_and_re_sendable(self):
         """The point of not raising: the record and the error both survive."""
-        s = self._new()
         with self._push_returns(False, None, 'connection refused'):
+            s = self._new()          # auto-submit fails under the mock → 'failed'
             result = s.action_submit()
 
         # A notification, not an exception — so nothing is rolled back.
@@ -81,8 +84,8 @@ class TestProductSuggestion(TransactionCase):
         duplicate reaches the backend. (Drift is prevented separately, by
         blocking CONTENT edits after submit — see the test below.)
         """
-        s = self._new()
         with self._push_returns(True, {'suggestion_id': 'be-1'}):
+            s = self._new()
             self.assertTrue(s.action_submit())
         self.assertEqual(s.state, 'submitted')
 

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 SHIPMENT_STATES = [
@@ -84,6 +87,15 @@ class RecycleShipment(models.Model):
         string='Shipment ID (Backend)', index=True, copy=False,
         help='External identifier of this shipment in the NestJS backend — '
              'used to correlate records during API synchronisation.')
+    # True once the backend ACKNOWLEDGED the reception (flipped its shipment to
+    # RECEIVED so the collection driver sees it). Reception accepts locally and
+    # THEN tells the backend; if that second call fails the shipment stays
+    # accepted here while the driver is never told — and re-scanning only says
+    # "already processed". The resync cron re-sends every accepted-but-not-yet-
+    # acknowledged shipment until this turns True, so a dropped call or a brief
+    # backend outage heals on its own instead of stranding the driver.
+    backend_received_synced = fields.Boolean(
+        string='Reception synced to backend', default=False, copy=False, index=True)
     weight_diff_pct = fields.Float(
         string='Weight Difference (%)', compute='_compute_weight_diff', store=True)
     state = fields.Selection(
@@ -675,6 +687,47 @@ class RecycleShipment(models.Model):
             'name': shipment.name,
             'state': shipment.state,
         }
+
+    @api.model
+    def _cron_resync_reception(self):
+        """Re-send reception confirmations the backend never acknowledged.
+
+        The reception screen accepts a shipment locally, THEN calls the backend
+        to flip it to RECEIVED so the collection driver sees the receipt. If
+        that second call fails (backend briefly unreachable, a wrong base URL),
+        the shipment stays 'accepted' here while the driver is never told — and
+        re-scanning only says 'already processed', so the screen offers no retry.
+
+        This closes that gap the same way every other backend sync does: any
+        shipment that was ACCEPTED but not acknowledged is re-sent until it is.
+        The backend confirm is idempotent, so a shipment that WAS already synced
+        (its flag still False from before this field existed) is simply marked
+        done on the first pass. Escalated / pending / receiving shipments are
+        left alone — only a legitimately accepted one may be reported RECEIVED.
+        """
+        Sync = self.env['recycle.backend.sync'].sudo()
+        todo = self.sudo().search([
+            ('backend_received_synced', '=', False),
+            ('state', 'in', ('accepted', 'sorting', 'sorted')),
+            ('backend_shipment_id', '!=', False),
+        ], limit=50)
+        for rec in todo:
+            wh_backend = rec.warehouse_id.backend_id
+            if not wh_backend:
+                # The warehouse itself is not linked to the backend yet; the
+                # warehouse sync must close that first (see backend_id writeback).
+                continue
+            try:
+                resp = Sync.post_signed_return(
+                    '/api/v1/odoo/shipments/confirm',
+                    {'backend_shipment_id': rec.backend_shipment_id,
+                     'warehouse_backend_id': wh_backend})
+                if resp and resp.get('success'):
+                    rec.sudo().backend_received_synced = True
+            except Exception:
+                # One unreachable row must never stop the sweep; next tick retries.
+                _logger.warning(
+                    'Reception resync failed for shipment %s', rec.name)
 
     def write(self, vals):
         # Priority comes from the backend or is set by the warehouse

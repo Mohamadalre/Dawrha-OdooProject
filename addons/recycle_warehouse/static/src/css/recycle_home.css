@@ -13351,3 +13351,31 @@ html[data-theme="dark"] .o_ra_picker_sheet,
     opacity: 0.9;
 }
 .o_recycle_wh_card_closed .o_recycle_wh_name { color: var(--ra-text-muted, #6b7280); }
+
+/* =========================================================================
+   RESPONSIVE FIX — clearance for the FIXED mobile bottom nav
+   -------------------------------------------------------------------------
+   On phones (≤768px, and short landscape) `.o_ra_bottom_nav` becomes
+   `position: fixed; bottom: 0; z-index: 100`, floating over the very bottom
+   of the viewport. Nothing below it was reserving that strip, so the LAST
+   item of a scroll region hid behind the bar — the reported "Back button
+   sitting on top of a warehouse card / warehouse info".
+
+   The direct content container of every view therefore needs a bottom
+   padding at least as tall as that bar (~74px) plus the phone's home-
+   indicator inset. We pad the container that holds each view's LAST visible
+   element, so the reserved strip sits between that element and the bar:
+     • `.o_recycle_view_container` — warehouse DETAIL + every form/list view
+                                     (the Back bar lives inside it)
+     • `.o_recycle_wh_scroll`      — the warehouse LIST's own inner scroller
+                                     (the Back bar is its sibling below)
+     • `.tw-main-scroll`           — sorting / output / delivery (Tailwind)
+   These three are never nested in one another, so no view is double-padded.
+   ========================================================================= */
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
+    .o_recycle_view_container,
+    .o_recycle_wh_scroll,
+    .tw-main-scroll {
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}

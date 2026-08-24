@@ -33,6 +33,7 @@ Recycle Warehouse Management
         'data/data.xml',
         'data/email_templates.xml',
         'data/suggestion_cron.xml',
+        'data/reception_resync_cron.xml',
         'views/uom_views.xml',
         'views/catalog_reference_views.xml',
         'views/delivery_tariff_views.xml',
